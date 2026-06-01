@@ -1,0 +1,293 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elements Reference &mdash; pyreportengine 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Layout System" href="layout.html" />
+    <link rel="prev" title="Quickstart" href="quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyreportengine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Elements Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#textelement">TextElement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#figureelement">FigureElement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tableelement">TableElement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#imageelement">ImageElement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#containerelement">ContainerElement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#spacerelement">SpacerElement</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="layout.html">Layout System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="styles.html">Styles &amp; Theming</a></li>
+<li class="toctree-l1"><a class="reference internal" href="renderers.html">Renderers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/padding_margin.html">Padding &amp; Margin example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/comprehensive.html">Comprehensive example</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyreportengine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Elements Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/elements.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="elements-reference">
+<h1>Elements Reference<a class="headerlink" href="#elements-reference" title="Link to this heading"></a></h1>
+<p>All content types inherit from <code class="docutils literal notranslate"><span class="pre">BaseElement</span></code> and are backend-agnostic —
+they do not know which renderer produces the final output.</p>
+<section id="textelement">
+<h2>TextElement<a class="headerlink" href="#textelement" title="Link to this heading"></a></h2>
+<p>A rich-text block made of one or more <code class="docutils literal notranslate"><span class="pre">TextBlock</span></code>s, each containing
+one or more <code class="docutils literal notranslate"><span class="pre">TextRun</span></code>s.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">slide</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;Hello&quot;</span><span class="p">)</span>                     <span class="c1"># simple text</span>
+<span class="n">slide</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;Bold red&quot;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>       <span class="c1"># formatted in one call</span>
+                  <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#C62828&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+<span class="n">slide</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;Times-Roman title&quot;</span><span class="p">,</span>         <span class="c1"># custom font</span>
+                  <span class="n">font_name</span><span class="o">=</span><span class="s2">&quot;Times-Roman&quot;</span><span class="p">,</span>
+                  <span class="n">size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">italic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Keyword arguments</strong> (all extracted from <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>):</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">bold</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">bool</span></code> — applies bold face (default <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">italic</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">bool</span></code> — applies italic (default <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">color</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">str</span></code> — hex color like <code class="docutils literal notranslate"><span class="pre">&quot;#C62828&quot;</span></code> (default <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">size</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">float</span></code> — font size in points (default <code class="docutils literal notranslate"><span class="pre">None</span></code>, renderer picks)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">font_name</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">str</span></code> — PostScript font name, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;Times-Roman&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Courier-Bold&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;Helvetica-Oblique&quot;</span></code> (default <code class="docutils literal notranslate"><span class="pre">None</span></code> → renderer default)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">alignment</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">TextAlignment</span></code> — <code class="docutils literal notranslate"><span class="pre">&quot;left&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;center&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;right&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;justify&quot;</span></code> (default <code class="docutils literal notranslate"><span class="pre">&quot;left&quot;</span></code>)</p>
+</dd>
+</dl>
+<p><strong>Multi-run text:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">el</span> <span class="o">=</span> <span class="n">slide</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;Base text&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">el</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot; bold part&quot;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">el</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot; red part&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#C62828&quot;</span><span class="p">)</span>
+<span class="n">el</span><span class="o">.</span><span class="n">add_block</span><span class="p">(</span><span class="n">alignment</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">)</span>
+<span class="n">el</span><span class="o">.</span><span class="n">add_run</span><span class="p">(</span><span class="s2">&quot;Centered line&quot;</span><span class="p">,</span> <span class="n">font_name</span><span class="o">=</span><span class="s2">&quot;Times-Roman&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/comprehensive_report_p1.png"><img alt="Text elements with various formatting" src="_images/comprehensive_report_p1.png" style="width: 320px;" />
+</a>
+</section>
+<hr class="docutils" />
+<section id="figureelement">
+<h2>FigureElement<a class="headerlink" href="#figureelement" title="Link to this heading"></a></h2>
+<p>Wraps a <code class="docutils literal notranslate"><span class="pre">matplotlib.figure.Figure</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">)))</span>
+<span class="n">slide</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>                    <span class="c1"># default dpi=150, bbox=&quot;tight&quot;</span>
+
+<span class="n">slide</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>           <span class="c1"># higher resolution</span>
+<span class="n">slide</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;jpg&quot;</span><span class="p">)</span>      <span class="c1"># JPEG output</span>
+</pre></div>
+</div>
+<p><strong>Keyword arguments:</strong></p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">dpi</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">int</span></code> — resolution (default <code class="docutils literal notranslate"><span class="pre">150</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bbox_inches</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> — bounding box (default <code class="docutils literal notranslate"><span class="pre">&quot;tight&quot;</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">format</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">str</span></code> — image format (default <code class="docutils literal notranslate"><span class="pre">&quot;png&quot;</span></code>)</p>
+</dd>
+</dl>
+<a class="reference internal image-reference" href="_images/engineering_report_p1.png"><img alt="Matplotlib figure in report" src="_images/engineering_report_p1.png" style="width: 320px;" />
+</a>
+</section>
+<hr class="docutils" />
+<section id="tableelement">
+<h2>TableElement<a class="headerlink" href="#tableelement" title="Link to this heading"></a></h2>
+<p>Wraps a <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s2">&quot;Parameter&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;Value&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">,</span> <span class="mf">3.2</span><span class="p">],</span>
+    <span class="s2">&quot;Status&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Pass&quot;</span><span class="p">,</span> <span class="s2">&quot;Pass&quot;</span><span class="p">,</span> <span class="s2">&quot;Fail&quot;</span><span class="p">],</span>
+<span class="p">})</span>
+<span class="n">slide</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>                    <span class="c1"># basic table</span>
+<span class="n">slide</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">zebra</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>        <span class="c1"># alternating row colors</span>
+<span class="n">slide</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">include_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># show index column</span>
+</pre></div>
+</div>
+<p><strong>Keyword arguments:</strong></p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">zebra</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">bool</span></code> — alternating row colors (default <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">include_index</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">bool</span></code> — reset index as first column (default <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">header</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">bool</span></code> — show header row (default <code class="docutils literal notranslate"><span class="pre">True</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">numeric_format</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">str</span></code> — format string for numbers, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;{:.2f}&quot;</span></code></p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">column_widths</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">list[float]</span></code> — explicit column widths in px</p>
+</dd>
+</dl>
+<p><strong>Conditional formatting:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">slide</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">highlight_max</span><span class="p">(</span><span class="s2">&quot;Value&quot;</span><span class="p">)</span>
+<span class="n">slide</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="s2">&quot;Value&quot;</span><span class="p">,</span> <span class="n">color_map</span><span class="o">=</span><span class="s2">&quot;Blues&quot;</span><span class="p">)</span>
+<span class="n">slide</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">highlight_min</span><span class="p">(</span><span class="s2">&quot;Status&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/dashboard_report_p1.png"><img alt="Table with zebra styling and plots" src="_images/dashboard_report_p1.png" style="width: 320px;" />
+</a>
+</section>
+<hr class="docutils" />
+<section id="imageelement">
+<h2>ImageElement<a class="headerlink" href="#imageelement" title="Link to this heading"></a></h2>
+<p>References an external image file.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">slide</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="s2">&quot;chart.png&quot;</span><span class="p">)</span>
+<span class="n">slide</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="s2">&quot;diagram.svg&quot;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Keyword arguments:</strong></p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">alt_text</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">str</span></code> — alternate text (default <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">scale</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">float</span></code> — scale factor (default <code class="docutils literal notranslate"><span class="pre">1.0</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">rotation</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">float</span></code> — rotation degrees (default <code class="docutils literal notranslate"><span class="pre">0.0</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">opacity</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">float</span></code> — opacity 0–1 (default <code class="docutils literal notranslate"><span class="pre">1.0</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">width</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">float</span></code> — explicit width in px (default <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">height</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">float</span></code> — explicit height in px (default <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p>
+</dd>
+</dl>
+</section>
+<hr class="docutils" />
+<section id="containerelement">
+<h2>ContainerElement<a class="headerlink" href="#containerelement" title="Link to this heading"></a></h2>
+<p>Nests a <code class="docutils literal notranslate"><span class="pre">Grid</span></code> inside a single cell. Useful for complex sub-layouts.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">reporting.layout.grid</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.layout.sizing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fill</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.elements.container</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContainerElement</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.elements.text</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextElement</span>
+
+<span class="n">inner</span> <span class="o">=</span> <span class="n">Grid</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">row_sizes</span><span class="o">=</span><span class="p">[</span><span class="n">Fill</span><span class="p">,</span> <span class="n">Fill</span><span class="p">],</span> <span class="n">gap</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">inner</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">panel</span><span class="o">.</span><span class="n">background_color</span> <span class="o">=</span> <span class="s2">&quot;#E8F0FE&quot;</span>
+<span class="n">inner</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">element</span> <span class="o">=</span> <span class="n">TextElement</span><span class="p">(</span><span class="s2">&quot;Top&quot;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">inner</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">panel</span><span class="o">.</span><span class="n">background_color</span> <span class="o">=</span> <span class="s2">&quot;#FFF3E0&quot;</span>
+<span class="n">inner</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">element</span> <span class="o">=</span> <span class="n">TextElement</span><span class="p">(</span><span class="s2">&quot;Bottom&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="n">container</span> <span class="o">=</span> <span class="n">ContainerElement</span><span class="p">(</span><span class="n">grid</span><span class="o">=</span><span class="n">inner</span><span class="p">)</span>
+<span class="n">slide</span><span class="o">.</span><span class="n">_set_cell_element</span><span class="p">(</span><span class="n">slide</span><span class="o">.</span><span class="n">_grid</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">container</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/nested_layouts_p1.png"><img alt="Nested container layout" src="_images/nested_layouts_p1.png" style="width: 320px;" />
+</a>
+</section>
+<hr class="docutils" />
+<section id="spacerelement">
+<h2>SpacerElement<a class="headerlink" href="#spacerelement" title="Link to this heading"></a></h2>
+<p>Occupies empty space in a layout. Typically unused — empty cells render as
+blank space automatically.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">reporting.elements.spacer</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpacerElement</span>
+
+<span class="n">slide</span><span class="o">.</span><span class="n">_grid</span><span class="o">.</span><span class="n">cells</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">element</span> <span class="o">=</span> <span class="n">SpacerElement</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quickstart" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="layout.html" class="btn btn-neutral float-right" title="Layout System" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, pyreportengine.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

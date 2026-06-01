@@ -1,0 +1,71 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "reporting/**"
+      - "examples/**"
+      - "pyproject.toml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "reporting/**"
+      - "examples/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install sphinx sphinx-rtd-theme pypdfium2
+
+      - name: Generate example PDFs and page images
+        run: |
+          python examples/basic_report.py
+          python examples/engineering_report.py
+          python examples/dashboard_report.py
+          python examples/theme_demo.py
+          python examples/nested_layouts.py
+          python examples/padding_margin.py
+          python examples/comprehensive_report.py
+          python docs/gen_doc_images.py
+
+      - name: Build HTML docs
+        run: |
+          cd docs
+          python -m sphinx -b html source build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

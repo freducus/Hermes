@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=64.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyreportengine"
+version = "0.1.0"
+description = "Programmable PowerPoint: a professional Python reporting framework for technical engineering reports"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Hermes Contributors"}]
+
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Engineering",
+    "Topic :: Office/Business :: Office Suites",
+    "Topic :: Multimedia :: Graphics :: Presentation",
+]
+
+dependencies = [
+    "reportlab>=4.0",
+    "matplotlib>=3.8",
+    "pandas>=2.0",
+    "python-pptx>=0.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+docs = [
+    "sphinx>=7.0",
+    "sphinx-rtd-theme>=2.0",
+    "pypdfium2>=4.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["reporting*"]

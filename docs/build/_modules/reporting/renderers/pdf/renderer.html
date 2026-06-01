@@ -1,0 +1,436 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>reporting.renderers.pdf.renderer &mdash; pyreportengine 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            pyreportengine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../elements.html">Elements Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../layout.html">Layout System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../styles.html">Styles &amp; Theming</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../renderers.html">Renderers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/padding_margin.html">Padding &amp; Margin example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/comprehensive.html">Comprehensive example</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">pyreportengine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">reporting.renderers.pdf.renderer</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for reporting.renderers.pdf.renderer</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;PDF renderer — generates PDF output using ReportLab with absolute positioning.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">reportlab.lib</span><span class="w"> </span><span class="kn">import</span> <span class="n">colors</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reportlab.lib.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TA_LEFT</span><span class="p">,</span> <span class="n">TA_CENTER</span><span class="p">,</span> <span class="n">TA_RIGHT</span><span class="p">,</span> <span class="n">TA_JUSTIFY</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reportlab.lib.styles</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParagraphStyle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reportlab.pdfgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">canvas</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reportlab.platypus</span><span class="w"> </span><span class="kn">import</span> <span class="n">Frame</span><span class="p">,</span> <span class="n">Paragraph</span><span class="p">,</span> <span class="n">Table</span><span class="p">,</span> <span class="n">TableStyle</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.elements.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">ElementType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.elements.figure</span><span class="w"> </span><span class="kn">import</span> <span class="n">FigureElement</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.elements.text</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextElement</span><span class="p">,</span> <span class="n">TextAlignment</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.elements.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageElement</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.elements.table</span><span class="w"> </span><span class="kn">import</span> <span class="n">TableElement</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.layout.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Rect</span><span class="p">,</span> <span class="n">Size</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.renderers.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseRenderer</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">reporting.document</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
+
+
+<span class="n">_PX_TO_PT</span> <span class="o">=</span> <span class="mi">72</span> <span class="o">/</span> <span class="mi">96</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_align_to_reportlab</span><span class="p">(</span><span class="n">align</span><span class="p">:</span> <span class="n">TextAlignment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="n">TextAlignment</span><span class="o">.</span><span class="n">LEFT</span><span class="p">:</span> <span class="n">TA_LEFT</span><span class="p">,</span>
+        <span class="n">TextAlignment</span><span class="o">.</span><span class="n">CENTER</span><span class="p">:</span> <span class="n">TA_CENTER</span><span class="p">,</span>
+        <span class="n">TextAlignment</span><span class="o">.</span><span class="n">RIGHT</span><span class="p">:</span> <span class="n">TA_RIGHT</span><span class="p">,</span>
+        <span class="n">TextAlignment</span><span class="o">.</span><span class="n">JUSTIFY</span><span class="p">:</span> <span class="n">TA_JUSTIFY</span><span class="p">,</span>
+    <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">align</span><span class="p">,</span> <span class="n">TA_LEFT</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_px_to_pt</span><span class="p">(</span><span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">v</span> <span class="o">*</span> <span class="n">_PX_TO_PT</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rect_to_canvas</span><span class="p">(</span><span class="n">slide_pt_h</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rx</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">ry</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rw</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rh</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">rx</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">slide_pt_h</span> <span class="o">-</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">ry</span> <span class="o">+</span> <span class="n">rh</span><span class="p">)</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">rw</span><span class="p">)</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">rh</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span>
+
+
+<div class="viewcode-block" id="PDFRenderer">
+<a class="viewcode-back" href="../../../../api.html#reporting.renderers.PDFRenderer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PDFRenderer</span><span class="p">(</span><span class="n">BaseRenderer</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">canvas</span><span class="o">.</span><span class="n">Canvas</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_slide_pt_h</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temp_files</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render_document</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">document</span><span class="p">:</span> <span class="s2">&quot;Document&quot;</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">slide</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">slides</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">document</span><span class="o">.</span><span class="n">slides</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">slide_w</span> <span class="o">=</span> <span class="n">slide</span><span class="o">.</span><span class="n">width</span> <span class="k">if</span> <span class="n">slide</span> <span class="k">else</span> <span class="mf">960.0</span>
+        <span class="n">slide_h</span> <span class="o">=</span> <span class="n">slide</span><span class="o">.</span><span class="n">height</span> <span class="k">if</span> <span class="n">slide</span> <span class="k">else</span> <span class="mf">540.0</span>
+
+        <span class="n">pw</span> <span class="o">=</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">slide_w</span><span class="p">)</span>
+        <span class="n">ph</span> <span class="o">=</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">slide_h</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_slide_pt_h</span> <span class="o">=</span> <span class="n">ph</span>
+
+        <span class="n">c</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">Canvas</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">pagesize</span><span class="o">=</span><span class="p">(</span><span class="n">pw</span><span class="p">,</span> <span class="n">ph</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span> <span class="o">=</span> <span class="n">c</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temp_files</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">slide</span> <span class="ow">in</span> <span class="n">document</span><span class="o">.</span><span class="n">slides</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_render_slide</span><span class="p">(</span><span class="n">slide</span><span class="p">)</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">showPage</span><span class="p">()</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">tmp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_temp_files</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render_slide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slide</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_render_slide</span><span class="p">(</span><span class="n">slide</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">slide</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_slide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slide</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_render_title_panel</span><span class="p">(</span><span class="n">slide</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">slide</span><span class="o">.</span><span class="n">_grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">cell_rects</span> <span class="o">=</span> <span class="n">slide</span><span class="o">.</span><span class="n">get_cell_rects</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slide</span><span class="o">.</span><span class="n">_grid</span><span class="o">.</span><span class="n">rows</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">c2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slide</span><span class="o">.</span><span class="n">_grid</span><span class="o">.</span><span class="n">cols</span><span class="p">):</span>
+                <span class="n">cell</span> <span class="o">=</span> <span class="n">slide</span><span class="o">.</span><span class="n">_grid</span><span class="o">.</span><span class="n">cells</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="n">c2</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_render_panel_background</span><span class="p">(</span><span class="n">cell_rects</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="n">c2</span><span class="p">],</span> <span class="n">cell</span><span class="o">.</span><span class="n">panel</span><span class="o">.</span><span class="n">background_color</span><span class="p">)</span>
+                <span class="n">element</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">element</span>
+                <span class="k">if</span> <span class="n">element</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_render_element</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">cell_rects</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="n">c2</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_title_panel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slide</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">th_pt</span> <span class="o">=</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">slide</span><span class="o">.</span><span class="n">title_panel_height</span><span class="p">)</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_slide_pt_h</span> <span class="o">-</span> <span class="n">th_pt</span>
+
+        <span class="k">if</span> <span class="n">slide</span><span class="o">.</span><span class="n">subtitle</span><span class="p">:</span>
+            <span class="n">sub_style</span> <span class="o">=</span> <span class="n">ParagraphStyle</span><span class="p">(</span>
+                <span class="s2">&quot;SlideSubtitle&quot;</span><span class="p">,</span>
+                <span class="n">fontName</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span>
+                <span class="n">fontSize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                <span class="n">leading</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
+                <span class="n">alignment</span><span class="o">=</span><span class="n">TA_LEFT</span><span class="p">,</span>
+                <span class="n">textColor</span><span class="o">=</span><span class="n">colors</span><span class="o">.</span><span class="n">Color</span><span class="p">(</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">sp</span> <span class="o">=</span> <span class="n">Paragraph</span><span class="p">(</span><span class="n">slide</span><span class="o">.</span><span class="n">subtitle</span><span class="p">,</span> <span class="n">sub_style</span><span class="p">)</span>
+            <span class="n">sub_frame</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span>
+                <span class="n">_px_to_pt</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span> <span class="n">y0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_slide_pt_h</span> <span class="o">-</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="mi">40</span><span class="p">),</span> <span class="n">th_pt</span><span class="p">,</span>
+                <span class="n">leftPadding</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rightPadding</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">topPadding</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">bottomPadding</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;subtitle&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">sub_frame</span><span class="o">.</span><span class="n">addFromList</span><span class="p">([</span><span class="n">sp</span><span class="p">],</span> <span class="n">c</span><span class="p">)</span>
+
+        <span class="n">c</span><span class="o">.</span><span class="n">setStrokeColor</span><span class="p">(</span><span class="n">colors</span><span class="o">.</span><span class="n">Color</span><span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">))</span>
+        <span class="n">c</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">_px_to_pt</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span> <span class="n">y0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_slide_pt_h</span> <span class="o">-</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span> <span class="n">y0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_panel_background</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rect</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">bg_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">bg_color</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">bg_color</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span>
+            <span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="mi">16</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">],</span> <span class="mi">16</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">6</span><span class="p">],</span> <span class="mi">16</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_slide_pt_h</span> <span class="o">-</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">y</span> <span class="o">+</span> <span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">)</span>
+            <span class="n">h_pt</span> <span class="o">=</span> <span class="n">_px_to_pt</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">setFillColorRGB</span><span class="p">(</span><span class="n">r</span> <span class="o">/</span> <span class="mi">255</span><span class="p">,</span> <span class="n">g</span> <span class="o">/</span> <span class="mi">255</span><span class="p">,</span> <span class="n">b</span> <span class="o">/</span> <span class="mi">255</span><span class="p">)</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h_pt</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">stroke</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_element</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">rect</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">element_type</span> <span class="o">==</span> <span class="n">ElementType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_render_text</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">rect</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">element</span><span class="o">.</span><span class="n">element_type</span> <span class="o">==</span> <span class="n">ElementType</span><span class="o">.</span><span class="n">IMAGE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_render_image</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">rect</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">element</span><span class="o">.</span><span class="n">element_type</span> <span class="o">==</span> <span class="n">ElementType</span><span class="o">.</span><span class="n">FIGURE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_render_figure</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">rect</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">element</span><span class="o">.</span><span class="n">element_type</span> <span class="o">==</span> <span class="n">ElementType</span><span class="o">.</span><span class="n">TABLE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_render_table</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">rect</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">element</span><span class="o">.</span><span class="n">element_type</span> <span class="o">==</span> <span class="n">ElementType</span><span class="o">.</span><span class="n">CONTAINER</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_render_container</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">rect</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="n">TextElement</span><span class="p">,</span> <span class="n">rect</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">_rect_to_canvas</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_slide_pt_h</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">element</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
+            <span class="n">parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">block_font</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">block_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">block</span><span class="o">.</span><span class="n">runs</span><span class="p">:</span>
+                <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">close</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                <span class="k">if</span> <span class="n">run</span><span class="o">.</span><span class="n">bold</span><span class="p">:</span>
+                    <span class="n">tag</span> <span class="o">+=</span> <span class="s2">&quot;&lt;b&gt;&quot;</span>
+                    <span class="n">close</span> <span class="o">=</span> <span class="s2">&quot;&lt;/b&gt;&quot;</span> <span class="o">+</span> <span class="n">close</span>
+                <span class="k">if</span> <span class="n">run</span><span class="o">.</span><span class="n">italic</span><span class="p">:</span>
+                    <span class="n">tag</span> <span class="o">+=</span> <span class="s2">&quot;&lt;i&gt;&quot;</span>
+                    <span class="n">close</span> <span class="o">=</span> <span class="s2">&quot;&lt;/i&gt;&quot;</span> <span class="o">+</span> <span class="n">close</span>
+                <span class="k">if</span> <span class="n">run</span><span class="o">.</span><span class="n">font_name</span><span class="p">:</span>
+                    <span class="n">tag</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;&lt;font face=&quot;</span><span class="si">{</span><span class="n">run</span><span class="o">.</span><span class="n">font_name</span><span class="si">}</span><span class="s1">&quot;&gt;&#39;</span>
+                    <span class="n">close</span> <span class="o">=</span> <span class="s2">&quot;&lt;/font&gt;&quot;</span> <span class="o">+</span> <span class="n">close</span>
+                    <span class="k">if</span> <span class="n">block_font</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">block_font</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">font_name</span>
+                <span class="k">if</span> <span class="n">run</span><span class="o">.</span><span class="n">color</span><span class="p">:</span>
+                    <span class="n">tag</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;&lt;font color=&quot;</span><span class="si">{</span><span class="n">run</span><span class="o">.</span><span class="n">color</span><span class="si">}</span><span class="s1">&quot;&gt;&#39;</span>
+                    <span class="n">close</span> <span class="o">=</span> <span class="s2">&quot;&lt;/font&gt;&quot;</span> <span class="o">+</span> <span class="n">close</span>
+                <span class="k">if</span> <span class="n">run</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                    <span class="n">tag</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;&lt;font size=&quot;</span><span class="si">{</span><span class="n">run</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s1">&quot;&gt;&#39;</span>
+                    <span class="n">close</span> <span class="o">=</span> <span class="s2">&quot;&lt;/font&gt;&quot;</span> <span class="o">+</span> <span class="n">close</span>
+                    <span class="k">if</span> <span class="n">block_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">block_size</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">size</span>
+                <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tag</span><span class="si">}{</span><span class="n">run</span><span class="o">.</span><span class="n">text</span><span class="si">}{</span><span class="n">close</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">html</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+
+            <span class="n">fs</span> <span class="o">=</span> <span class="n">block_size</span> <span class="ow">or</span> <span class="nb">max</span><span class="p">(</span><span class="n">h</span> <span class="o">*</span> <span class="mf">0.12</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+            <span class="n">style</span> <span class="o">=</span> <span class="n">ParagraphStyle</span><span class="p">(</span>
+                <span class="s2">&quot;CellText&quot;</span><span class="p">,</span>
+                <span class="n">fontName</span><span class="o">=</span><span class="n">block_font</span> <span class="ow">or</span> <span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span>
+                <span class="n">fontSize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+                <span class="n">leading</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">fs</span> <span class="o">*</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
+                <span class="n">alignment</span><span class="o">=</span><span class="n">_align_to_reportlab</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">alignment</span><span class="p">),</span>
+                <span class="n">spaceBefore</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">spaceAfter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">Paragraph</span><span class="p">(</span><span class="n">html</span><span class="p">,</span> <span class="n">style</span><span class="p">)</span>
+            <span class="n">frame</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">leftPadding</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">rightPadding</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">topPadding</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">bottomPadding</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;cell&quot;</span><span class="p">)</span>
+            <span class="n">frame</span><span class="o">.</span><span class="n">addFromList</span><span class="p">([</span><span class="n">p</span><span class="p">],</span> <span class="n">c</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="n">ImageElement</span><span class="p">,</span> <span class="n">rect</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">element</span><span class="o">.</span><span class="n">source</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">element</span><span class="o">.</span><span class="n">source</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">_rect_to_canvas</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_slide_pt_h</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">element</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">w</span> <span class="o">-</span> <span class="mi">4</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">h</span> <span class="o">-</span> <span class="mi">4</span><span class="p">,</span> <span class="n">preserveAspectRatio</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">anchor</span><span class="o">=</span><span class="s1">&#39;c&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="n">FigureElement</span><span class="p">,</span> <span class="n">rect</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">element</span><span class="o">.</span><span class="n">figure</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">figure</span>
+            <span class="n">old_size</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">get_size_inches</span><span class="p">()</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">set_size_inches</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">width</span> <span class="o">/</span> <span class="n">element</span><span class="o">.</span><span class="n">dpi</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">height</span> <span class="o">/</span> <span class="n">element</span><span class="o">.</span><span class="n">dpi</span><span class="p">)</span>
+
+            <span class="n">fd</span><span class="p">,</span> <span class="n">tmp_path</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.png&quot;</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="n">element</span><span class="o">.</span><span class="n">dpi</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="n">element</span><span class="o">.</span><span class="n">bbox_inches</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">set_size_inches</span><span class="p">(</span><span class="n">old_size</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_temp_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">_rect_to_canvas</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_slide_pt_h</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">drawImage</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">w</span> <span class="o">-</span> <span class="mi">4</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">h</span> <span class="o">-</span> <span class="mi">4</span><span class="p">,</span> <span class="n">preserveAspectRatio</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">anchor</span><span class="o">=</span><span class="s1">&#39;c&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="n">TableElement</span><span class="p">,</span> <span class="n">rect</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">element</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">include_index</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+            <span class="n">headers</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+            <span class="n">rows_data</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="n">headers</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                <span class="n">rows_data</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="p">])</span>
+
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">_rect_to_canvas</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_slide_pt_h</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+            <span class="n">n_cols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span>
+            <span class="n">n_rows_t</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows_data</span><span class="p">)</span>
+            <span class="n">pad</span> <span class="o">=</span> <span class="mi">8</span>
+            <span class="n">avail_w</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">w</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+            <span class="n">col_w</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">avail_w</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">n_cols</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span>
+
+            <span class="n">row_h_pt</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">h</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">n_rows_t</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span>
+            <span class="n">body_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">row_h_pt</span> <span class="o">*</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="n">header_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">row_h_pt</span> <span class="o">*</span> <span class="mf">0.35</span><span class="p">,</span> <span class="mi">9</span><span class="p">),</span> <span class="mi">4</span><span class="p">)</span>
+
+            <span class="n">cmds</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="s2">&quot;FONTNAME&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="s2">&quot;Helvetica-Bold&quot;</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;FONTSIZE&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">header_size</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;FONTSIZE&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">body_size</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;ALIGN&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;CENTER&quot;</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;VALIGN&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;MIDDLE&quot;</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;GRID&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">colors</span><span class="o">.</span><span class="n">Color</span><span class="p">(</span><span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">)),</span>
+                <span class="p">(</span><span class="s2">&quot;BACKGROUND&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">colors</span><span class="o">.</span><span class="n">Color</span><span class="p">(</span><span class="mf">0.27</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">,</span> <span class="mf">0.77</span><span class="p">)),</span>
+                <span class="p">(</span><span class="s2">&quot;TEXTCOLOR&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">colors</span><span class="o">.</span><span class="n">white</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;TOPPADDING&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;BOTTOMPADDING&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;LEFTPADDING&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;RIGHTPADDING&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">zebra</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows_data</span><span class="p">),</span> <span class="mi">2</span><span class="p">):</span>
+                    <span class="n">cmds</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;BACKGROUND&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">),</span> <span class="n">colors</span><span class="o">.</span><span class="n">Color</span><span class="p">(</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">)))</span>
+
+            <span class="n">t</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">rows_data</span><span class="p">,</span> <span class="n">colWidths</span><span class="o">=</span><span class="p">[</span><span class="n">col_w</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_cols</span><span class="p">)</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">setStyle</span><span class="p">(</span><span class="n">TableStyle</span><span class="p">(</span><span class="n">cmds</span><span class="p">))</span>
+            <span class="n">frame</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">leftPadding</span><span class="o">=</span><span class="n">pad</span><span class="p">,</span> <span class="n">rightPadding</span><span class="o">=</span><span class="n">pad</span><span class="p">,</span> <span class="n">topPadding</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">bottomPadding</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;table_cell&quot;</span><span class="p">)</span>
+            <span class="n">frame</span><span class="o">.</span><span class="n">addFromList</span><span class="p">([</span><span class="n">t</span><span class="p">],</span> <span class="n">c</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_container</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">rect</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">inner</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">grid</span>
+        <span class="k">if</span> <span class="n">inner</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">inner_size</span><span class="p">,</span> <span class="n">inner_rects</span> <span class="o">=</span> <span class="n">inner</span><span class="o">.</span><span class="n">layout</span><span class="p">(</span><span class="n">Size</span><span class="p">(</span><span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">inner</span><span class="o">.</span><span class="n">rows</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">c2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">inner</span><span class="o">.</span><span class="n">cols</span><span class="p">):</span>
+                <span class="n">cell</span> <span class="o">=</span> <span class="n">inner</span><span class="o">.</span><span class="n">cells</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="n">c2</span><span class="p">]</span>
+                <span class="n">cell_rect</span> <span class="o">=</span> <span class="n">inner_rects</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="n">c2</span><span class="p">]</span>
+                <span class="n">abs_rect</span> <span class="o">=</span> <span class="n">Rect</span><span class="p">(</span>
+                    <span class="n">x</span><span class="o">=</span><span class="n">rect</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">cell_rect</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+                    <span class="n">y</span><span class="o">=</span><span class="n">rect</span><span class="o">.</span><span class="n">y</span> <span class="o">+</span> <span class="n">cell_rect</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                    <span class="n">width</span><span class="o">=</span><span class="n">cell_rect</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
+                    <span class="n">height</span><span class="o">=</span><span class="n">cell_rect</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_render_panel_background</span><span class="p">(</span><span class="n">abs_rect</span><span class="p">,</span> <span class="n">cell</span><span class="o">.</span><span class="n">panel</span><span class="o">.</span><span class="n">background_color</span><span class="p">)</span>
+                <span class="n">inner_el</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">element</span>
+                <span class="k">if</span> <span class="n">inner_el</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_render_element</span><span class="p">(</span><span class="n">inner_el</span><span class="p">,</span> <span class="n">abs_rect</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render_panel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">panel</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">rect</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, pyreportengine.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

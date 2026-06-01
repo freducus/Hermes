@@ -1,0 +1,234 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>reporting.styles.theme &mdash; pyreportengine 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            pyreportengine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../elements.html">Elements Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../layout.html">Layout System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../styles.html">Styles &amp; Theming</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../renderers.html">Renderers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/padding_margin.html">Padding &amp; Margin example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/comprehensive.html">Comprehensive example</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyreportengine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">reporting.styles.theme</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for reporting.styles.theme</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Theme system — defines visual themes for reports.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">Color</span><span class="p">,</span> <span class="n">ColorPalette</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.typography</span><span class="w"> </span><span class="kn">import</span> <span class="n">Typography</span><span class="p">,</span> <span class="n">FontSpec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.table_style</span><span class="w"> </span><span class="kn">import</span> <span class="n">TableStyle</span>
+
+
+<div class="viewcode-block" id="Theme">
+<a class="viewcode-back" href="../../../api.html#reporting.styles.Theme">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Theme</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">palette</span><span class="p">:</span> <span class="n">ColorPalette</span>
+    <span class="n">typography</span><span class="p">:</span> <span class="n">Typography</span>
+    <span class="n">table_style</span><span class="p">:</span> <span class="n">TableStyle</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_heading_style</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FontSpec</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="mi">1</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">typography</span><span class="o">.</span><span class="n">heading_1</span><span class="p">,</span>
+            <span class="mi">2</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">typography</span><span class="o">.</span><span class="n">heading_2</span><span class="p">,</span>
+            <span class="mi">3</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">typography</span><span class="o">.</span><span class="n">heading_3</span><span class="p">,</span>
+        <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">typography</span><span class="o">.</span><span class="n">body</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="CorporateTheme">
+<a class="viewcode-back" href="../../../api.html#reporting.styles.CorporateTheme">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CorporateTheme</span><span class="p">(</span><span class="n">Theme</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">palette</span> <span class="o">=</span> <span class="n">ColorPalette</span><span class="p">(</span>
+            <span class="n">primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#1F4E79&quot;</span><span class="p">),</span>
+            <span class="n">secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#2E75B6&quot;</span><span class="p">),</span>
+            <span class="n">accent</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#ED7D31&quot;</span><span class="p">),</span>
+            <span class="n">background</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#FFFFFF&quot;</span><span class="p">),</span>
+            <span class="n">text_primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#333333&quot;</span><span class="p">),</span>
+            <span class="n">text_secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#666666&quot;</span><span class="p">),</span>
+            <span class="n">border</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#D9D9D9&quot;</span><span class="p">),</span>
+            <span class="n">error</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#C00000&quot;</span><span class="p">),</span>
+            <span class="n">warning</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#FFC000&quot;</span><span class="p">),</span>
+            <span class="n">success</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#70AD47&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">typography</span> <span class="o">=</span> <span class="n">Typography</span><span class="p">(</span>
+            <span class="n">heading_1</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">28.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#1F4E79&quot;</span><span class="p">),</span>
+            <span class="n">heading_2</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">22.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#1F4E79&quot;</span><span class="p">),</span>
+            <span class="n">heading_3</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">16.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#2E75B6&quot;</span><span class="p">),</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">11.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#333333&quot;</span><span class="p">),</span>
+            <span class="n">caption</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#666666&quot;</span><span class="p">),</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier New&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#333333&quot;</span><span class="p">),</span>
+            <span class="n">mono</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier New&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#333333&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">table_style</span> <span class="o">=</span> <span class="n">TableStyle</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Corporate&quot;</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span> <span class="n">table_style</span><span class="o">=</span><span class="n">table_style</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="DarkTheme">
+<a class="viewcode-back" href="../../../api.html#reporting.styles.DarkTheme">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DarkTheme</span><span class="p">(</span><span class="n">Theme</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">palette</span> <span class="o">=</span> <span class="n">ColorPalette</span><span class="p">(</span>
+            <span class="n">primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#4FC3F7&quot;</span><span class="p">),</span>
+            <span class="n">secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#29B6F6&quot;</span><span class="p">),</span>
+            <span class="n">accent</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#FFB74D&quot;</span><span class="p">),</span>
+            <span class="n">background</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#1E1E1E&quot;</span><span class="p">),</span>
+            <span class="n">text_primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#E0E0E0&quot;</span><span class="p">),</span>
+            <span class="n">text_secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#9E9E9E&quot;</span><span class="p">),</span>
+            <span class="n">border</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#424242&quot;</span><span class="p">),</span>
+            <span class="n">error</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#EF5350&quot;</span><span class="p">),</span>
+            <span class="n">warning</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#FFA726&quot;</span><span class="p">),</span>
+            <span class="n">success</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#66BB6A&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">typography</span> <span class="o">=</span> <span class="n">Typography</span><span class="p">(</span>
+            <span class="n">heading_1</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">28.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#4FC3F7&quot;</span><span class="p">),</span>
+            <span class="n">heading_2</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">22.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#4FC3F7&quot;</span><span class="p">),</span>
+            <span class="n">heading_3</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">16.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#29B6F6&quot;</span><span class="p">),</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">11.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#E0E0E0&quot;</span><span class="p">),</span>
+            <span class="n">caption</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#9E9E9E&quot;</span><span class="p">),</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#E0E0E0&quot;</span><span class="p">),</span>
+            <span class="n">mono</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#E0E0E0&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">table_style</span> <span class="o">=</span> <span class="n">TableStyle</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Dark&quot;</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span> <span class="n">table_style</span><span class="o">=</span><span class="n">table_style</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="LightTheme">
+<a class="viewcode-back" href="../../../api.html#reporting.styles.LightTheme">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LightTheme</span><span class="p">(</span><span class="n">Theme</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">palette</span> <span class="o">=</span> <span class="n">ColorPalette</span><span class="p">(</span>
+            <span class="n">primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#1565C0&quot;</span><span class="p">),</span>
+            <span class="n">secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#42A5F5&quot;</span><span class="p">),</span>
+            <span class="n">accent</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#FF7043&quot;</span><span class="p">),</span>
+            <span class="n">background</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#FAFAFA&quot;</span><span class="p">),</span>
+            <span class="n">text_primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#212121&quot;</span><span class="p">),</span>
+            <span class="n">text_secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#757575&quot;</span><span class="p">),</span>
+            <span class="n">border</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#E0E0E0&quot;</span><span class="p">),</span>
+            <span class="n">error</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#E53935&quot;</span><span class="p">),</span>
+            <span class="n">warning</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#FB8C00&quot;</span><span class="p">),</span>
+            <span class="n">success</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#43A047&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">typography</span> <span class="o">=</span> <span class="n">Typography</span><span class="p">(</span>
+            <span class="n">heading_1</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">28.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#1565C0&quot;</span><span class="p">),</span>
+            <span class="n">heading_2</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">22.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#1565C0&quot;</span><span class="p">),</span>
+            <span class="n">heading_3</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">16.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#42A5F5&quot;</span><span class="p">),</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">11.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#212121&quot;</span><span class="p">),</span>
+            <span class="n">caption</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#757575&quot;</span><span class="p">),</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#212121&quot;</span><span class="p">),</span>
+            <span class="n">mono</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#212121&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">table_style</span> <span class="o">=</span> <span class="n">TableStyle</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Light&quot;</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span> <span class="n">table_style</span><span class="o">=</span><span class="n">table_style</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, pyreportengine.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

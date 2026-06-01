@@ -1,0 +1,37 @@
+"""Nested layout example — demonstrates ContainerElement with nested grids, generates a PDF."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from reporting.document import Document
+from reporting.slide import Slide
+from reporting.elements.container import ContainerElement
+from reporting.layout.grid import Grid
+from reporting.layout.sizing import Fill
+from reporting.renderers.pdf.renderer import PDFRenderer
+
+
+def main() -> None:
+    doc = Document(title="Nested Layouts")
+
+    slide = Slide("Dashboard Overview")
+    slide.grid_layout(rows=1, cols=2, gap=10)
+
+    inner = Grid(rows=2, cols=1, row_sizes=[Fill, Fill], gap=5)
+    inner[0, 0].panel.background_color = "#E8F0FE"
+    inner[1, 0].panel.background_color = "#E8F0FE"
+    container = ContainerElement(grid=inner)
+    slide._set_cell_element(slide._grid[0, 0], container)
+
+    slide[0, 1].text("Side panel content")
+
+    doc.add_slide(slide)
+
+    renderer = PDFRenderer()
+    doc.render(renderer, str(Path(__file__).parent / "nested_layouts.pdf"))
+    print("Generated nested_layouts.pdf")
+
+
+if __name__ == "__main__":
+    main()

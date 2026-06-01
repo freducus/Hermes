@@ -1,0 +1,222 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Styles &amp; Theming &mdash; pyreportengine 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Renderers" href="renderers.html" />
+    <link rel="prev" title="Layout System" href="layout.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyreportengine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="elements.html">Elements Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layout.html">Layout System</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Styles &amp; Theming</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#colors">Colors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#typography">Typography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tablestyle">TableStyle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#themes">Themes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="renderers.html">Renderers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/padding_margin.html">Padding &amp; Margin example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/comprehensive.html">Comprehensive example</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyreportengine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Styles &amp; Theming</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/styles.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="styles-theming">
+<h1>Styles &amp; Theming<a class="headerlink" href="#styles-theming" title="Link to this heading"></a></h1>
+<p>The styling system provides colors, typography, table styles, and complete
+themes.</p>
+<section id="colors">
+<h2>Colors<a class="headerlink" href="#colors" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">Color</span><span class="p">,</span> <span class="n">ColorPalette</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#1F4E79&quot;</span><span class="p">)</span>          <span class="c1"># from hex string</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">Color</span><span class="o">.</span><span class="n">from_rgb</span><span class="p">(</span><span class="mi">31</span><span class="p">,</span> <span class="mi">78</span><span class="p">,</span> <span class="mi">121</span><span class="p">)</span>        <span class="c1"># from RGB integers</span>
+<span class="n">c</span><span class="o">.</span><span class="n">rgba</span>                                  <span class="c1"># → &quot;rgba(31,78,121,1.0)&quot;</span>
+
+<span class="n">palette</span> <span class="o">=</span> <span class="n">ColorPalette</span><span class="p">(</span>
+    <span class="n">primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#1F4E79&quot;</span><span class="p">),</span>
+    <span class="n">secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#2E75B6&quot;</span><span class="p">),</span>
+    <span class="n">accent</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#ED7D31&quot;</span><span class="p">),</span>
+    <span class="n">background</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#FFFFFF&quot;</span><span class="p">),</span>
+    <span class="n">text_primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#333333&quot;</span><span class="p">),</span>
+    <span class="n">text_secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#666666&quot;</span><span class="p">),</span>
+    <span class="n">border</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#D9D9D9&quot;</span><span class="p">),</span>
+    <span class="n">error</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#C00000&quot;</span><span class="p">),</span>
+    <span class="n">warning</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#FFC000&quot;</span><span class="p">),</span>
+    <span class="n">success</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#70AD47&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="typography">
+<h2>Typography<a class="headerlink" href="#typography" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.typography</span><span class="w"> </span><span class="kn">import</span> <span class="n">Typography</span><span class="p">,</span> <span class="n">FontSpec</span>
+
+<span class="n">typography</span> <span class="o">=</span> <span class="n">Typography</span><span class="p">(</span>
+    <span class="n">heading_1</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">28.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#1F4E79&quot;</span><span class="p">),</span>
+    <span class="n">heading_2</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">22.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#1F4E79&quot;</span><span class="p">),</span>
+    <span class="n">heading_3</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">16.0</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#2E75B6&quot;</span><span class="p">),</span>
+    <span class="n">body</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">11.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#333333&quot;</span><span class="p">),</span>
+    <span class="n">caption</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Arial&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#666666&quot;</span><span class="p">),</span>
+    <span class="n">code</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier New&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#333333&quot;</span><span class="p">),</span>
+    <span class="n">mono</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier New&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#333333&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="tablestyle">
+<h2>TableStyle<a class="headerlink" href="#tablestyle" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.table_style</span><span class="w"> </span><span class="kn">import</span> <span class="n">TableStyle</span><span class="p">,</span> <span class="n">ZebraStyle</span>
+
+<span class="n">table_style</span> <span class="o">=</span> <span class="n">TableStyle</span><span class="p">(</span>
+    <span class="n">zebra</span><span class="o">=</span><span class="n">ZebraStyle</span><span class="p">(</span>
+        <span class="n">even_row_color</span><span class="o">=</span><span class="s2">&quot;#F3F3F3&quot;</span><span class="p">,</span>
+        <span class="n">odd_row_color</span><span class="o">=</span><span class="s2">&quot;#FFFFFF&quot;</span><span class="p">,</span>
+        <span class="n">header_color</span><span class="o">=</span><span class="s2">&quot;#4472C4&quot;</span><span class="p">,</span>
+        <span class="n">header_text_color</span><span class="o">=</span><span class="s2">&quot;#FFFFFF&quot;</span><span class="p">,</span>
+        <span class="n">border_color</span><span class="o">=</span><span class="s2">&quot;#D9D9D9&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">font_size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+    <span class="n">header_font_size</span><span class="o">=</span><span class="mf">11.0</span><span class="p">,</span>
+    <span class="n">font_family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span>
+    <span class="n">padding</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="themes">
+<h2>Themes<a class="headerlink" href="#themes" title="Link to this heading"></a></h2>
+<p>Three built-in themes are provided:</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">CorporateTheme</span></code></dt><dd><p>Blue/orange palette, Arial typography. Professional look.</p>
+<a class="reference internal image-reference" href="_images/theme_demo_p1.png"><img alt="Corporate theme" src="_images/theme_demo_p1.png" style="width: 320px;" />
+</a>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">DarkTheme</span></code></dt><dd><p>Cyan/amber on dark gray, Helvetica typography. Presentation style.</p>
+<a class="reference internal image-reference" href="_images/theme_demo_p2.png"><img alt="Dark theme" src="_images/theme_demo_p2.png" style="width: 320px;" />
+</a>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">LightTheme</span></code></dt><dd><p>Blue/teal on light gray, Helvetica typography. Clean minimal look.</p>
+<a class="reference internal image-reference" href="_images/theme_demo_p3.png"><img alt="Light theme" src="_images/theme_demo_p3.png" style="width: 320px;" />
+</a>
+</dd>
+</dl>
+<p>Using a theme:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.theme</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorporateTheme</span><span class="p">,</span> <span class="n">DarkTheme</span><span class="p">,</span> <span class="n">LightTheme</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.document</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.slide</span><span class="w"> </span><span class="kn">import</span> <span class="n">Slide</span>
+
+<span class="n">doc</span> <span class="o">=</span> <span class="n">Document</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Report&quot;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="n">CorporateTheme</span><span class="p">())</span>
+<span class="n">slide</span> <span class="o">=</span> <span class="n">Slide</span><span class="p">(</span><span class="s2">&quot;Title&quot;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="n">DarkTheme</span><span class="p">())</span>
+
+<span class="c1"># Query theme properties</span>
+<span class="n">heading</span> <span class="o">=</span> <span class="n">slide</span><span class="o">.</span><span class="n">theme</span><span class="o">.</span><span class="n">get_heading_style</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># → FontSpec(family=&quot;Helvetica&quot;, size=28.0, bold=True, color=&quot;#...&quot;)</span>
+</pre></div>
+</div>
+<p>Note: themes define the visual defaults, but elements do not automatically
+consume them yet — theme integration with auto-styling of text/table
+elements is planned.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="layout.html" class="btn btn-neutral float-left" title="Layout System" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="renderers.html" class="btn btn-neutral float-right" title="Renderers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, pyreportengine.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

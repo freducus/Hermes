@@ -1,0 +1,25 @@
+Metadata-Version: 2.4
+Name: pyreportengine
+Version: 0.1.0
+Summary: Programmable PowerPoint: a professional Python reporting framework for technical engineering reports
+Author: Hermes Contributors
+License: MIT
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Engineering
+Classifier: Topic :: Office/Business :: Office Suites
+Classifier: Topic :: Multimedia :: Graphics :: Presentation
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: reportlab>=4.0
+Requires-Dist: matplotlib>=3.8
+Requires-Dist: pandas>=2.0
+Requires-Dist: python-pptx>=0.6
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Provides-Extra: docs
+Requires-Dist: sphinx>=7.0; extra == "docs"
+Requires-Dist: sphinx-rtd-theme>=2.0; extra == "docs"
+Requires-Dist: pypdfium2>=4.0; extra == "docs"
