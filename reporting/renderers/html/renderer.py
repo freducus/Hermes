@@ -14,6 +14,7 @@ from reporting.elements.figure import FigureElement
 from reporting.elements.text import TextElement, TextAlignment
 from reporting.elements.image import ImageElement
 from reporting.elements.table import TableElement
+from reporting.elements.tablespec_element import TableSpecElement
 from reporting.layout.geometry import Rect, Size
 from reporting.renderers.base import BaseRenderer
 
@@ -116,6 +117,8 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
             return self._render_figure_html(element, style)
         elif element.element_type == ElementType.TABLE:
             return self._render_table_html(element, style)
+        elif element.element_type == ElementType.TABLESPEC:
+            return self._render_tablespec_html(element, style)
         elif element.element_type == ElementType.CONTAINER:
             return self._render_container_html(element, rect)
         return f"""<div class="cell" style="{style}"></div>"""
@@ -204,6 +207,70 @@ thead th { background-color: #4472C4; color: #ffffff; }
             html += "<tr>"
             for val in row:
                 html += f"<td style='padding:4px;border:1px solid #d9d9d9;text-align:center'>{val}</td>"
+            html += "</tr>"
+        html += "</tbody></table></div>"
+        return html
+
+    def _render_tablespec_html(self, element: Any, style: str) -> str:
+        spec = element.tablespec
+        if spec is None or not spec.columns or not spec.rows:
+            return f"""<div class="cell" style="{style}"></div>"""
+
+        num_cols = len(spec.columns)
+        num_rows = len(spec.rows) + 1
+
+        occupied = [[False] * num_cols for _ in range(num_rows)]
+
+        table_style = "width:100%;border-collapse:collapse;font-size:10px"
+        if spec.style.zebra:
+            table_style += ";background-color:#FFFFFF"
+
+        html = f"""<div class="cell" style="{style};overflow:auto"><table style="{table_style}">
+<thead><tr>"""
+        for col in spec.columns:
+            html += f"<th style='padding:4px;border:1px solid #d9d9d9;text-align:center;background-color:#4472C4;color:#FFFFFF'>{col.label}</th>"
+        html += "</tr></thead><tbody>"
+
+        for r in range(len(spec.rows)):
+            row = spec.rows[r]
+            rr = r + 1
+            if rr % 2 == 0 and spec.style.zebra:
+                bg_base = "#f3f3f3"
+            else:
+                bg_base = "#ffffff"
+
+            html += "<tr>"
+            for c_idx in range(num_cols):
+                if occupied[rr][c_idx]:
+                    continue
+                if c_idx >= len(row.cells):
+                    html += "<td></td>"
+                    continue
+                cell = row.cells[c_idx]
+                txt = cell.text if cell.text is not None else (str(cell.value) if cell.value is not None else "")
+
+                td_style = f"padding:4px;border:1px solid #d9d9d9;text-align:center"
+                if cell.background_color:
+                    td_style += f";background-color:{cell.background_color}"
+                else:
+                    td_style += f";background-color:{bg_base}"
+                if cell.text_color:
+                    td_style += f";color:{cell.text_color}"
+
+                colspan = cell.colspan if cell.colspan > 1 else ""
+                rowspan = cell.rowspan if cell.rowspan > 1 else ""
+                cs = f' colspan="{colspan}"' if colspan else ""
+                rs = f' rowspan="{rowspan}"' if rowspan else ""
+
+                html += f'<td{cs}{rs} style="{td_style}">{txt}</td>'
+
+                if cell.colspan > 1 or cell.rowspan > 1:
+                    c2 = min(c_idx + cell.colspan - 1, num_cols - 1)
+                    r2 = min(rr + cell.rowspan - 1, num_rows - 1)
+                    for span_r in range(rr, r2 + 1):
+                        for span_c in range(c_idx, c2 + 1):
+                            occupied[span_r][span_c] = True
+                    occupied[rr][c_idx] = False
             html += "</tr>"
         html += "</tbody></table></div>"
         return html

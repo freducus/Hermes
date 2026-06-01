@@ -16,6 +16,7 @@ from reporting.elements.figure import FigureElement
 from reporting.elements.text import TextElement, TextAlignment
 from reporting.elements.image import ImageElement
 from reporting.elements.table import TableElement
+from reporting.elements.tablespec_element import TableSpecElement
 from reporting.layout.geometry import Rect, Size
 from reporting.renderers.base import BaseRenderer
 
@@ -111,6 +112,8 @@ class PPTXRenderer(BaseRenderer):
             self._render_figure_in_cell(pptx_slide, element, left, top, width, height)
         elif element.element_type == ElementType.TABLE:
             self._render_table_in_cell(pptx_slide, element, left, top, width, height)
+        elif element.element_type == ElementType.TABLESPEC:
+            self._render_tablespec_in_cell(pptx_slide, element, left, top, width, height)
         elif element.element_type == ElementType.CONTAINER:
             self._render_pptx_container(pptx_slide, element, rect)
 
@@ -200,6 +203,76 @@ class PPTXRenderer(BaseRenderer):
                         for j in range(cols_count):
                             table.cell(i, j).fill.solid()
                             table.cell(i, j).fill.fore_color.rgb = RGBColor(0xF3, 0xF3, 0xF3)
+        except Exception:
+            pass
+
+    def _render_tablespec_in_cell(self, pptx_slide: Any, element: Any, left: int, top: int, width: int, height: int) -> None:
+        spec = element.tablespec
+        if spec is None or not spec.columns or not spec.rows:
+            return
+        try:
+            num_cols = len(spec.columns)
+            num_rows = len(spec.rows) + 1
+            table_shape = pptx_slide.shapes.add_table(num_rows, num_cols, left, top, width, height)
+            table = table_shape.table
+
+            for j, col in enumerate(spec.columns):
+                cell = table.cell(0, j)
+                cell.text = col.label
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = RGBColor(0x44, 0x72, 0xC4)
+                for paragraph in cell.text_frame.paragraphs:
+                    for run in paragraph.runs:
+                        run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                        run.font.bold = True
+                        run.font.size = Pt(10)
+
+            occupied = [[False] * num_cols for _ in range(num_rows)]
+            for r in range(len(spec.rows)):
+                row = spec.rows[r]
+                rr = r + 1
+                for c_idx in range(min(len(row.cells), num_cols)):
+                    if occupied[rr][c_idx]:
+                        continue
+                    cell_obj = row.cells[c_idx]
+                    txt = cell_obj.text if cell_obj.text is not None else (str(cell_obj.value) if cell_obj.value is not None else "")
+
+                    pptx_cell = table.cell(rr, c_idx)
+                    pptx_cell.text = txt
+
+                    if cell_obj.background_color:
+                        try:
+                            h = cell_obj.background_color.lstrip("#")
+                            pptx_cell.fill.solid()
+                            pptx_cell.fill.fore_color.rgb = RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+                        except Exception:
+                            pass
+                    elif rr % 2 == 0 and spec.style.zebra:
+                        pptx_cell.fill.solid()
+                        pptx_cell.fill.fore_color.rgb = RGBColor(0xF3, 0xF3, 0xF3)
+                    else:
+                        pptx_cell.fill.solid()
+                        pptx_cell.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+                    if cell_obj.text_color:
+                        try:
+                            h = cell_obj.text_color.lstrip("#")
+                            for paragraph in pptx_cell.text_frame.paragraphs:
+                                for run in paragraph.runs:
+                                    run.font.color.rgb = RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+                        except Exception:
+                            pass
+
+                    if cell_obj.colspan > 1 or cell_obj.rowspan > 1:
+                        c2 = min(c_idx + cell_obj.colspan - 1, num_cols - 1)
+                        r2 = min(rr + cell_obj.rowspan - 1, num_rows - 1)
+                        merge_first = table.cell(rr, c_idx)
+                        merge_last = table.cell(r2, c2)
+                        merge_first.merge(merge_last)
+                        for span_r in range(rr, r2 + 1):
+                            for span_c in range(c_idx, c2 + 1):
+                                occupied[span_r][span_c] = True
+                        occupied[rr][c_idx] = False
         except Exception:
             pass
 

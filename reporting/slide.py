@@ -11,6 +11,7 @@ from reporting.elements.text import TextElement
 from reporting.elements.image import ImageElement
 from reporting.elements.figure import FigureElement
 from reporting.elements.table import TableElement
+from reporting.elements.tablespec_element import TableSpecElement
 from reporting.styles.theme import Theme, CorporateTheme
 
 
@@ -101,5 +102,10 @@ class _CellProxy:
 
     def table(self, data: object = None, **kwargs: object) -> TableElement:
         el = TableElement(data, **kwargs)
+        self._slide._set_cell_element(self._cell, el)
+        return el
+
+    def table_spec(self, spec: object = None, **kwargs: object) -> TableSpecElement:
+        el = TableSpecElement(spec, **kwargs)
         self._slide._set_cell_element(self._cell, el)
         return el

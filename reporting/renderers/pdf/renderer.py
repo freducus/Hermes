@@ -17,6 +17,7 @@ from reporting.elements.figure import FigureElement
 from reporting.elements.text import TextElement, TextAlignment
 from reporting.elements.image import ImageElement
 from reporting.elements.table import TableElement
+from reporting.elements.tablespec_element import TableSpecElement
 from reporting.layout.geometry import Rect, Size
 from reporting.renderers.base import BaseRenderer
 
@@ -160,6 +161,8 @@ class PDFRenderer(BaseRenderer):
             self._render_figure(element, rect)
         elif element.element_type == ElementType.TABLE:
             self._render_table(element, rect)
+        elif element.element_type == ElementType.TABLESPEC:
+            self._render_tablespec(element, rect)
         elif element.element_type == ElementType.CONTAINER:
             self._render_container(element, rect)
 
@@ -330,6 +333,99 @@ class PDFRenderer(BaseRenderer):
             t = Table(rows_data, colWidths=[col_w] * n_cols)
             t.setStyle(TableStyle(cmds))
             frame = Frame(x, y, w, h, leftPadding=pad, rightPadding=pad, topPadding=4, bottomPadding=4, id="table_cell")
+            frame.addFromList([t], c)
+        except Exception:
+            pass
+
+    def _render_tablespec(self, element: Any, rect: Any) -> None:
+        c = self._canvas
+        if c is None:
+            return
+
+        spec = element.tablespec
+        if spec is None or not spec.columns or not spec.rows:
+            return
+
+        try:
+            x, y, w, h = _rect_to_canvas(self._slide_pt_h, rect.x, rect.y, rect.width, rect.height)
+
+            headers = [col.label for col in spec.columns]
+            num_cols = len(headers)
+            num_rows = len(spec.rows) + 1
+
+            pad = 4
+            avail_w = max(w - 2 * pad, 10)
+            col_w = max(avail_w / max(num_cols, 1), 8)
+
+            row_height = max(h / max(num_rows, 1), 10)
+            body_size = max(min(row_height * 0.3, 8), 3)
+            header_size = max(min(row_height * 0.35, 9), 4)
+
+            data_rows: list[list[str]] = [list(headers)]
+            data_rows.extend(
+                [""] * num_cols for _ in range(len(spec.rows))
+            )
+
+            cmds: list[tuple] = [
+                ("FONTNAME", (0, 0), (num_cols - 1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (num_cols - 1, 0), header_size),
+                ("FONTSIZE", (0, 1), (num_cols - 1, num_rows - 1), body_size),
+                ("ALIGN", (0, 0), (num_cols - 1, num_rows - 1), "CENTER"),
+                ("VALIGN", (0, 0), (num_cols - 1, num_rows - 1), "MIDDLE"),
+                ("GRID", (0, 0), (num_cols - 1, num_rows - 1), 0.5, colors.Color(0.85, 0.85, 0.85)),
+                ("BACKGROUND", (0, 0), (num_cols - 1, 0), colors.Color(0.27, 0.45, 0.77)),
+                ("TEXTCOLOR", (0, 0), (num_cols - 1, 0), colors.white),
+                ("TOPPADDING", (0, 0), (-1, -1), 1),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+            ]
+
+            if spec.style.zebra:
+                for i in range(2, num_rows, 2):
+                    cmds.append(("BACKGROUND", (0, i), (num_cols - 1, i),
+                                 colors.Color(0.95, 0.95, 0.95)))
+
+            occupied = [[False] * num_cols for _ in range(num_rows)]
+            for r in range(len(spec.rows)):
+                row = spec.rows[r]
+                rr = r + 1
+                for c_idx in range(min(len(row.cells), num_cols)):
+                    if occupied[rr][c_idx]:
+                        continue
+                    cell = row.cells[c_idx]
+
+                    txt = cell.text if cell.text is not None else (str(cell.value) if cell.value is not None else "")
+                    data_rows[rr][c_idx] = txt
+
+                    if cell.colspan > 1 or cell.rowspan > 1:
+                        c2 = min(c_idx + cell.colspan - 1, num_cols - 1)
+                        r2 = min(rr + cell.rowspan - 1, num_rows - 1)
+                        cmds.append(("SPAN", (c_idx, rr), (c2, r2)))
+                        for span_r in range(rr, r2 + 1):
+                            for span_c in range(c_idx, c2 + 1):
+                                occupied[span_r][span_c] = True
+                        occupied[rr][c_idx] = False
+
+                    if cell.background_color:
+                        try:
+                            hex_bg = cell.background_color.lstrip("#")
+                            bg = colors.Color(int(hex_bg[0:2], 16) / 255, int(hex_bg[2:4], 16) / 255, int(hex_bg[4:6], 16) / 255)
+                            cmds.append(("BACKGROUND", (c_idx, rr), (c_idx, rr), bg))
+                        except Exception:
+                            pass
+
+                    if cell.text_color:
+                        try:
+                            hex_tc = cell.text_color.lstrip("#")
+                            tc = colors.Color(int(hex_tc[0:2], 16) / 255, int(hex_tc[2:4], 16) / 255, int(hex_tc[4:6], 16) / 255)
+                            cmds.append(("TEXTCOLOR", (c_idx, rr), (c_idx, rr), tc))
+                        except Exception:
+                            pass
+
+            t = Table(data_rows, colWidths=[col_w] * num_cols)
+            t.setStyle(TableStyle(cmds))
+            frame = Frame(x, y, w, h, leftPadding=pad, rightPadding=pad, topPadding=2, bottomPadding=2, id="tablespec_cell")
             frame.addFromList([t], c)
         except Exception:
             pass

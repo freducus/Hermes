@@ -12,6 +12,7 @@ class ElementType(Enum):
     IMAGE = "image"
     FIGURE = "figure"
     TABLE = "table"
+    TABLESPEC = "tablespec"
     CONTAINER = "container"
     SPACER = "spacer"
 
