@@ -47,6 +47,8 @@ class TextElement(BaseElement):
         size = kwargs.pop("size", None)
         font_name = kwargs.pop("font_name", None)
         alignment = kwargs.pop("alignment", TextAlignment.LEFT)
+        if isinstance(alignment, str):
+            alignment = TextAlignment(alignment)
         self.blocks = []
         if text:
             run = TextRun(text=text, bold=bold, italic=italic, color=color, size=size, font_name=font_name)
@@ -73,6 +75,8 @@ class TextElement(BaseElement):
         spacing_before: float = 0.0,
         spacing_after: float = 0.0,
     ) -> TextBlock:
+        if isinstance(alignment, str):
+            alignment = TextAlignment(alignment)
         block = TextBlock(runs=[], alignment=alignment, spacing_before=spacing_before, spacing_after=spacing_after)
         self.blocks.append(block)
         return block

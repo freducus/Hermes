@@ -86,6 +86,10 @@ cd docs && make.bat html      # build docs on Windows cmd
 cd docs && python -m sphinx -b html source build   # build docs (any shell)
 ```
 
+## Commits
+
+Commit after every meaningful change. Stage only intended files; never commit secrets.
+
 ## Code style
 
 - Google-style docstrings.

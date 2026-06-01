@@ -1,4 +1,4 @@
-"""Theme demo — demonstrates different themes, generates a PDF."""
+"""Theme demo — demonstrates different themes, generates PDF, HTML, PPTX."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ from reporting.document import Document
 from reporting.slide import Slide
 from reporting.styles.theme import CorporateTheme, DarkTheme, LightTheme
 from reporting.renderers.pdf.renderer import PDFRenderer
+from reporting.renderers.html.renderer import HTMLRenderer
+from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def main() -> None:
@@ -26,9 +28,11 @@ def main() -> None:
         slide[0, 1].text("Content area with theme styling applied.")
         doc.add_slide(slide)
 
-    renderer = PDFRenderer()
-    doc.render(renderer, str(Path(__file__).parent / "theme_demo.pdf"))
-    print("Generated theme_demo.pdf")
+    out = Path(__file__).parent / "theme_demo"
+    PDFRenderer().render_document(doc, str(out) + ".pdf")
+    HTMLRenderer().render_document(doc, str(out) + ".html")
+    PPTXRenderer().render_document(doc, str(out) + ".pptx")
+    print("Generated theme_demo.{pdf,html,pptx}")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Padding & Margin visual demonstration — generates a PDF with 4 slides
+"""Padding & Margin visual demonstration — generates PDF, HTML, PPTX with 4 slides
 showing how grid.padding, grid.gap, panel.padding, and panel.margin affect layout."""
 
 from __future__ import annotations
@@ -9,6 +9,8 @@ from reporting.document import Document
 from reporting.slide import Slide
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
+from reporting.renderers.html.renderer import HTMLRenderer
+from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def make_slide(title: str, subtitle: str = "") -> Slide:
@@ -133,9 +135,11 @@ def main() -> None:
     slide[1, 1]._cell.panel.margin = Edges.all(8)
     doc.add_slide(slide)
 
-    renderer = PDFRenderer()
-    doc.render(renderer, str(Path(__file__).parent / "padding_margin.pdf"))
-    print("Generated examples/padding_margin.pdf")
+    out = Path(__file__).parent / "padding_margin"
+    PDFRenderer().render_document(doc, str(out) + ".pdf")
+    HTMLRenderer().render_document(doc, str(out) + ".html")
+    PPTXRenderer().render_document(doc, str(out) + ".pptx")
+    print("Generated padding_margin.{pdf,html,pptx}")
 
 
 if __name__ == "__main__":

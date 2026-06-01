@@ -1,4 +1,4 @@
-"""Dashboard report example — multi-panel layout with tables and plots, generates a PDF."""
+"""Dashboard report example — multi-panel layout with tables and plots, generates PDF, HTML, PPTX."""
 
 from __future__ import annotations
 
@@ -12,6 +12,8 @@ from reporting.document import Document
 from reporting.slide import Slide
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
+from reporting.renderers.html.renderer import HTMLRenderer
+from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def create_plot(title: str) -> plt.Figure:
@@ -30,9 +32,9 @@ def main() -> None:
     slide = Slide("KPIs Overview")
     slide.grid_layout(rows=2, cols=5, gap=8, padding=Edges.all(15))
 
-    slide[0, 0].plot(create_plot("Efficiency"))
-    slide[0, 1].plot(create_plot("Power Output"))
-    slide[0, 2].plot(create_plot("Temperature"))
+    slide[0, 0].plot(create_plot("Efficiency"), format="pdf")
+    slide[0, 1].plot(create_plot("Power Output"), format="pdf")
+    slide[0, 2].plot(create_plot("Temperature"), format="pdf")
 
     data = pd.DataFrame({
         "Parameter": ["Efficiency", "Power", "Temp", "Pressure"],
@@ -42,9 +44,11 @@ def main() -> None:
     slide[1, 0:2].table(data, zebra=True)
     doc.add_slide(slide)
 
-    renderer = PDFRenderer()
-    doc.render(renderer, str(Path(__file__).parent / "dashboard_report.pdf"))
-    print("Generated dashboard_report.pdf")
+    out = Path(__file__).parent / "dashboard_report"
+    PDFRenderer().render_document(doc, str(out) + ".pdf")
+    HTMLRenderer().render_document(doc, str(out) + ".html")
+    PPTXRenderer().render_document(doc, str(out) + ".pptx")
+    print("Generated dashboard_report.{pdf,html,pptx}")
 
 
 if __name__ == "__main__":

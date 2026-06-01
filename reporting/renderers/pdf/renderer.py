@@ -229,18 +229,58 @@ class PDFRenderer(BaseRenderer):
             return
         try:
             fig = element.figure
-            old_size = fig.get_size_inches()
-            fig.set_size_inches(rect.width / element.dpi, rect.height / element.dpi)
-
-            fd, tmp_path = tempfile.mkstemp(suffix=".png")
-            os.close(fd)
-            fig.savefig(tmp_path, dpi=element.dpi, bbox_inches=element.bbox_inches, format="png")
-            fig.set_size_inches(old_size)
-            self._temp_files.append(tmp_path)
             x, y, w, h = _rect_to_canvas(self._slide_pt_h, rect.x, rect.y, rect.width, rect.height)
-            c.drawImage(tmp_path, x + 2, y + 2, width=w - 4, height=h - 4, preserveAspectRatio=True, anchor='c')
+
+            if element.format == "pdf":
+                self._render_figure_vector(fig, c, x, y, w, h)
+            else:
+                self._render_figure_raster(fig, element, c, x, y, w, h)
         except Exception:
             pass
+
+    def _render_figure_vector(self, fig: Any, c: Any, x: float, y: float, w: float, h: float) -> None:
+        try:
+            import io
+            from pdfrw import PdfReader
+            from pdfrw.buildxobj import pagexobj
+            from pdfrw.toreportlab import makerl
+        except ImportError:
+            self._render_figure_raster(fig, None, c, x, y, w, h)
+            return
+
+        old_size = fig.get_size_inches()
+        try:
+            fig.set_size_inches(w / 72, h / 72)
+            buf = io.BytesIO()
+            fig.savefig(buf, format="pdf", bbox_inches="tight")
+            buf.seek(0)
+            reader = PdfReader(buf)
+            xobj = pagexobj(reader.pages[0])
+            name = makerl(c, xobj)
+            bbox = xobj.BBox
+            scale_x = w / bbox[2]
+            scale_y = h / bbox[3]
+            scale = min(scale_x, scale_y)
+            c.saveState()
+            c.translate(x + (w - bbox[2] * scale) / 2, y + (h - bbox[3] * scale) / 2)
+            c.scale(scale, scale)
+            c.doForm(name)
+            c.restoreState()
+        except Exception:
+            self._render_figure_raster(fig, None, c, x, y, w, h)
+        finally:
+            fig.set_size_inches(old_size)
+
+    def _render_figure_raster(self, fig: Any, element: Any, c: Any, x: float, y: float, w: float, h: float) -> None:
+        dpi = element.dpi if element else 150
+        old_size = fig.get_size_inches()
+        fig.set_size_inches(w / 72, h / 72)
+        fd, tmp_path = tempfile.mkstemp(suffix=".png")
+        os.close(fd)
+        fig.savefig(tmp_path, dpi=dpi, bbox_inches="tight", format="png")
+        fig.set_size_inches(old_size)
+        self._temp_files.append(tmp_path)
+        c.drawImage(tmp_path, x + 2, y + 2, width=w - 4, height=h - 4, preserveAspectRatio=True, anchor='c')
 
     def _render_table(self, element: TableElement, rect: Any) -> None:
         c = self._canvas

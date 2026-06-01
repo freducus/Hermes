@@ -18,3 +18,17 @@ def figure_to_tempfile(fig: object, dpi: int = 150, suffix: str = ".png") -> str
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         fig.savefig(tmp, dpi=dpi, bbox_inches="tight")
         return tmp.name
+
+
+def figure_to_pdf_bytes(fig: object) -> bytes:
+    buf = io.BytesIO()
+    fig.savefig(buf, format="pdf", bbox_inches="tight")
+    buf.seek(0)
+    return buf.read()
+
+
+def figure_to_svg_bytes(fig: object) -> bytes:
+    buf = io.BytesIO()
+    fig.savefig(buf, format="svg", bbox_inches="tight")
+    buf.seek(0)
+    return buf.read()

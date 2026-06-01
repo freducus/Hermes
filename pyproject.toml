@@ -37,6 +37,9 @@ docs = [
     "sphinx-rtd-theme>=2.0",
     "pypdfium2>=4.0",
 ]
+vector = [
+    "pdfrw>=0.4",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]

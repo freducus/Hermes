@@ -1,4 +1,4 @@
-"""Basic report example — generates a PDF."""
+"""Basic report example — generates a PDF, HTML, and PPTX."""
 
 from __future__ import annotations
 
@@ -7,6 +7,8 @@ from pathlib import Path
 from reporting.document import Document
 from reporting.slide import Slide
 from reporting.renderers.pdf.renderer import PDFRenderer
+from reporting.renderers.html.renderer import HTMLRenderer
+from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def main() -> None:
@@ -24,9 +26,11 @@ def main() -> None:
     slide2[0, 0].text("Detailed results go here.")
     doc.add_slide(slide2)
 
-    renderer = PDFRenderer()
-    doc.render(renderer, str(Path(__file__).parent / "basic_report.pdf"))
-    print("Generated basic_report.pdf")
+    out = Path(__file__).parent / "basic_report"
+    PDFRenderer().render_document(doc, str(out) + ".pdf")
+    HTMLRenderer().render_document(doc, str(out) + ".html")
+    PPTXRenderer().render_document(doc, str(out) + ".pptx")
+    print("Generated basic_report.{pdf,html,pptx}")
 
 
 if __name__ == "__main__":

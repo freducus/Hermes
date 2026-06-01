@@ -161,12 +161,20 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
             old_size = fig.get_size_inches()
             fig.set_size_inches(cell_w / element.dpi, cell_h / element.dpi)
 
-            buf = io.BytesIO()
-            fig.savefig(buf, dpi=element.dpi, bbox_inches=element.bbox_inches, format="png")
-            fig.set_size_inches(old_size)
-            buf.seek(0)
-            b64 = base64.b64encode(buf.read()).decode("utf-8")
-            return f"""<div class="cell" style="{style}"><img src="data:image/png;base64,{b64}" style="width:100%;height:100%;object-fit:contain"></div>"""
+            if element.format == "svg":
+                buf = io.BytesIO()
+                fig.savefig(buf, dpi=element.dpi, bbox_inches=element.bbox_inches, format="svg")
+                fig.set_size_inches(old_size)
+                buf.seek(0)
+                svg_raw = buf.read().decode("utf-8")
+                return f"""<div class="cell" style="{style}">{svg_raw}</div>"""
+            else:
+                buf = io.BytesIO()
+                fig.savefig(buf, dpi=element.dpi, bbox_inches=element.bbox_inches, format="png")
+                fig.set_size_inches(old_size)
+                buf.seek(0)
+                b64 = base64.b64encode(buf.read()).decode("utf-8")
+                return f"""<div class="cell" style="{style}"><img src="data:image/png;base64,{b64}" style="width:100%;height:100%;object-fit:contain"></div>"""
         except Exception:
             return f"""<div class="cell" style="{style}"></div>"""
 

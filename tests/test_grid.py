@@ -17,8 +17,10 @@ class TestGridLayout:
     def test_fill_sizes(self):
         g = Grid(rows=2, cols=2, gap=10)
         total_size, cell_rects = g.layout(Size(400, 300))
-        assert total_size.width == 410
-        assert total_size.height == 310
+        assert total_size.width == 400
+        assert total_size.height == 300
+        assert cell_rects[0][0].width == 195
+        assert cell_rects[0][0].height == 145
 
     def test_mixed_sizes(self):
         g = Grid(

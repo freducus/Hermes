@@ -1,4 +1,4 @@
-"""Nested layout example — demonstrates ContainerElement with nested grids, generates a PDF."""
+"""Nested layout example — demonstrates ContainerElement with nested grids, generates PDF, HTML, PPTX."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from reporting.elements.container import ContainerElement
 from reporting.layout.grid import Grid
 from reporting.layout.sizing import Fill
 from reporting.renderers.pdf.renderer import PDFRenderer
+from reporting.renderers.html.renderer import HTMLRenderer
+from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def main() -> None:
@@ -28,9 +30,11 @@ def main() -> None:
 
     doc.add_slide(slide)
 
-    renderer = PDFRenderer()
-    doc.render(renderer, str(Path(__file__).parent / "nested_layouts.pdf"))
-    print("Generated nested_layouts.pdf")
+    out = Path(__file__).parent / "nested_layouts"
+    PDFRenderer().render_document(doc, str(out) + ".pdf")
+    HTMLRenderer().render_document(doc, str(out) + ".html")
+    PPTXRenderer().render_document(doc, str(out) + ".pptx")
+    print("Generated nested_layouts.{pdf,html,pptx}")
 
 
 if __name__ == "__main__":

@@ -14,6 +14,8 @@ from reporting.layout.sizing import Fill
 from reporting.elements.container import ContainerElement
 from reporting.elements.text import TextElement
 from reporting.renderers.pdf.renderer import PDFRenderer
+from reporting.renderers.html.renderer import HTMLRenderer
+from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def create_plot(title: str, color: str = "C0") -> plt.Figure:
@@ -74,19 +76,15 @@ def main() -> None:
 
     # ---- Slide 2: Matplotlib plots ----
     slide = Slide("Plots Gallery")
-    slide.grid_layout(rows=2, cols=3, gap=12, padding=Edges.all(15))
+    slide.grid_layout(rows=1, cols=6, gap=12, padding=Edges.all(15))
 
     plots = [
         ("Sine Wave", "C0"),
         ("Cosine", "C1"),
-        ("Damped", "C2"),
-        ("Random Walk", "C3"),
-        ("Exponential", "C4"),
-        ("Square Root", "C5"),
-    ]
+        ("Damped", "C2")]
     for i, (title, color) in enumerate(plots):
-        r, c = divmod(i, 3)
-        slide[r, c].plot(create_plot(title, color))
+        r, c = divmod(i, 6)
+        slide[r, c].plot(create_plot(title, color), format="pdf")
     doc.add_slide(slide)
 
     # ---- Slide 3: Tables ----
@@ -112,9 +110,9 @@ def main() -> None:
     slide = Slide("Dashboard")
     slide.grid_layout(rows=3, cols=3, gap=8, padding=Edges.all(12))
 
-    slide[0, 0].plot(create_plot("Efficiency", "C2"))
-    slide[0, 1].plot(create_plot("Power", "C1"))
-    slide[0, 2].plot(create_plot("Temperature", "C3"))
+    slide[0, 0].plot(create_plot("Efficiency", "C2"), format="pdf")
+    slide[0, 1].plot(create_plot("Power", "C1"), format="pdf")
+    slide[0, 2].plot(create_plot("Temperature", "C3"), format="pdf")
 
     slide[1, 0].text("Summary:\nAll systems nominal.", font_name="Times-Roman", size=10)
     slide[1, 0]._cell.panel.background_color = "#E8F5E9"
@@ -191,9 +189,11 @@ def main() -> None:
     slide[1, 2]._cell.panel.background_color = "#F5F5F5"
     doc.add_slide(slide)
 
-    renderer = PDFRenderer()
-    doc.render(renderer, str(Path(__file__).parent / "comprehensive_report.pdf"))
-    print("Generated comprehensive_report.pdf")
+    out = Path(__file__).parent / "comprehensive_report"
+    PDFRenderer().render_document(doc, str(out) + ".pdf")
+    HTMLRenderer().render_document(doc, str(out) + ".html")
+    PPTXRenderer().render_document(doc, str(out) + ".pptx")
+    print("Generated comprehensive_report.{pdf,html,pptx}")
 
 
 if __name__ == "__main__":

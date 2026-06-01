@@ -1,4 +1,4 @@
-"""Engineering report example — CFD/FEM style report with matplotlib and pandas, generates a PDF."""
+"""Engineering report example — CFD/FEM style report with matplotlib and pandas, generates PDF, HTML, PPTX."""
 
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ from reporting.document import Document
 from reporting.slide import Slide
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
+from reporting.renderers.html.renderer import HTMLRenderer
+from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def create_pressure_plot() -> plt.Figure:
@@ -32,13 +34,15 @@ def main() -> None:
     slide = Slide("CFD Results - Pressure Distribution")
     slide.grid_layout(rows=1, cols=2, gap=20, padding=Edges.all(20))
     fig = create_pressure_plot()
-    slide[0, 0].plot(fig)
+    slide[0, 0].plot(fig, format="pdf")
     slide[0, 1].text("Convergence achieved at iteration 250.\nTarget lift within 2%.", size=10)
     doc.add_slide(slide)
 
-    renderer = PDFRenderer()
-    doc.render(renderer, str(Path(__file__).parent / "engineering_report.pdf"))
-    print("Generated engineering_report.pdf")
+    out = Path(__file__).parent / "engineering_report"
+    PDFRenderer().render_document(doc, str(out) + ".pdf")
+    HTMLRenderer().render_document(doc, str(out) + ".html")
+    PPTXRenderer().render_document(doc, str(out) + ".pptx")
+    print("Generated engineering_report.{pdf,html,pptx}")
 
 
 if __name__ == "__main__":

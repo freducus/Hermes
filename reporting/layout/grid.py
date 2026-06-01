@@ -79,8 +79,10 @@ class Grid:
         return range(start, stop)
 
     def layout(self, available: Size) -> tuple[Size, list[list[Rect]]]:
-        row_heights = self._resolve_sizes(self.row_sizes, available.height - self.padding.vertical, self.rows)
-        col_widths = self._resolve_sizes(self.col_sizes, available.width - self.padding.horizontal, self.cols)
+        avail_w = available.width - self.padding.horizontal - max(0, (self.cols - 1) * self.gap)
+        avail_h = available.height - self.padding.vertical - max(0, (self.rows - 1) * self.gap)
+        col_widths = self._resolve_sizes(self.col_sizes, avail_w, self.cols)
+        row_heights = self._resolve_sizes(self.row_sizes, avail_h, self.rows)
 
         total_w = self.padding.horizontal + (self.cols - 1) * self.gap + sum(col_widths)
         total_h = self.padding.vertical + (self.rows - 1) * self.gap + sum(row_heights)
