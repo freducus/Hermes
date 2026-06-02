@@ -45,14 +45,14 @@ class TestSlide:
         with pytest.raises(RuntimeError, match="Call grid_layout"):
             _ = slide[0, 0]
 
-    def test_get_cell_rects_offsets_by_title_panel(self):
+    def test_get_cell_rects_grid_relative(self):
         slide = Slide("Test", width=800, height=600, title_panel_height=60)
         slide.grid_layout(rows=1, cols=1)
         rects = slide.get_cell_rects()
         assert len(rects) == 1
         assert len(rects[0]) == 1
         r = rects[0][0]
-        assert r.y == 60
+        assert r.y == 0
         assert r.width == 800
         assert r.height == 540
 

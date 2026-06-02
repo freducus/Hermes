@@ -9,7 +9,6 @@ from reporting.slide import Slide
 from reporting.styles.theme import CorporateTheme, DarkTheme, LightTheme
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
-from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def main() -> None:
@@ -31,8 +30,7 @@ def main() -> None:
     out = Path(__file__).parent / "theme_demo"
     PDFRenderer().render_document(doc, str(out) + ".pdf")
     HTMLRenderer().render_document(doc, str(out) + ".html")
-    PPTXRenderer().render_document(doc, str(out) + ".pptx")
-    print("Generated theme_demo.{pdf,html,pptx}")
+    print("Generated theme_demo.{pdf,html}")
 
 
 if __name__ == "__main__":

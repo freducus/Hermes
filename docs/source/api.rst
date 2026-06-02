@@ -116,9 +116,6 @@ Renderers
    :members:
    :show-inheritance:
 
-.. automodule:: reporting.renderers.pptx.renderer
-   :members:
-   :show-inheritance:
 
 .. automodule:: reporting.renderers.html.renderer
    :members:

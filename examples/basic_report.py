@@ -8,7 +8,6 @@ from reporting.document import Document
 from reporting.slide import Slide
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
-from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def main() -> None:
@@ -29,8 +28,7 @@ def main() -> None:
     out = Path(__file__).parent / "basic_report"
     PDFRenderer().render_document(doc, str(out) + ".pdf")
     HTMLRenderer().render_document(doc, str(out) + ".html")
-    PPTXRenderer().render_document(doc, str(out) + ".pptx")
-    print("Generated basic_report.{pdf,html,pptx}")
+    print("Generated basic_report.{pdf,html}")
 
 
 if __name__ == "__main__":

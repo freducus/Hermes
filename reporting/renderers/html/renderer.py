@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import io
+import mimetypes
 import os
 import re
 import tempfile
@@ -17,6 +18,8 @@ from reporting.elements.table import TableElement
 from reporting.elements.tablespec_element import TableSpecElement
 from reporting.layout.geometry import Rect, Size
 from reporting.renderers.base import BaseRenderer
+from reporting.background import BackgroundType, SolidBackground, GradientBackground, ImageBackground
+from reporting.title_config import TitleConfig
 
 if TYPE_CHECKING:
     from reporting.document import Document
@@ -47,11 +50,13 @@ class HTMLRenderer(BaseRenderer):
 body {{ background: #333; font-family: Arial, sans-serif; }}
 .slide {{ width: 960px; height: 540px; margin: 20px auto; background: #fff;
          box-shadow: 0 4px 12px rgba(0,0,0,0.3); position: relative; overflow: hidden; }}
-.title-panel {{ position: absolute; top: 0; left: 0; width: 100%; height: 60px;
-                padding: 8px 20px; border-bottom: 1px solid #ccc; }}
+.title-panel {{ position: absolute; top: 0; left: 0; width: 100%;
+                border-bottom: 1px solid #ccc; overflow: hidden; }}
+.title-panel.beside {{ display: flex; justify-content: space-between; align-items: center; }}
 .title-panel h1 {{ font-size: 20px; color: #1F4E79; margin: 0; }}
 .title-panel p {{ font-size: 11px; color: #666; margin: 2px 0 0 0; }}
-.slide-content {{ position: absolute; top: 60px; left: 0; width: 100%; bottom: 0; }}
+.title-panel.beside p {{ margin: 0; text-align: right; }}
+.slide-content {{ position: absolute; left: 0; width: 100%; bottom: 0; }}
 .cell {{ position: absolute; overflow: hidden; padding: 4px; }}
 </style>
 </head>
@@ -66,10 +71,51 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
             f.write(html)
 
     def _render_slide_html(self, slide: Slide) -> str:
-        title_html = f"""<div class="title-panel"><h1>{slide.title}</h1>"""
-        if slide.subtitle:
-            title_html += f"<p>{slide.subtitle}</p>"
-        title_html += "</div>"
+        slide_bg_style = self._background_css(slide)
+        slide_extra = f'style="{slide_bg_style}"' if slide_bg_style else ""
+
+        tc = slide.title_config
+        sc = slide.subtitle_config
+        tpc = slide.title_panel_config
+        th = slide.title_panel_height
+
+        h1_weight = "bold" if tc.bold else "normal"
+        h1_style = (f"font-size:{tc.font_size}px;color:{tc.color};"
+                    f"font-weight:{h1_weight};font-family:{tc.font_name};"
+                    f"text-align:{tc.alignment.value}")
+
+        is_beside = (
+            slide.subtitle
+            and tpc.subtitle_placement.value == "beside"
+        )
+
+        panel_cls = "title-panel beside" if is_beside else "title-panel"
+        panel_style = f"height:{th}px;padding:{tpc.padding.top}px {tpc.padding.right}px {tpc.padding.bottom}px {tpc.padding.left}px;"
+
+        if is_beside:
+            sub_w = tpc.subtitle_width_ratio
+            sub_weight = "bold" if sc.bold else "normal"
+            sub_style = (f"font-size:{sc.font_size}px;color:{sc.color};"
+                         f"font-weight:{sub_weight};font-family:{sc.font_name};"
+                         f"text-align:{sc.alignment.value};width:{sub_w*100}%")
+            title_html = (
+                f"""<div class="{panel_cls}" style="{panel_style}">"""
+                f"""<h1 style="{h1_style}">{slide.title}</h1>"""
+                f"""<p style="{sub_style}">{slide.subtitle}</p>"""
+                f"""</div>"""
+            )
+        else:
+            title_html = f"""<div class="{panel_cls}" style="{panel_style}"><h1 style="{h1_style}">{slide.title}</h1>"""
+            if slide.subtitle:
+                sub_weight = "bold" if sc.bold else "normal"
+                sub_style = (f"font-size:{sc.font_size}px;color:{sc.color};"
+                             f"font-weight:{sub_weight};font-family:{sc.font_name};"
+                             f"text-align:{sc.alignment.value}")
+                title_html += f"<p style=\"{sub_style}\">{slide.subtitle}</p>"
+            if tc.show_separator:
+                title_html += (f"<hr style=\"border:none;border-top:{tc.separator_width}px solid "
+                               f"{tc.separator_color};margin-top:{tc.separator_margin}px;margin-bottom:0\">")
+            title_html += "</div>"
 
         content_parts: list[str] = []
 
@@ -90,12 +136,40 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
 
         cells_content = "\n".join(content_parts)
 
-        return f"""<div class="slide">
+        return f"""<div class="slide" {slide_extra}>
   {title_html}
-  <div class="slide-content">
+  <div class="slide-content" style="top:{th}px">
     {cells_content}
   </div>
 </div>"""
+
+    def _background_css(self, slide: Slide) -> str:
+        bg = getattr(slide, "background", None)
+        if bg is None:
+            return ""
+        if bg.type == BackgroundType.SOLID:
+            return f"background:{bg.color};"
+        elif bg.type == BackgroundType.GRADIENT:
+            return f"background:linear-gradient({bg.angle}deg,{bg.start_color},{bg.end_color});"
+        elif bg.type == BackgroundType.IMAGE:
+            url = self._background_image_url(bg.source)
+            if bg.opacity < 1.0 and url.startswith("data:"):
+                return f"background:linear-gradient(rgba(255,255,255,{1-bg.opacity:.2f}),rgba(255,255,255,{1-bg.opacity:.2f})),{url} center/cover no-repeat;"
+            return f"background:{url} center/cover no-repeat;"
+        return ""
+
+    @staticmethod
+    def _background_image_url(source: str) -> str:
+        if not os.path.exists(source):
+            return ""
+        try:
+            with open(source, "rb") as f:
+                data = f.read()
+            b64 = base64.b64encode(data).decode("ascii")
+            mime = mimetypes.guess_type(source)[0] or "image/png"
+            return f"url('data:{mime};base64,{b64}')"
+        except Exception:
+            return ""
 
     def _cell_style(self, rect: Any, bg_color: Optional[str] = None) -> str:
         parts = [

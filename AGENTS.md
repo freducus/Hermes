@@ -27,7 +27,6 @@ reporting/
   renderers/           # Output backends
     base.py            # Abstract renderer interface
     pdf/               # ReportLab implementation
-    pptx/              # python-pptx implementation
     html/              # HTML/CSS implementation
   utils/
   examples/
@@ -70,7 +69,7 @@ Slices auto-compute `colspan`/`rowspan`. Text kwargs (`bold`, `italic`, `color`,
 | Language | Python >= 3.11 (current: 3.12.10, Windows) |
 | Testing | pytest |
 | PDF | reportlab |
-| PPTX | python-pptx |
+| HTML | — (pure HTML/CSS) |
 | Plots | matplotlib (`matplotlib.figure.Figure`) |
 | Tables | pandas (`DataFrame` as input) |
 

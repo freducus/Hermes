@@ -81,11 +81,7 @@ Renderers
 .. code-block:: python
 
    from reporting.renderers.pdf.renderer import PDFRenderer
-   from reporting.renderers.pptx.renderer import PPTXRenderer
-   from reporting.renderers.html.renderer import HTMLRenderer
-
    PDFRenderer().render_document(doc, "report.pdf")
-   PPTXRenderer().render_document(doc, "report.pptx")
    HTMLRenderer().render_document(doc, "report.html")
 
 Example output

@@ -12,7 +12,6 @@ from reporting.slide import Slide
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
-from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def create_pressure_plot() -> plt.Figure:
@@ -41,8 +40,7 @@ def main() -> None:
     out = Path(__file__).parent / "engineering_report"
     PDFRenderer().render_document(doc, str(out) + ".pdf")
     HTMLRenderer().render_document(doc, str(out) + ".html")
-    PPTXRenderer().render_document(doc, str(out) + ".pptx")
-    print("Generated engineering_report.{pdf,html,pptx}")
+    print("Generated engineering_report.{pdf,html}")
 
 
 if __name__ == "__main__":

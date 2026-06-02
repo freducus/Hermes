@@ -10,7 +10,6 @@ from reporting.slide import Slide
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
-from reporting.renderers.pptx.renderer import PPTXRenderer
 
 
 def make_slide(title: str, subtitle: str = "") -> Slide:
@@ -138,8 +137,7 @@ def main() -> None:
     out = Path(__file__).parent / "padding_margin"
     PDFRenderer().render_document(doc, str(out) + ".pdf")
     HTMLRenderer().render_document(doc, str(out) + ".html")
-    PPTXRenderer().render_document(doc, str(out) + ".pptx")
-    print("Generated padding_margin.{pdf,html,pptx}")
+    print("Generated padding_margin.{pdf,html}")
 
 
 if __name__ == "__main__":

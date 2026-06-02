@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 import tempfile
 from typing import TYPE_CHECKING, Any, Optional
@@ -20,6 +21,7 @@ from reporting.elements.table import TableElement
 from reporting.elements.tablespec_element import TableSpecElement
 from reporting.layout.geometry import Rect, Size
 from reporting.renderers.base import BaseRenderer
+from reporting.background import BackgroundType, SolidBackground, GradientBackground, ImageBackground
 
 if TYPE_CHECKING:
     from reporting.document import Document
@@ -91,48 +93,174 @@ class PDFRenderer(BaseRenderer):
         if c is None:
             return
 
+        self._render_background(slide)
         self._render_title_panel(slide)
 
         if slide._grid is None:
             return
 
         cell_rects = slide.get_cell_rects()
+        offset_y = slide.title_panel_height
         for r in range(slide._grid.rows):
             for c2 in range(slide._grid.cols):
                 cell = slide._grid.cells[r][c2]
-                self._render_panel_background(cell_rects[r][c2], cell.panel.background_color)
+                rect = cell_rects[r][c2]
+                adj = Rect(rect.x, rect.y + offset_y, rect.width, rect.height)
+                self._render_panel_background(adj, cell.panel.background_color)
                 element = cell.element
                 if element is None:
                     continue
-                self._render_element(element, cell_rects[r][c2])
+                self._render_element(element, adj)
+
+    def _render_background(self, slide: Any) -> None:
+        bg = getattr(slide, "background", None)
+        if bg is None:
+            return
+        c = self._canvas
+        if c is None:
+            return
+        pw = _px_to_pt(slide.width)
+        ph = _px_to_pt(slide.height)
+
+        if bg.type == BackgroundType.SOLID:
+            try:
+                h = bg.color.lstrip("#")
+                c.setFillColorRGB(int(h[0:2], 16) / 255, int(h[2:4], 16) / 255, int(h[4:6], 16) / 255)
+                c.rect(0, 0, pw, ph, fill=1, stroke=0)
+            except Exception:
+                pass
+
+        elif bg.type == BackgroundType.GRADIENT:
+            try:
+                h1 = bg.start_color.lstrip("#")
+                h2 = bg.end_color.lstrip("#")
+                r1, g1, b1 = int(h1[0:2], 16) / 255, int(h1[2:4], 16) / 255, int(h1[4:6], 16) / 255
+                r2, g2, b2 = int(h2[0:2], 16) / 255, int(h2[2:4], 16) / 255, int(h2[4:6], 16) / 255
+
+                bands = 80
+                angle_rad = math.radians(bg.angle)
+                cos_a = abs(math.cos(angle_rad))
+                sin_a = abs(math.sin(angle_rad))
+
+                for i in range(bands):
+                    t = i / bands
+                    r = r1 + (r2 - r1) * t
+                    g = g1 + (g2 - g1) * t
+                    b = b1 + (b2 - b1) * t
+
+                    band_h = ph / bands
+                    band_w = pw / bands
+                    c.setFillColorRGB(r, g, b)
+                    if cos_a >= sin_a:
+                        y0 = ph - (i + 1) * band_h
+                        c.rect(0, y0, pw, band_h + 1, fill=1, stroke=0)
+                    else:
+                        x0 = i * band_w
+                        c.rect(x0, 0, band_w + 1, ph, fill=1, stroke=0)
+            except Exception:
+                pass
+
+        elif bg.type == BackgroundType.IMAGE:
+            try:
+                if os.path.exists(bg.source):
+                    if bg.opacity < 1.0:
+                        c.saveState()
+                    c.drawImage(bg.source, 0, 0, width=pw, height=ph, preserveAspectRatio=True, anchor='c')
+                    if bg.opacity < 1.0:
+                        c.setFillColorRGB(1, 1, 1, alpha=1.0 - bg.opacity)
+                        c.rect(0, 0, pw, ph, fill=1, stroke=0)
+                        c.restoreState()
+            except Exception:
+                pass
 
     def _render_title_panel(self, slide: Any) -> None:
         c = self._canvas
         if c is None:
             return
 
+        tc = slide.title_config
+        sc = slide.subtitle_config
+        tpc = slide.title_panel_config
         th_pt = _px_to_pt(slide.title_panel_height)
         y0 = self._slide_pt_h - th_pt
+        margin = _px_to_pt(20)
+        text_w = _px_to_pt(slide.width) - margin * 2
 
-        if slide.subtitle:
-            sub_style = ParagraphStyle(
-                "SlideSubtitle",
-                fontName="Helvetica",
-                fontSize=10,
-                leading=13,
-                alignment=TA_LEFT,
-                textColor=colors.Color(0.4, 0.4, 0.4),
-            )
-            sp = Paragraph(slide.subtitle, sub_style)
-            sub_frame = Frame(
-                _px_to_pt(20), y0, self._slide_pt_h - _px_to_pt(40), th_pt,
-                leftPadding=0, rightPadding=0, topPadding=20, bottomPadding=0,
-                id="subtitle",
-            )
-            sub_frame.addFromList([sp], c)
+        def _hex_color(hex_str: str):
+            h = hex_str.lstrip("#")
+            return colors.Color(int(h[0:2], 16) / 255, int(h[2:4], 16) / 255, int(h[4:6], 16) / 255)
 
-        c.setStrokeColor(colors.Color(0.8, 0.8, 0.8))
-        c.line(_px_to_pt(20), y0, self._slide_pt_h - _px_to_pt(20), y0)
+        title_style = ParagraphStyle(
+            "SlideTitle",
+            fontName=tc.font_name if not tc.bold else tc.font_name + "-Bold",
+            fontSize=tc.font_size,
+            leading=tc.font_size * 1.2,
+            alignment=_align_to_reportlab(tc.alignment),
+            textColor=_hex_color(tc.color),
+        )
+        tp = Paragraph(slide.title, title_style)
+
+        is_beside = (
+            slide.subtitle
+            and tpc.subtitle_placement.value == "beside"
+        )
+
+        if is_beside:
+            sub_w = text_w * tpc.subtitle_width_ratio
+            title_w = text_w - sub_w
+
+            title_frame = Frame(
+                margin, y0, title_w, th_pt,
+                leftPadding=0, rightPadding=0, topPadding=6, bottomPadding=0,
+                id="title",
+            )
+            title_frame.addFromList([tp], c)
+
+            sub_font = sc.font_name if not sc.bold else sc.font_name + "-Bold"
+            sub_x = margin + title_w
+            sub_align = _align_to_reportlab(sc.alignment)
+            sub_color = _hex_color(sc.color)
+
+            c.saveState()
+            c.setFont(sub_font, sc.font_size)
+            c.setFillColor(sub_color)
+            sub_leading = sc.font_size * 1.3
+            sub_baseline = y0 + (th_pt - sub_leading) / 2 + sc.font_size * 0.35
+            if sub_align == TA_RIGHT:
+                c.drawRightString(sub_x + sub_w, sub_baseline, slide.subtitle)
+            elif sub_align == TA_CENTER:
+                c.drawCentredString(sub_x + sub_w / 2, sub_baseline, slide.subtitle)
+            else:
+                c.drawString(sub_x, sub_baseline, slide.subtitle)
+            c.restoreState()
+        else:
+            flowables = [tp]
+            if slide.subtitle:
+                sub_font = sc.font_name if not sc.bold else sc.font_name + "-Bold"
+                sub_style = ParagraphStyle(
+                    "SlideSubtitle",
+                    fontName=sub_font,
+                    fontSize=sc.font_size,
+                    leading=sc.font_size * 1.3,
+                    alignment=_align_to_reportlab(sc.alignment),
+                    textColor=_hex_color(sc.color),
+                )
+                from reportlab.platypus import Spacer
+                flowables.append(Spacer(1, 4))
+                flowables.append(Paragraph(slide.subtitle, sub_style))
+
+            main_frame = Frame(
+                margin, y0, text_w, th_pt,
+                leftPadding=0, rightPadding=0, topPadding=6, bottomPadding=2,
+                id="title_panel",
+            )
+            main_frame.addFromList(flowables, c)
+
+        if tc.show_separator:
+            sep_y = y0 + _px_to_pt(tc.separator_margin)
+            c.setStrokeColor(_hex_color(tc.separator_color))
+            c.setLineWidth(tc.separator_width)
+            c.line(margin, sep_y, margin + text_w, sep_y)
 
     def _render_panel_background(self, rect: Any, bg_color: Optional[str]) -> None:
         if bg_color is None:

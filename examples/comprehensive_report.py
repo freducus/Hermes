@@ -10,13 +10,42 @@ from reporting.document import Document
 from reporting.slide import Slide
 from reporting.layout.geometry import Edges
 from reporting.layout.grid import Grid
-from reporting.layout.sizing import Fill
+from reporting.layout.sizing import Fill, Percent
 from reporting.elements.container import ContainerElement
-from reporting.elements.text import TextElement
+from reporting.elements.text import TextElement, TextAlignment
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
-from reporting.renderers.pptx.renderer import PPTXRenderer
 from reporting.tablespec import TableSpec
+from reporting.background import SolidBackground, GradientBackground, ImageBackground
+from reporting.title_config import TitleConfig, SubtitleConfig, TitlePanelConfig, SubtitlePlacement
+
+OUT_DIR = Path(__file__).parent
+
+
+def create_bg_image() -> str:
+    path = OUT_DIR / "bg_pattern.png"
+    if path.exists():
+        return str(path)
+    fig, ax = plt.subplots(figsize=(10, 5.625))
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 5.625)
+    ax.set_facecolor("#0D1B2A")
+    for i in range(30):
+        x = i * 0.35
+        y = 5.625 / 2
+        r = 0.5 + (i % 7) * 0.2
+        circle = plt.Circle(
+            (x, y + (i % 3 - 1) * 1.2), r,
+            color=f"#{(20 + i*8):02X}3A{(50 + i*6):02X}",
+            alpha=0.35 + (i % 5) * 0.12,
+            linewidth=0,
+        )
+        ax.add_patch(circle)
+    ax.axis("off")
+    fig.subplots_adjust(0, 0, 1, 1)
+    fig.savefig(path, dpi=96, bbox_inches="tight", pad_inches=0)
+    plt.close(fig)
+    return str(path)
 
 
 def create_plot(title: str, color: str = "C0") -> plt.Figure:
@@ -77,7 +106,7 @@ def main() -> None:
 
     # ---- Slide 2: Matplotlib plots ----
     slide = Slide("Plots Gallery")
-    slide.grid_layout(rows=1, cols=3, gap=12, padding=Edges.all(15))
+    slide.grid_layout(rows=2, cols=3, gap=12, padding=Edges.all(15))
 
     plots = [
         ("Sine Wave", "C0"),
@@ -284,11 +313,170 @@ def main() -> None:
     slide[1, 1].table_spec(ts4)
     doc.add_slide(slide)
 
-    out = Path(__file__).parent / "comprehensive_report"
+    # ---- Slide 8: Solid background ----
+    slide = Slide(
+        "Solid Background",
+        subtitle="SolidBackground('#E8F0FE')",
+        background=SolidBackground("#E8F0FE"),
+    )
+    slide.grid_layout(rows=1, cols=1, padding=Edges.all(30))
+    slide[0, 0].text(
+        "This slide uses a solid background color.",
+        font_name="Helvetica", size=14, color="#1F4E79",
+    )
+    doc.add_slide(slide)
+
+    # ---- Slide 9: Gradient background (pronounced) ----
+    slide = Slide(
+        "Gradient Background",
+        subtitle="GradientBackground('#1A237E', '#FF5722', angle=135)",
+        background=GradientBackground("#1A237E", "#FF5722", angle=135),
+    )
+    slide.grid_layout(rows=1, cols=1, padding=Edges.all(30))
+    slide[0, 0].text(
+        "This slide uses a pronounced linear gradient.",
+        font_name="Helvetica-Bold", size=16, color="#FFFFFF",
+    )
+    doc.add_slide(slide)
+
+    # ---- Slide 10: Image background ----
+    bg_path = create_bg_image()
+    slide = Slide(
+        "Image Background",
+        subtitle=f"ImageBackground('{Path(bg_path).name}', opacity=0.85)",
+        background=ImageBackground(bg_path, opacity=0.85),
+    )
+    slide.grid_layout(rows=1, cols=1, padding=Edges.all(30))
+    slide[0, 0].text(
+        "This slide uses an image as background.",
+        font_name="Helvetica-Bold", size=16, color="#FFFFFF",
+    )
+    doc.add_slide(slide)
+
+    # ---- Slide 11: Formatted title/subtitle with BESIDE placement ----
+    slide = Slide(
+        "Custom Title Formatting",
+        subtitle="Subtitle beside title — panel 70px",
+        background=SolidBackground("#F5F5F5"),
+        title_config=TitleConfig(
+            font_name="Times-Bold",
+            font_size=26,
+            bold=False,
+            color="#1565C0",
+            alignment=TextAlignment.LEFT,
+            show_separator=False,
+        ),
+        subtitle_config=SubtitleConfig(
+            font_name="Helvetica-Oblique",
+            font_size=12,
+            italic=True,
+            color="#757575",
+            alignment=TextAlignment.RIGHT,
+        ),
+        title_panel_config=TitlePanelConfig(
+            subtitle_placement=SubtitlePlacement.BESIDE,
+            subtitle_width_ratio=0.3,
+        ),
+        title_panel_height=70,
+    )
+    slide.grid_layout(
+        rows=1, cols=2,
+        col_sizes=[Percent(60), Percent(40)],
+        padding=Edges.all(0), gap=16,
+    )
+    slide[0, 0].text(
+        "60% column: title config demo.\n"
+        "Times-Bold 26pt, subtitle italic right 12pt.",
+        font_name="Helvetica", size=12, color="#333333",
+    )
+    slide[0, 1].text(
+        "40% column: right panel.",
+        font_name="Helvetica", size=12, color="#616161",
+    )
+    slide[0, 1]._cell.panel.background_color = "#E8EAF6"
+    doc.add_slide(slide)
+
+    # ---- Slide 12: Formatted title/subtitle with BELOW placement ----
+    slide = Slide(
+        "BELOW Subtitle Placement",
+        subtitle="Separator enabled, centered, taller panel (80px)",
+        title_config=TitleConfig(
+            font_size=24,
+            bold=True,
+            color="#2E7D32",
+            alignment=TextAlignment.CENTER,
+            show_separator=True,
+            separator_color="#A5D6A7",
+            separator_width=2,
+        ),
+        subtitle_config=SubtitleConfig(
+            font_name="Helvetica",
+            font_size=13,
+            color="#558B2F",
+            alignment=TextAlignment.CENTER,
+        ),
+        title_panel_height=80,
+    )
+    slide.grid_layout(
+        rows=1, cols=2,
+        col_sizes=[Percent(60), Percent(40)],
+        padding=Edges.all(0), gap=16,
+    )
+    slide[0, 0].text(
+        "60% column: title config demo.\n"
+        "Times-Bold 26pt, subtitle italic right 12pt.",
+        font_name="Helvetica", size=12, color="#333333",
+    )
+    slide[0, 1].text(
+        "40% column: right panel.",
+        font_name="Helvetica", size=12, color="#616161",
+    )
+    slide[0, 1]._cell.panel.background_color = "#E8EAF6"
+    doc.add_slide(slide)
+
+    # ---- Slide 12: Formatted title/subtitle with BELOW placement ----
+    slide = Slide(
+        "BELOW Subtitle Placement",
+        subtitle="Separator enabled, centered, taller panel (80px)",
+        title_config=TitleConfig(
+            font_size=24,
+            bold=True,
+            color="#2E7D32",
+            alignment=TextAlignment.CENTER,
+            show_separator=True,
+            separator_color="#A5D6A7",
+            separator_width=2,
+        ),
+        subtitle_config=SubtitleConfig(
+            font_name="Helvetica",
+            font_size=13,
+            color="#558B2F",
+            alignment=TextAlignment.CENTER,
+        ),
+        title_panel_height=80,
+    )
+    slide.grid_layout(
+        rows=1, cols=2,
+        col_sizes=[Percent(60), Percent(40)],
+        padding=Edges.all(0), gap=16,
+    )
+    slide[0, 0].text(
+        "60% column: centered title + subtitle,\n"
+        "green separator, 80px panel.",
+        font_name="Helvetica", size=12, color="#333333",
+    )
+    slide[0, 1].text(
+        "40% column: secondary info.",
+        font_name="Helvetica", size=12, color="#616161",
+    )
+    slide[0, 1]._cell.panel.background_color = "#E8F5E9"
+    slide[0, 0]._cell.panel.background_color = "#616161"
+    doc.add_slide(slide)
+
+    out = OUT_DIR / "comprehensive_report"
     PDFRenderer().render_document(doc, str(out) + ".pdf")
     HTMLRenderer().render_document(doc, str(out) + ".html")
-    PPTXRenderer().render_document(doc, str(out) + ".pptx")
-    print("Generated comprehensive_report.{pdf,html,pptx}")
+    print("Generated comprehensive_report.{pdf,html}")
 
 
 if __name__ == "__main__":
