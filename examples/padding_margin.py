@@ -50,12 +50,12 @@ def main() -> None:
     slide = Slide("Grid padding")
     slide.grid_layout(rows=1, cols=2, gap=8, padding=Edges.all(15))
     slide[0, 0].text("padding=Edges.all(5)")
-    slide[0, 0]._cell.panel.background_color = "#E3F2FD"
+    slide[0, 0]._cell.panel.background_color = "lightblue"
     slide[0, 0]._cell.panel.padding = Edges.all(5)
 
     # Actually put the text back and set padding on the panel
     slide[0, 1].text("padding=Edges.all(30)")
-    slide[0, 1]._cell.panel.background_color = "#FFF3E0"
+    slide[0, 1]._cell.panel.background_color = "moccasin"
     slide[0, 1]._cell.panel.padding = Edges.all(30)
     doc.add_slide(slide)
 
@@ -63,36 +63,36 @@ def main() -> None:
     slide = Slide("Grid gap", subtitle="gap=2  |  gap=20")
     slide.grid_layout(rows=2, cols=2, gap=2, padding=Edges.all(15))
     slide[0, 0].text("A", size=12, alignment="center")
-    slide[0, 0]._cell.panel.background_color = "#C8E6C9"
+    slide[0, 0]._cell.panel.background_color = (200, 230, 201)
     slide[0, 1].text("B", size=12, alignment="center")
-    slide[0, 1]._cell.panel.background_color = "#C8E6C9"
+    slide[0, 1]._cell.panel.background_color = (200, 230, 201)
     slide[1, 0].text("C", size=12, alignment="center")
-    slide[1, 0]._cell.panel.background_color = "#C8E6C9"
+    slide[1, 0]._cell.panel.background_color = (200, 230, 201)
     slide[1, 1].text("D", size=12, alignment="center")
-    slide[1, 1]._cell.panel.background_color = "#C8E6C9"
+    slide[1, 1]._cell.panel.background_color = (200, 230, 201)
     doc.add_slide(slide)
 
     slide = Slide("Grid gap (wide)", subtitle="gap=20  |  padding=Edges.all(5)")
     slide.grid_layout(rows=2, cols=2, gap=20, padding=Edges.all(5))
     slide[0, 0].text("A", size=12, alignment="center")
-    slide[0, 0]._cell.panel.background_color = "#FFE0B2"
+    slide[0, 0]._cell.panel.background_color = "bisque"
     slide[0, 1].text("B", size=12, alignment="center")
-    slide[0, 1]._cell.panel.background_color = "#FFE0B2"
+    slide[0, 1]._cell.panel.background_color = "bisque"
     slide[1, 0].text("C", size=12, alignment="center")
-    slide[1, 0]._cell.panel.background_color = "#FFE0B2"
+    slide[1, 0]._cell.panel.background_color = "bisque"
     slide[1, 1].text("D", size=12, alignment="center")
-    slide[1, 1]._cell.panel.background_color = "#FFE0B2"
+    slide[1, 1]._cell.panel.background_color = "bisque"
     doc.add_slide(slide)
 
     # ---- Slide 3: panel.padding ----
     slide = Slide("Panel padding", subtitle="padding=0 (left)  |  padding=20 (right)")
     slide.grid_layout(rows=1, cols=2, gap=10, padding=Edges.all(15))
     slide[0, 0].text("No padding\nContent touches\ncell edge")
-    slide[0, 0]._cell.panel.background_color = "#F3E5F5"
+    slide[0, 0]._cell.panel.background_color = "rgb(243, 229, 245)"
     slide[0, 0]._cell.panel.padding = Edges()
 
     slide[0, 1].text("padding=20\nContent is inset\nfrom cell edge")
-    slide[0, 1]._cell.panel.background_color = "#F3E5F5"
+    slide[0, 1]._cell.panel.background_color = "rgb(243, 229, 245)"
     slide[0, 1]._cell.panel.padding = Edges.all(20)
     doc.add_slide(slide)
 
@@ -100,7 +100,7 @@ def main() -> None:
     slide = Slide("Panel margin", subtitle="Each labelled cell has margin=15 around it")
     slide.grid_layout(rows=2, cols=3, gap=0, padding=Edges.all(10))
     labels = ["A", "B", "C", "D", "E", "F"]
-    colors = ["#E3F2FD", "#FFF3E0", "#E8F5E9", "#F3E5F5", "#FFEBEE", "#E0F7FA"]
+    colors = ["lightblue", "moccasin", "honeydew", "rgb(243, 229, 245)", "mistyrose", "lightcyan"]
     for i in range(2):
         for j in range(3):
             idx = i * 3 + j
@@ -114,22 +114,22 @@ def main() -> None:
     slide.grid_layout(rows=2, cols=2, gap=12, padding=Edges.all(20))
 
     slide[0, 0].text("padding=10\nmargin=5")
-    slide[0, 0]._cell.panel.background_color = "#E3F2FD"
+    slide[0, 0]._cell.panel.background_color = "rgb(227, 242, 253)"
     slide[0, 0]._cell.panel.padding = Edges.all(10)
     slide[0, 0]._cell.panel.margin = Edges.all(5)
 
     slide[0, 1].text("padding=20\nmargin=2")
-    slide[0, 1]._cell.panel.background_color = "#FFF3E0"
+    slide[0, 1]._cell.panel.background_color = "rgb(255, 243, 224)"
     slide[0, 1]._cell.panel.padding = Edges.all(20)
     slide[0, 1]._cell.panel.margin = Edges.all(2)
 
     slide[1, 0].text("padding=5\nmargin=10")
-    slide[1, 0]._cell.panel.background_color = "#E8F5E9"
+    slide[1, 0]._cell.panel.background_color = "honeydew"
     slide[1, 0]._cell.panel.padding = Edges.all(5)
     slide[1, 0]._cell.panel.margin = Edges.all(10)
 
     slide[1, 1].text("padding=15\nmargin=8")
-    slide[1, 1]._cell.panel.background_color = "#F3E5F5"
+    slide[1, 1]._cell.panel.background_color = "rgb(243, 229, 245)"
     slide[1, 1]._cell.panel.padding = Edges.all(15)
     slide[1, 1]._cell.panel.margin = Edges.all(8)
     doc.add_slide(slide)

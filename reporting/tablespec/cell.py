@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from reporting.elements.text import TextAlignment
+from reporting.styles.colors import ColorValue, normalize_color
 from reporting.tablespec.style import CellStyle
 
 
@@ -30,8 +31,8 @@ class Cell:
         rowspan: int = 1,
         colspan: int = 1,
         alignment: Optional[TextAlignment] = None,
-        background_color: Optional[str] = None,
-        text_color: Optional[str] = None,
+        background_color: Optional[ColorValue] = None,
+        text_color: Optional[ColorValue] = None,
         style: Optional[CellStyle] = None,
     ) -> None:
         self.value = value
@@ -39,8 +40,8 @@ class Cell:
         self.rowspan = rowspan
         self.colspan = colspan
         self.alignment = alignment
-        self.background_color = background_color
-        self.text_color = text_color
+        self.background_color = normalize_color(background_color) if background_color is not None else None
+        self.text_color = normalize_color(text_color) if text_color is not None else None
         self.style = style
 
     def __repr__(self) -> str:

@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
+
+from reporting.styles.colors import Color, ColorValue, normalize_color
 
 
 class BackgroundType(Enum):
@@ -30,10 +32,8 @@ class SolidBackground(Background):
 
     color: str
 
-    def __init__(self, color: str) -> None:
-        if not color.startswith("#"):
-            raise ValueError(f"Color must be a hex string starting with '#', got {color!r}")
-        self.color = color
+    def __init__(self, color: ColorValue) -> None:
+        self.color = normalize_color(color)
 
     @property
     def type(self) -> BackgroundType:
@@ -53,13 +53,9 @@ class GradientBackground(Background):
     end_color: str
     angle: float
 
-    def __init__(self, start_color: str, end_color: str, angle: float = 0.0) -> None:
-        if not start_color.startswith("#"):
-            raise ValueError(f"start_color must be a hex string starting with '#', got {start_color!r}")
-        if not end_color.startswith("#"):
-            raise ValueError(f"end_color must be a hex string starting with '#', got {end_color!r}")
-        self.start_color = start_color
-        self.end_color = end_color
+    def __init__(self, start_color: ColorValue, end_color: ColorValue, angle: float = 0.0) -> None:
+        self.start_color = normalize_color(start_color)
+        self.end_color = normalize_color(end_color)
         self.angle = angle
 
     @property

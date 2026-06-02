@@ -5,6 +5,8 @@ from __future__ import annotations
 import dataclasses
 from typing import Optional
 
+from reporting.styles.colors import ColorValue, normalize_color
+
 
 @dataclasses.dataclass(frozen=True)
 class FontSpec:
@@ -12,8 +14,12 @@ class FontSpec:
     size: float = 12.0
     bold: bool = False
     italic: bool = False
-    color: Optional[str] = None
+    color: Optional[ColorValue] = None
     underline: bool = False
+
+    def __post_init__(self) -> None:
+        if self.color is not None:
+            object.__setattr__(self, 'color', normalize_color(self.color))
 
 
 @dataclasses.dataclass(frozen=True)

@@ -22,6 +22,7 @@ from reporting.elements.tablespec_element import TableSpecElement
 from reporting.layout.geometry import Rect, Size
 from reporting.renderers.base import BaseRenderer
 from reporting.background import BackgroundType, SolidBackground, GradientBackground, ImageBackground
+from reporting.styles.colors import Color
 
 if TYPE_CHECKING:
     from reporting.document import Document
@@ -124,18 +125,18 @@ class PDFRenderer(BaseRenderer):
 
         if bg.type == BackgroundType.SOLID:
             try:
-                h = bg.color.lstrip("#")
-                c.setFillColorRGB(int(h[0:2], 16) / 255, int(h[2:4], 16) / 255, int(h[4:6], 16) / 255)
+                _c = Color.parse(bg.color).reportlab_color
+                c.setFillColor(_c)
                 c.rect(0, 0, pw, ph, fill=1, stroke=0)
             except Exception:
                 pass
 
         elif bg.type == BackgroundType.GRADIENT:
             try:
-                h1 = bg.start_color.lstrip("#")
-                h2 = bg.end_color.lstrip("#")
-                r1, g1, b1 = int(h1[0:2], 16) / 255, int(h1[2:4], 16) / 255, int(h1[4:6], 16) / 255
-                r2, g2, b2 = int(h2[0:2], 16) / 255, int(h2[2:4], 16) / 255, int(h2[4:6], 16) / 255
+                c1 = Color.parse(bg.start_color)
+                c2 = Color.parse(bg.end_color)
+                r1, g1, b1 = c1.float_rgb
+                r2, g2, b2 = c2.float_rgb
 
                 bands = 80
                 angle_rad = math.radians(bg.angle)
@@ -186,17 +187,13 @@ class PDFRenderer(BaseRenderer):
         margin = _px_to_pt(20)
         text_w = _px_to_pt(slide.width) - margin * 2
 
-        def _hex_color(hex_str: str):
-            h = hex_str.lstrip("#")
-            return colors.Color(int(h[0:2], 16) / 255, int(h[2:4], 16) / 255, int(h[4:6], 16) / 255)
-
         title_style = ParagraphStyle(
             "SlideTitle",
             fontName=tc.font_name if not tc.bold else tc.font_name + "-Bold",
             fontSize=tc.font_size,
             leading=tc.font_size * 1.2,
             alignment=_align_to_reportlab(tc.alignment),
-            textColor=_hex_color(tc.color),
+            textColor=Color.parse(tc.color).reportlab_color,
         )
         tp = Paragraph(slide.title, title_style)
 
@@ -219,7 +216,7 @@ class PDFRenderer(BaseRenderer):
             sub_font = sc.font_name if not sc.bold else sc.font_name + "-Bold"
             sub_x = margin + title_w
             sub_align = _align_to_reportlab(sc.alignment)
-            sub_color = _hex_color(sc.color)
+            sub_color = Color.parse(sc.color).reportlab_color
 
             c.saveState()
             c.setFont(sub_font, sc.font_size)
@@ -243,7 +240,7 @@ class PDFRenderer(BaseRenderer):
                     fontSize=sc.font_size,
                     leading=sc.font_size * 1.3,
                     alignment=_align_to_reportlab(sc.alignment),
-                    textColor=_hex_color(sc.color),
+                    textColor=Color.parse(sc.color).reportlab_color,
                 )
                 from reportlab.platypus import Spacer
                 flowables.append(Spacer(1, 4))
@@ -258,7 +255,7 @@ class PDFRenderer(BaseRenderer):
 
         if tc.show_separator:
             sep_y = y0 + _px_to_pt(tc.separator_margin)
-            c.setStrokeColor(_hex_color(tc.separator_color))
+            c.setStrokeColor(Color.parse(tc.separator_color).reportlab_color)
             c.setLineWidth(tc.separator_width)
             c.line(margin, sep_y, margin + text_w, sep_y)
 
@@ -269,13 +266,12 @@ class PDFRenderer(BaseRenderer):
         if c is None:
             return
         try:
-            h = bg_color.lstrip("#")
-            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            cc = Color.parse(bg_color)
             x = _px_to_pt(rect.x)
             y = self._slide_pt_h - _px_to_pt(rect.y + rect.height)
             w = _px_to_pt(rect.width)
             h_pt = _px_to_pt(rect.height)
-            c.setFillColorRGB(r / 255, g / 255, b / 255)
+            c.setFillColor(cc.reportlab_color)
             c.rect(x, y, w, h_pt, fill=1, stroke=0)
         except Exception:
             pass
@@ -537,16 +533,14 @@ class PDFRenderer(BaseRenderer):
 
                     if cell.background_color:
                         try:
-                            hex_bg = cell.background_color.lstrip("#")
-                            bg = colors.Color(int(hex_bg[0:2], 16) / 255, int(hex_bg[2:4], 16) / 255, int(hex_bg[4:6], 16) / 255)
+                            bg = Color.parse(cell.background_color).reportlab_color
                             cmds.append(("BACKGROUND", (c_idx, rr), (c_idx, rr), bg))
                         except Exception:
                             pass
 
                     if cell.text_color:
                         try:
-                            hex_tc = cell.text_color.lstrip("#")
-                            tc = colors.Color(int(hex_tc[0:2], 16) / 255, int(hex_tc[2:4], 16) / 255, int(hex_tc[4:6], 16) / 255)
+                            tc = Color.parse(cell.text_color).reportlab_color
                             cmds.append(("TEXTCOLOR", (c_idx, rr), (c_idx, rr), tc))
                         except Exception:
                             pass

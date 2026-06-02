@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theme Demo</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #333; font-family: Arial, sans-serif; }
+.slide { width: 960px; height: 540px; margin: 20px auto; background: #fff;
+         box-shadow: 0 4px 12px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
+.title-panel { position: absolute; top: 0; left: 0; width: 100%;
+                border-bottom: 1px solid #ccc; overflow: hidden; }
+.title-panel.beside { display: flex; justify-content: space-between; align-items: center; }
+.title-panel h1 { font-size: 20px; color: #1F4E79; margin: 0; }
+.title-panel p { font-size: 11px; color: #666; margin: 2px 0 0 0; }
+.title-panel.beside p { margin: 0; text-align: right; }
+.slide-content { position: absolute; left: 0; width: 100%; bottom: 0; }
+.cell { position: absolute; overflow: hidden; padding: 4px; }
+</style>
+</head>
+<body>
+<div class="slide" >
+  <div class="title-panel" style="height:60.0px;padding:8px 20px 8px 20px;"><h1 style="font-size:20.0px;color:#1F4E79;font-weight:bold;font-family:Helvetica;text-align:left">Corporate Theme</h1><hr style="border:none;border-top:1.0px solid #CCCCCC;margin-top:8.0px;margin-bottom:0"></div>
+  <div class="slide-content" style="top:60.0px">
+    <div class="cell" style="left:0.0px; top:0.0px; width:475.0px; height:480.0px;"><div class="text-block text-left" style="text-align:left"><span style="">This slide uses the Corporate theme</span></div></div>
+<div class="cell" style="left:485.0px; top:0.0px; width:475.0px; height:480.0px;"><div class="text-block text-left" style="text-align:left"><span style="">Content area with theme styling applied.</span></div></div>
+  </div>
+</div>
+<div class="slide" >
+  <div class="title-panel" style="height:60.0px;padding:8px 20px 8px 20px;"><h1 style="font-size:20.0px;color:#1F4E79;font-weight:bold;font-family:Helvetica;text-align:left">Dark Theme</h1><hr style="border:none;border-top:1.0px solid #CCCCCC;margin-top:8.0px;margin-bottom:0"></div>
+  <div class="slide-content" style="top:60.0px">
+    <div class="cell" style="left:0.0px; top:0.0px; width:475.0px; height:480.0px;"><div class="text-block text-left" style="text-align:left"><span style="">This slide uses the Dark theme</span></div></div>
+<div class="cell" style="left:485.0px; top:0.0px; width:475.0px; height:480.0px;"><div class="text-block text-left" style="text-align:left"><span style="">Content area with theme styling applied.</span></div></div>
+  </div>
+</div>
+<div class="slide" >
+  <div class="title-panel" style="height:60.0px;padding:8px 20px 8px 20px;"><h1 style="font-size:20.0px;color:#1F4E79;font-weight:bold;font-family:Helvetica;text-align:left">Light Theme</h1><hr style="border:none;border-top:1.0px solid #CCCCCC;margin-top:8.0px;margin-bottom:0"></div>
+  <div class="slide-content" style="top:60.0px">
+    <div class="cell" style="left:0.0px; top:0.0px; width:475.0px; height:480.0px;"><div class="text-block text-left" style="text-align:left"><span style="">This slide uses the Light theme</span></div></div>
+<div class="cell" style="left:485.0px; top:0.0px; width:475.0px; height:480.0px;"><div class="text-block text-left" style="text-align:left"><span style="">Content area with theme styling applied.</span></div></div>
+  </div>
+</div>
+</body>
+</html>

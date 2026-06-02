@@ -19,6 +19,7 @@ from reporting.elements.tablespec_element import TableSpecElement
 from reporting.layout.geometry import Rect, Size
 from reporting.renderers.base import BaseRenderer
 from reporting.background import BackgroundType, SolidBackground, GradientBackground, ImageBackground
+from reporting.styles.colors import Color
 from reporting.title_config import TitleConfig
 
 if TYPE_CHECKING:
@@ -80,7 +81,7 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
         th = slide.title_panel_height
 
         h1_weight = "bold" if tc.bold else "normal"
-        h1_style = (f"font-size:{tc.font_size}px;color:{tc.color};"
+        h1_style = (f"font-size:{tc.font_size}px;color:{Color.parse(tc.color).css};"
                     f"font-weight:{h1_weight};font-family:{tc.font_name};"
                     f"text-align:{tc.alignment.value}")
 
@@ -95,7 +96,7 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
         if is_beside:
             sub_w = tpc.subtitle_width_ratio
             sub_weight = "bold" if sc.bold else "normal"
-            sub_style = (f"font-size:{sc.font_size}px;color:{sc.color};"
+            sub_style = (f"font-size:{sc.font_size}px;color:{Color.parse(sc.color).css};"
                          f"font-weight:{sub_weight};font-family:{sc.font_name};"
                          f"text-align:{sc.alignment.value};width:{sub_w*100}%")
             title_html = (
@@ -108,13 +109,13 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
             title_html = f"""<div class="{panel_cls}" style="{panel_style}"><h1 style="{h1_style}">{slide.title}</h1>"""
             if slide.subtitle:
                 sub_weight = "bold" if sc.bold else "normal"
-                sub_style = (f"font-size:{sc.font_size}px;color:{sc.color};"
+                sub_style = (f"font-size:{sc.font_size}px;color:{Color.parse(sc.color).css};"
                              f"font-weight:{sub_weight};font-family:{sc.font_name};"
                              f"text-align:{sc.alignment.value}")
                 title_html += f"<p style=\"{sub_style}\">{slide.subtitle}</p>"
             if tc.show_separator:
                 title_html += (f"<hr style=\"border:none;border-top:{tc.separator_width}px solid "
-                               f"{tc.separator_color};margin-top:{tc.separator_margin}px;margin-bottom:0\">")
+                               f"{Color.parse(tc.separator_color).css};margin-top:{tc.separator_margin}px;margin-bottom:0\">")
             title_html += "</div>"
 
         content_parts: list[str] = []
@@ -148,9 +149,10 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
         if bg is None:
             return ""
         if bg.type == BackgroundType.SOLID:
-            return f"background:{bg.color};"
+            return f"background:{Color.parse(bg.color).css};"
         elif bg.type == BackgroundType.GRADIENT:
-            return f"background:linear-gradient({bg.angle}deg,{bg.start_color},{bg.end_color});"
+            return (f"background:linear-gradient({bg.angle}deg,"
+                    f"{Color.parse(bg.start_color).css},{Color.parse(bg.end_color).css});")
         elif bg.type == BackgroundType.IMAGE:
             url = self._background_image_url(bg.source)
             if bg.opacity < 1.0 and url.startswith("data:"):
@@ -177,7 +179,7 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
             f"width:{rect.width:.1f}px; height:{rect.height:.1f}px;",
         ]
         if bg_color:
-            parts.append(f"background-color:{bg_color};")
+            parts.append(f"background-color:{Color.parse(bg_color).css};")
         return " ".join(parts)
 
     def _render_element_html(self, element: Any, rect: Any, bg_color: Optional[str] = None) -> str:
@@ -208,7 +210,7 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
                 if run.italic:
                     span_style += "font-style:italic;"
                 if run.color:
-                    span_style += f"color:{run.color};"
+                    span_style += f"color:{Color.parse(run.color).css};"
                 if run.size:
                     span_style += f"font-size:{run.size}px;"
                 if run.font_name:
@@ -325,11 +327,11 @@ thead th { background-color: #4472C4; color: #ffffff; }
 
                 td_style = f"padding:4px;border:1px solid #d9d9d9;text-align:center"
                 if cell.background_color:
-                    td_style += f";background-color:{cell.background_color}"
+                    td_style += f";background-color:{Color.parse(cell.background_color).css}"
                 else:
                     td_style += f";background-color:{bg_base}"
                 if cell.text_color:
-                    td_style += f";color:{cell.text_color}"
+                    td_style += f";color:{Color.parse(cell.text_color).css}"
 
                 colspan = cell.colspan if cell.colspan > 1 else ""
                 rowspan = cell.rowspan if cell.rowspan > 1 else ""

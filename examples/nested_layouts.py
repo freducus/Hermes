@@ -20,8 +20,8 @@ def main() -> None:
     slide.grid_layout(rows=1, cols=2, gap=10)
 
     inner = Grid(rows=2, cols=1, row_sizes=[Fill, Fill], gap=5)
-    inner[0, 0].panel.background_color = "#E8F0FE"
-    inner[1, 0].panel.background_color = "#E8F0FE"
+    inner[0, 0].panel.background_color = "aliceblue"
+    inner[1, 0].panel.background_color = "aliceblue"
     container = ContainerElement(grid=inner)
     slide._set_cell_element(slide._grid[0, 0], container)
 

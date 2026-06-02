@@ -6,6 +6,7 @@ import dataclasses
 from enum import Enum
 from typing import Optional
 
+from reporting.styles.colors import ColorValue, normalize_color
 from reporting.elements.base import BaseElement, ElementType
 
 
@@ -22,9 +23,13 @@ class TextRun:
     bold: bool = False
     italic: bool = False
     underline: bool = False
-    color: Optional[str] = None
+    color: Optional[ColorValue] = None
     size: Optional[float] = None
     font_name: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if self.color is not None:
+            self.color = normalize_color(self.color)
 
 
 @dataclasses.dataclass
