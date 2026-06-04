@@ -65,6 +65,10 @@ class HTMLRenderer(BaseRenderer):
 
         slides_content = "\n".join(slides_html)
 
+        # Derive theme from first slide or document default
+        theme = document.slides[0].theme if document.slides else document.theme
+        pal = theme.palette
+
         if self.standalone:
             html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -74,14 +78,14 @@ class HTMLRenderer(BaseRenderer):
 <title>{document.title}</title>
 <style>
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-body {{ background: #333; font-family: Arial, sans-serif; }}
-.slide {{ width: 960px; height: 540px; margin: 20px auto; background: #fff;
+body {{ background: {pal.background.css}; font-family: {theme.typography.body.family}, sans-serif; }}
+.slide {{ width: 960px; height: 540px; margin: 20px auto; background: {pal.background.css};
          box-shadow: 0 4px 12px rgba(0,0,0,0.3); position: relative; overflow: hidden; }}
 .title-panel {{ position: absolute; top: 0; left: 0; width: 100%;
-                border-bottom: 1px solid #ccc; overflow: hidden; }}
+                border-bottom: 1px solid {pal.border.css}; overflow: hidden; }}
 .title-panel.beside {{ display: flex; justify-content: space-between; align-items: center; }}
-.title-panel h1 {{ font-size: 20px; color: #1F4E79; margin: 0; }}
-.title-panel p {{ font-size: 11px; color: #666; margin: 2px 0 0 0; }}
+.title-panel h1 {{ font-size: 20px; color: {pal.primary.css}; margin: 0; }}
+.title-panel p {{ font-size: 11px; color: {pal.text_secondary.css}; margin: 2px 0 0 0; }}
 .title-panel.beside p {{ margin: 0; text-align: right; }}
 .slide-content {{ position: absolute; left: 0; width: 100%; bottom: 0; }}
 .cell {{ position: absolute; overflow: hidden; padding: 4px; }}
@@ -98,6 +102,7 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
             f.write(html)
 
     def _render_slide_html(self, slide: Slide) -> str:
+        self._current_slide = slide
         slide_bg_style = self._background_css(slide)
         slide_extra = f'style="{slide_bg_style}"' if slide_bg_style else ""
 
@@ -311,28 +316,39 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
         if element.data is None:
             return f"""<div class="cell" style="{style}"></div>"""
 
+        theme = getattr(self, '_current_slide', None)
+        ts = theme.theme.table_style if theme is not None else None
+
+        header_bg = Color.parse(ts.header_background).css if ts else "#4472C4"
+        header_fg = Color.parse(ts.header_text_color).css if ts else "#ffffff"
+        border_c = Color.parse(ts.border_color).css if ts else "#d9d9d9"
+        body_fs = f"{ts.font_size}pt" if ts else "10px"
+
         df = element.data
         if element.include_index:
             df = df.reset_index()
 
         zebra_style = ""
         if element.zebra:
-            zebra_style = """<style>
-tr:nth-child(even) { background-color: #f3f3f3; }
-tr:nth-child(odd) { background-color: #ffffff; }
-thead th { background-color: #4472C4; color: #ffffff; }
+            even_bg = Color.parse(ts.even_row_color).css if ts else "#f3f3f3"
+            odd_bg = Color.parse(ts.odd_row_color).css if ts else "#ffffff"
+            zebra_style = f"""<style>
+tr:nth-child(even) {{ background-color: {even_bg}; }}
+tr:nth-child(odd) {{ background-color: {odd_bg}; }}
+thead th {{ background-color: {header_bg}; color: {header_fg}; }}
 </style>"""
 
+        cell_style = f"padding:4px;border:1px solid {border_c};text-align:center"
         html = f"""<div class="cell" style="{style};overflow:auto">{zebra_style}
-<table style="width:100%;border-collapse:collapse;font-size:10px">
+<table style="width:100%;border-collapse:collapse;font-size:{body_fs}">
 <thead><tr>"""
         for col in df.columns:
-            html += f"<th style='padding:4px;border:1px solid #d9d9d9;text-align:center'>{col}</th>"
+            html += f"<th style='{cell_style}'>{col}</th>"
         html += "</tr></thead><tbody>"
         for _, row in df.iterrows():
             html += "<tr>"
             for val in row:
-                html += f"<td style='padding:4px;border:1px solid #d9d9d9;text-align:center'>{val}</td>"
+                html += f"<td style='{cell_style}'>{val}</td>"
             html += "</tr>"
         html += "</tbody></table></div>"
         return html
@@ -397,7 +413,7 @@ thead th { background-color: #4472C4; color: #ffffff; }
                         else:
                             display = str(cell.value) if cell.value is not None else ""
 
-                td_s = self._cell_css(resolved, is_header=True, default_bg=ts.header_background, default_color=ts.header_text_color) if resolved else "padding:4px;border:1px solid #d9d9d9;text-align:center;background-color:" + ts.header_background + ";color:" + ts.header_text_color
+                td_s = self._cell_css(resolved, is_header=True, default_bg=ts.header_background, default_color=ts.header_text_color, border_color=ts.border_color) if resolved else f"padding:4px;border:1px solid {ts.border_color};text-align:center;background-color:" + ts.header_background + ";color:" + ts.header_text_color
 
                 cs = f' colspan="{colspan}"' if colspan > 1 else ""
                 rs = f' rowspan="{rowspan}"' if rowspan > 1 else ""
@@ -449,7 +465,7 @@ thead th { background-color: #4472C4; color: #ffffff; }
                         else:
                             display = str(cell.value) if cell.value is not None else ""
 
-                td_s = self._cell_css(resolved, is_header=False, zebra=ts.zebra, row_idx=r, even_color=ts.even_row_color, odd_color=ts.odd_row_color) if resolved else "padding:4px;border:1px solid #d9d9d9;text-align:center"
+                td_s = self._cell_css(resolved, is_header=False, zebra=ts.zebra, row_idx=r, even_color=ts.even_row_color, odd_color=ts.odd_row_color, border_color=ts.border_color) if resolved else f"padding:4px;border:1px solid {ts.border_color};text-align:center"
 
                 cs = f' colspan="{colspan}"' if colspan > 1 else ""
                 rs = f' rowspan="{rowspan}"' if rowspan > 1 else ""
@@ -477,6 +493,7 @@ thead th { background-color: #4472C4; color: #ffffff; }
         row_idx: int = 0,
         even_color: str = "#F3F3F3",
         odd_color: str = "#FFFFFF",
+        border_color: str = "#d9d9d9",
     ) -> str:
         """Build inline CSS for a single cell from its resolved CellStyle."""
         css_parts: list[str] = []
@@ -487,13 +504,9 @@ thead th { background-color: #4472C4; color: #ffffff; }
         else:
             css_parts.append("padding:4px")
 
-        bc = resolved.border_color
-        bw = resolved.border_width
-        if bc:
-            bw_str = f"{bw}px" if bw else "1px"
-            css_parts.append(f"border:{bw_str} solid {Color.parse(bc).css}")
-        else:
-            css_parts.append("border:1px solid #d9d9d9")
+        bc = resolved.border_color or border_color
+        bw = resolved.border_width or 1
+        css_parts.append(f"border:{bw}px solid {Color.parse(bc).css}")
 
         if is_header:
             bg = resolved.background_color or default_bg

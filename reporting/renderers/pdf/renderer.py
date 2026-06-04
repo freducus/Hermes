@@ -36,6 +36,23 @@ if TYPE_CHECKING:
 
 _PX_TO_PT = 72 / 96
 
+_FONT_MAP: dict[str, str] = {
+    "Arial": "Helvetica",
+    "Arial Black": "Helvetica",
+    "Times New Roman": "Times-Roman",
+    "Courier New": "Courier",
+    "Courier New Bold": "Courier-Bold",
+    "Verdana": "Helvetica",
+    "Tahoma": "Helvetica",
+    "Calibri": "Helvetica",
+    "Segoe UI": "Helvetica",
+}
+
+
+def _ps_font_name(family: str) -> str:
+    """Map CSS font-family to a ReportLab PostScript base name."""
+    return _FONT_MAP.get(family.strip(), family.strip())
+
 
 def _align_to_reportlab(align: TextAlignment) -> int:
     return {
@@ -57,13 +74,14 @@ def _v_align_to_str(align_v: Optional[str]) -> str:
 def _resolve_font_name(base: str, bold: Optional[bool], italic: Optional[bool]) -> str:
     b = bold or False
     i = italic or False
+    ps_base = _ps_font_name(base)
     if b and i:
-        return base + "-BoldOblique"
+        return ps_base + "-BoldOblique"
     elif b:
-        return base + "-Bold"
+        return ps_base + "-Bold"
     elif i:
-        return base + "-Oblique"
-    return base
+        return ps_base + "-Oblique"
+    return ps_base
 
 
 def _cell_padding(padding: Any) -> tuple[float, float, float, float]:
@@ -175,6 +193,7 @@ class PDFRenderer(BaseRenderer):
         if c is None:
             return
 
+        self._current_slide = slide
         self._render_background(slide)
         self._render_title_panel(slide)
 
@@ -270,7 +289,7 @@ class PDFRenderer(BaseRenderer):
 
         title_style = ParagraphStyle(
             "SlideTitle",
-            fontName=tc.font_name if not tc.bold else tc.font_name + "-Bold",
+            fontName=_resolve_font_name(tc.font_name, tc.bold, None),
             fontSize=tc.font_size,
             leading=tc.font_size * 1.2,
             alignment=_align_to_reportlab(tc.alignment),
@@ -294,7 +313,7 @@ class PDFRenderer(BaseRenderer):
             )
             title_frame.addFromList([tp], c)
 
-            sub_font = sc.font_name if not sc.bold else sc.font_name + "-Bold"
+            sub_font = _resolve_font_name(sc.font_name, sc.bold, None)
             sub_x = margin + title_w
             sub_align = _align_to_reportlab(sc.alignment)
             sub_color = Color.parse(sc.color).reportlab_color
@@ -314,7 +333,7 @@ class PDFRenderer(BaseRenderer):
         else:
             flowables = [tp]
             if slide.subtitle:
-                sub_font = sc.font_name if not sc.bold else sc.font_name + "-Bold"
+                sub_font = _resolve_font_name(sc.font_name, sc.bold, None)
                 sub_style = ParagraphStyle(
                     "SlideSubtitle",
                     fontName=sub_font,
@@ -388,8 +407,12 @@ class PDFRenderer(BaseRenderer):
             if not blocks or not blocks[0].runs:
                 return Size(rect.width, rect.height)
             run = blocks[0].runs[0]
-            font_name = run.font_name or "Helvetica"
-            font_size = run.size or 10
+            theme = getattr(self, '_current_slide', None)
+            body = theme.theme.typography.body if theme is not None else None
+            fallback_family = body.family if body is not None else "Helvetica"
+            fallback_size = body.size if body is not None else 10.0
+            font_name = _ps_font_name(run.font_name or fallback_family)
+            font_size = run.size or fallback_size
             try:
                 text_w = stringWidth(run.text, font_name, font_size)
             except Exception:
@@ -543,6 +566,9 @@ class PDFRenderer(BaseRenderer):
         if c is None:
             return
 
+        theme = getattr(self, '_current_slide', None)
+        body = theme.theme.typography.body if theme is not None else None
+
         x, y, w, h = _rect_to_canvas(self._slide_pt_h, rect.x, rect.y, rect.width, rect.height)
 
         for block in element.blocks:
@@ -559,7 +585,7 @@ class PDFRenderer(BaseRenderer):
                     tag += "<i>"
                     close = "</i>" + close
                 if run.font_name:
-                    tag += f'<font face="{run.font_name}">'
+                    tag += f'<font face="{_ps_font_name(run.font_name)}">'
                     close = "</font>" + close
                     if block_font is None:
                         block_font = run.font_name
@@ -574,10 +600,12 @@ class PDFRenderer(BaseRenderer):
                 parts.append(f"{tag}{run.text}{close}")
             html = "".join(parts)
 
+            fallback_family = body.family if body is not None else "Helvetica"
+            fallback_size = body.size if body is not None else 12.0
             fs = block_size or max(h * 0.12, 6)
             style = ParagraphStyle(
                 "CellText",
-                fontName=block_font or "Helvetica",
+                fontName=_ps_font_name(block_font or fallback_family),
                 fontSize=fs,
                 leading=max(fs * 1.2, 8),
                 alignment=_align_to_reportlab(block.alignment),
@@ -731,6 +759,8 @@ class PDFRenderer(BaseRenderer):
         if c is None or element.data is None:
             return
 
+        ts = self._current_slide.theme.table_style if hasattr(self, '_current_slide') else None
+
         try:
             df = element.data
             if element.include_index:
@@ -757,15 +787,25 @@ class PDFRenderer(BaseRenderer):
             body_size = max(min(row_h_pt * 0.3, 8), 3)
             header_size = max(min(row_h_pt * 0.35, 9), 4)
 
+            border_c = colors.Color(0.85, 0.85, 0.85)
+            header_bg = colors.Color(0.27, 0.45, 0.77)
+            header_text = colors.white
+            border_w = 0.5
+            if ts is not None:
+                border_c = Color.parse(ts.border_color).reportlab_color
+                header_bg = Color.parse(ts.header_background).reportlab_color
+                header_text = Color.parse(ts.header_text_color).reportlab_color
+                border_w = ts.border_width
+
             cmds: list[tuple] = [
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("FONTSIZE", (0, 0), (-1, 0), header_size),
                 ("FONTSIZE", (0, 1), (-1, -1), body_size),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.Color(0.85, 0.85, 0.85)),
-                ("BACKGROUND", (0, 0), (-1, 0), colors.Color(0.27, 0.45, 0.77)),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("GRID", (0, 0), (-1, -1), border_w, border_c),
+                ("BACKGROUND", (0, 0), (-1, 0), header_bg),
+                ("TEXTCOLOR", (0, 0), (-1, 0), header_text),
                 ("TOPPADDING", (0, 0), (-1, -1), 1),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
                 ("LEFTPADDING", (0, 0), (-1, -1), 2),
@@ -773,8 +813,11 @@ class PDFRenderer(BaseRenderer):
             ]
 
             if element.zebra:
+                even_color = colors.Color(0.95, 0.95, 0.95)
+                if ts is not None:
+                    even_color = Color.parse(ts.even_row_color).reportlab_color
                 for i in range(2, len(rows_data), 2):
-                    cmds.append(("BACKGROUND", (0, i), (-1, i), colors.Color(0.95, 0.95, 0.95)))
+                    cmds.append(("BACKGROUND", (0, i), (-1, i), even_color))
 
             t = Table(rows_data, colWidths=col_widths)
             t.setStyle(TableStyle(cmds))

@@ -7,11 +7,14 @@ from __future__ import annotations
 
 import dataclasses
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from reporting.layout.geometry import Edges
 from reporting.elements.text import TextAlignment
 from reporting.styles.colors import Color, ColorValue, normalize_color
+
+if TYPE_CHECKING:
+    from reporting.styles.theme import Theme
 
 __all__ = [
     "TitleConfig", "SubtitleConfig",
@@ -87,6 +90,33 @@ class TitleConfig:
         self.color = normalize_color(self.color)
         self.separator_color = normalize_color(self.separator_color)
 
+    @classmethod
+    def from_theme(cls, theme: Theme) -> TitleConfig:
+        """Create a ``TitleConfig`` from a ``Theme``.
+
+        Derives font, colour, and separator settings from the
+        theme's ``heading_1`` typography and colour palette.
+
+        Args:
+            theme: The theme to use as a source.
+
+        Returns:
+            A fully-populated ``TitleConfig``.
+        """
+        h1 = theme.typography.heading_1
+        return cls(
+            font_name=h1.family,
+            font_size=h1.size,
+            bold=h1.bold,
+            italic=h1.italic,
+            color=h1.color or theme.palette.primary.css,
+            alignment=TextAlignment.LEFT,
+            show_separator=True,
+            separator_color=theme.palette.border.css,
+            separator_width=1.0,
+            separator_margin=8.0,
+        )
+
 
 @dataclasses.dataclass
 class SubtitleConfig:
@@ -124,6 +154,29 @@ class SubtitleConfig:
 
     def __post_init__(self) -> None:
         self.color = normalize_color(self.color)
+
+    @classmethod
+    def from_theme(cls, theme: Theme) -> SubtitleConfig:
+        """Create a ``SubtitleConfig`` from a ``Theme``.
+
+        Derives font and colour from the theme's ``body``
+        typography and colour palette.
+
+        Args:
+            theme: The theme to use as a source.
+
+        Returns:
+            A fully-populated ``SubtitleConfig``.
+        """
+        body = theme.typography.body
+        return cls(
+            font_name=body.family,
+            font_size=body.size,
+            bold=body.bold,
+            italic=body.italic,
+            color=body.color or theme.palette.text_secondary.css,
+            alignment=TextAlignment.LEFT,
+        )
 
 
 @dataclasses.dataclass

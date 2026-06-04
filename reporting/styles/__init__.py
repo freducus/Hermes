@@ -9,3 +9,15 @@ __all__ = [
     "Theme", "CorporateTheme", "DarkTheme", "LightTheme",
 ]
 
+
+def __getattr__(name: str) -> object:
+    """Lazy import of ``TableStyle`` to avoid circular imports."""
+    if name == "TableStyle":
+        from reporting.tablespec.style import TableStyle as _ts
+        return _ts
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(__all__)
+

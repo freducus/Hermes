@@ -85,8 +85,8 @@ class Slide:
             self.background: Optional[Background] = SolidBackground(background)
         else:
             self.background: Optional[Background] = background
-        self.title_config = title_config or TitleConfig()
-        self.subtitle_config = subtitle_config or SubtitleConfig()
+        self.title_config = title_config or TitleConfig.from_theme(self.theme)
+        self.subtitle_config = subtitle_config or SubtitleConfig.from_theme(self.theme)
         self.title_panel_config = title_panel_config or TitlePanelConfig()
         self._grid: Optional[Grid] = None
         self._elements: dict[tuple[int, int], Any] = {}
@@ -435,6 +435,12 @@ class _CellProxy:
             ts.row(10, 20)
             slide[0, 0].table_spec(ts)
         """
+        from reporting.tablespec.spec import TableSpec as _TableSpec
+        from reporting.tablespec.style import TableStyle as _TableStyle
+        if isinstance(spec, _TableSpec) and spec.style == _TableStyle():
+            import dataclasses
+            theme_ts = self._slide.theme.table_style
+            spec.style = _TableStyle(**{f.name: getattr(theme_ts, f.name) for f in dataclasses.fields(_TableStyle)})
         el = TableSpecElement(spec, **kwargs)
         self._slide._set_cell_element(self._cell, el)
         return el
