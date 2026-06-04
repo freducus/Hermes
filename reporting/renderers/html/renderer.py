@@ -16,10 +16,11 @@ from reporting.elements.text import TextElement, TextAlignment
 from reporting.elements.image import ImageElement
 from reporting.elements.table import TableElement
 from reporting.elements.tablespec_element import TableSpecElement
-from reporting.layout.geometry import Rect, Size
+from reporting.layout.geometry import Edges, Rect, Size
+from reporting.layout.panel import HAlign, VAlign
 from reporting.renderers.base import BaseRenderer
-from reporting.background import BackgroundType, SolidBackground, GradientBackground, ImageBackground
 from reporting.styles.colors import Color
+from reporting.tablespec.sizing import TableFitMode
 from reporting.title_config import TitleConfig
 
 if TYPE_CHECKING:
@@ -28,6 +29,31 @@ if TYPE_CHECKING:
 
 
 class HTMLRenderer(BaseRenderer):
+    """Render a report to a standalone HTML file with CSS styling.
+
+    Each ``Slide`` becomes a ``<div class="slide">`` with absolute-
+    positioned cells.  Images and figure PNGs are embedded as
+    base64 data URIs for portability.
+
+    Args:
+        standalone: If ``True`` (default), generates a complete
+            HTML document with ``<!DOCTYPE html>``, ``<head>``,
+            and inline CSS.  If ``False``, returns only the
+            slide ``<div>`` fragments for embedding.
+
+    Example::
+
+        from reporting.document import Document
+        from reporting.renderers.html.renderer import HTMLRenderer
+
+        doc = Document()
+        slide = doc.new_slide("Hello")
+        slide.grid_layout(1, 1)
+        slide[0, 0].text("Hello, HTML!")
+
+        renderer = HTMLRenderer()
+        renderer.render_document(doc, "output.html")
+    """
     def __init__(self, standalone: bool = True) -> None:
         self.standalone = standalone
         self._body_parts: list[str] = []
@@ -132,7 +158,7 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
                         style = self._cell_style(rect, bg)
                         content_parts.append(f"""<div class="cell" style="{style}"></div>""")
                         continue
-                    element_html = self._render_element_html(element, rect, bg)
+                    element_html = self._render_element_html(element, rect, bg, panel=cell.panel)
                     content_parts.append(element_html)
 
         cells_content = "\n".join(content_parts)
@@ -182,8 +208,11 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
             parts.append(f"background-color:{Color.parse(bg_color).css};")
         return " ".join(parts)
 
-    def _render_element_html(self, element: Any, rect: Any, bg_color: Optional[str] = None) -> str:
+    def _render_element_html(self, element: Any, rect: Any, bg_color: Optional[str] = None,
+                             panel: Optional[Any] = None) -> str:
         style = self._cell_style(rect, bg_color)
+        if panel and (panel.h_align != HAlign.STRETCH or panel.v_align != VAlign.STRETCH):
+            style = self._align_style(style, panel)
 
         if element.element_type == ElementType.TEXT:
             return self._render_text_html(element, style)
@@ -196,8 +225,29 @@ body {{ background: #333; font-family: Arial, sans-serif; }}
         elif element.element_type == ElementType.TABLESPEC:
             return self._render_tablespec_html(element, style)
         elif element.element_type == ElementType.CONTAINER:
-            return self._render_container_html(element, rect)
+            return self._render_container_html(element, rect, panel=panel)
         return f"""<div class="cell" style="{style}"></div>"""
+
+    @staticmethod
+    def _align_style(style: str, panel: Any) -> str:
+        """Inject CSS flexbox alignment into the cell style."""
+        align_items = ""
+        justify = ""
+        if panel.h_align == HAlign.CENTER:
+            justify = "justify-content:center;"
+        elif panel.h_align == HAlign.LEFT:
+            justify = "justify-content:flex-start;"
+        elif panel.h_align == HAlign.RIGHT:
+            justify = "justify-content:flex-end;"
+        if panel.v_align == VAlign.MIDDLE:
+            align_items = "align-items:center;"
+        elif panel.v_align == VAlign.TOP:
+            align_items = "align-items:flex-start;"
+        elif panel.v_align == VAlign.BOTTOM:
+            align_items = "align-items:flex-end;"
+        if justify or align_items:
+            return f"display:flex;{align_items}{justify}{style}"
+        return style
 
     def _render_text_html(self, element: TextElement, style: str) -> str:
         parts: list[str] = []
@@ -293,65 +343,209 @@ thead th { background-color: #4472C4; color: #ffffff; }
             return f"""<div class="cell" style="{style}"></div>"""
 
         num_cols = len(spec.columns)
-        num_rows = len(spec.rows) + 1
+        num_rows = len(spec.rows)
+        ts = spec.style
+        hr = ts.header_rows
 
         occupied = [[False] * num_cols for _ in range(num_rows)]
 
-        table_style = "width:100%;border-collapse:collapse;font-size:10px"
-        if spec.style.zebra:
-            table_style += ";background-color:#FFFFFF"
+        sizing = spec.sizing
+        table_width_css = "100%"
+        if sizing.fit_mode == TableFitMode.PERCENT:
+            table_width_css = f"{sizing.percent_width * 100:.0f}%"
+        fs_css = f"{ts.font_size}pt"
+        table_css = f"width:{table_width_css};border-collapse:collapse;font-size:{fs_css}"
+        if ts.zebra:
+            table_css += ";background-color:#FFFFFF"
 
-        html = f"""<div class="cell" style="{style};overflow:auto"><table style="{table_style}">
-<thead><tr>"""
-        for col in spec.columns:
-            html += f"<th style='padding:4px;border:1px solid #d9d9d9;text-align:center;background-color:#4472C4;color:#FFFFFF'>{col.label}</th>"
-        html += "</tr></thead><tbody>"
+        parts: list[str] = []
+        parts.append(f"""<div class="cell" style="{style};overflow:auto"><table style="{table_css}">""")
 
-        for r in range(len(spec.rows)):
-            row = spec.rows[r]
-            rr = r + 1
-            if rr % 2 == 0 and spec.style.zebra:
-                bg_base = "#f3f3f3"
-            else:
-                bg_base = "#ffffff"
+        parts.append("<thead>")
+        for hr_idx in range(min(hr, num_rows)):
+            row = spec.rows[hr_idx]
+            parts.append("<tr>")
+            grid_c = 0
+            for cell_idx in range(len(row.cells)):
+                if grid_c >= num_cols:
+                    break
+                while grid_c < num_cols and occupied[hr_idx][grid_c]:
+                    grid_c += 1
+                if grid_c >= num_cols:
+                    break
 
-            html += "<tr>"
-            for c_idx in range(num_cols):
-                if occupied[rr][c_idx]:
-                    continue
-                if c_idx >= len(row.cells):
-                    html += "<td></td>"
-                    continue
-                cell = row.cells[c_idx]
-                txt = cell.text if cell.text is not None else (str(cell.value) if cell.value is not None else "")
+                cell = row.cells[cell_idx]
+                colspan = max(cell.colspan, 1)
+                rowspan = max(cell.rowspan, 1)
+                c_end = min(grid_c + colspan - 1, num_cols - 1)
 
-                td_style = f"padding:4px;border:1px solid #d9d9d9;text-align:center"
-                if cell.background_color:
-                    td_style += f";background-color:{Color.parse(cell.background_color).css}"
-                else:
-                    td_style += f";background-color:{bg_base}"
-                if cell.text_color:
-                    td_style += f";color:{Color.parse(cell.text_color).css}"
+                resolved = spec.resolve_cell_style(hr_idx, grid_c, cell_idx=cell_idx) if cell else None
 
-                colspan = cell.colspan if cell.colspan > 1 else ""
-                rowspan = cell.rowspan if cell.rowspan > 1 else ""
-                cs = f' colspan="{colspan}"' if colspan else ""
-                rs = f' rowspan="{rowspan}"' if rowspan else ""
+                display = ""
+                if cell:
+                    display = cell.text
+                    if display is None:
+                        col = spec.columns[grid_c] if grid_c < len(spec.columns) else None
+                        if col and col.formatter:
+                            display = col.formatter(cell.value)
+                        elif col and col.format:
+                            from reporting.tablespec.formatters import apply_format
+                            try:
+                                display = apply_format(cell.value, col.format)
+                            except Exception:
+                                display = str(cell.value) if cell.value is not None else ""
+                        else:
+                            display = str(cell.value) if cell.value is not None else ""
 
-                html += f'<td{cs}{rs} style="{td_style}">{txt}</td>'
+                td_s = self._cell_css(resolved, is_header=True, default_bg=ts.header_background, default_color=ts.header_text_color) if resolved else "padding:4px;border:1px solid #d9d9d9;text-align:center;background-color:" + ts.header_background + ";color:" + ts.header_text_color
 
-                if cell.colspan > 1 or cell.rowspan > 1:
-                    c2 = min(c_idx + cell.colspan - 1, num_cols - 1)
-                    r2 = min(rr + cell.rowspan - 1, num_rows - 1)
-                    for span_r in range(rr, r2 + 1):
-                        for span_c in range(c_idx, c2 + 1):
+                cs = f' colspan="{colspan}"' if colspan > 1 else ""
+                rs = f' rowspan="{rowspan}"' if rowspan > 1 else ""
+                parts.append(f'<th{cs}{rs} style="{td_s}">{display}</th>')
+
+                if colspan > 1 or rowspan > 1:
+                    r2 = min(hr_idx + rowspan - 1, num_rows - 1)
+                    for span_r in range(hr_idx, r2 + 1):
+                        for span_c in range(grid_c, c_end + 1):
                             occupied[span_r][span_c] = True
-                    occupied[rr][c_idx] = False
-            html += "</tr>"
-        html += "</tbody></table></div>"
-        return html
+                    occupied[hr_idx][grid_c] = False
 
-    def _render_container_html(self, element: Any, parent_rect: Any) -> str:
+                grid_c += colspan
+            parts.append("</tr>")
+        parts.append("</thead><tbody>")
+
+        for r in range(hr, num_rows):
+            row = spec.rows[r]
+            parts.append("<tr>")
+            grid_c = 0
+            for cell_idx in range(len(row.cells)):
+                if grid_c >= num_cols:
+                    break
+                while grid_c < num_cols and occupied[r][grid_c]:
+                    grid_c += 1
+                if grid_c >= num_cols:
+                    break
+
+                cell = row.cells[cell_idx]
+                colspan = max(cell.colspan, 1)
+                rowspan = max(cell.rowspan, 1)
+                c_end = min(grid_c + colspan - 1, num_cols - 1)
+
+                resolved = spec.resolve_cell_style(r, grid_c, cell_idx=cell_idx) if cell else None
+
+                display = ""
+                if cell:
+                    display = cell.text
+                    if display is None:
+                        col = spec.columns[grid_c] if grid_c < len(spec.columns) else None
+                        if col and col.formatter:
+                            display = col.formatter(cell.value)
+                        elif col and col.format:
+                            from reporting.tablespec.formatters import apply_format
+                            try:
+                                display = apply_format(cell.value, col.format)
+                            except Exception:
+                                display = str(cell.value) if cell.value is not None else ""
+                        else:
+                            display = str(cell.value) if cell.value is not None else ""
+
+                td_s = self._cell_css(resolved, is_header=False, zebra=ts.zebra, row_idx=r, even_color=ts.even_row_color, odd_color=ts.odd_row_color) if resolved else "padding:4px;border:1px solid #d9d9d9;text-align:center"
+
+                cs = f' colspan="{colspan}"' if colspan > 1 else ""
+                rs = f' rowspan="{rowspan}"' if rowspan > 1 else ""
+                parts.append(f'<td{cs}{rs} style="{td_s}">{display}</td>')
+
+                if colspan > 1 or rowspan > 1:
+                    r2 = min(r + rowspan - 1, num_rows - 1)
+                    for span_r in range(r, r2 + 1):
+                        for span_c in range(grid_c, c_end + 1):
+                            occupied[span_r][span_c] = True
+                    occupied[r][grid_c] = False
+
+                grid_c += colspan
+            parts.append("</tr>")
+        parts.append("</tbody></table></div>")
+        return "".join(parts)
+
+    def _cell_css(
+        self,
+        resolved: Any,
+        is_header: bool = False,
+        default_bg: str = "#4472C4",
+        default_color: str = "#FFFFFF",
+        zebra: bool = False,
+        row_idx: int = 0,
+        even_color: str = "#F3F3F3",
+        odd_color: str = "#FFFFFF",
+    ) -> str:
+        """Build inline CSS for a single cell from its resolved CellStyle."""
+        css_parts: list[str] = []
+
+        padding_val = resolved.padding
+        if padding_val is not None:
+            css_parts.append(f"padding:{_css_padding(padding_val)}")
+        else:
+            css_parts.append("padding:4px")
+
+        bc = resolved.border_color
+        bw = resolved.border_width
+        if bc:
+            bw_str = f"{bw}px" if bw else "1px"
+            css_parts.append(f"border:{bw_str} solid {Color.parse(bc).css}")
+        else:
+            css_parts.append("border:1px solid #d9d9d9")
+
+        if is_header:
+            bg = resolved.background_color or default_bg
+            tc = resolved.text_color or default_color
+            css_parts.append(f"background-color:{Color.parse(bg).css}")
+            css_parts.append(f"color:{Color.parse(tc).css}")
+        else:
+            if resolved.background_color:
+                css_parts.append(f"background-color:{Color.parse(resolved.background_color).css}")
+            elif zebra:
+                bg = even_color if row_idx % 2 == 0 else odd_color
+                css_parts.append(f"background-color:{Color.parse(bg).css}")
+            if resolved.text_color:
+                css_parts.append(f"color:{Color.parse(resolved.text_color).css}")
+
+        ah = resolved.align_h or ""
+        if ah:
+            css_parts.append(f"text-align:{ah}")
+        else:
+            css_parts.append("text-align:center")
+
+        av = resolved.align_v or ""
+        if av:
+            css_parts.append(f"vertical-align:{av}")
+        else:
+            css_parts.append("vertical-align:middle")
+
+        if resolved.bold:
+            css_parts.append("font-weight:bold")
+        if resolved.italic:
+            css_parts.append("font-style:italic")
+        if resolved.underline:
+            css_parts.append("text-decoration:underline")
+        if resolved.font_size:
+            css_parts.append(f"font-size:{resolved.font_size}pt")
+
+        return ";".join(css_parts)
+
+
+def _css_padding(padding: Any) -> str:
+    if padding is None:
+        return "4px"
+    if isinstance(padding, (int, float)):
+        return f"{padding}px"
+    top = getattr(padding, "top", 4) or 4
+    right = getattr(padding, "right", 4) or 4
+    bottom = getattr(padding, "bottom", 4) or 4
+    left = getattr(padding, "left", 4) or 4
+    return f"{top}px {right}px {bottom}px {left}px"
+
+    def _render_container_html(self, element: Any, parent_rect: Any,
+                               panel: Optional[Any] = None) -> str:
         inner = element.grid
         if inner is None:
             return ""
@@ -373,11 +567,28 @@ thead th { background-color: #4472C4; color: #ffffff; }
                     style = self._cell_style(abs_rect, bg)
                     parts.append(f"""<div class="cell" style="{style}"></div>""")
                 else:
-                    parts.append(self._render_element_html(inner_el, abs_rect, bg))
+                    parts.append(self._render_element_html(inner_el, abs_rect, bg, panel=cell.panel))
         return "\n".join(parts)
 
     def render_slide(self, slide: object) -> object:
+        """Render a single slide as HTML.
+
+        Args:
+            slide: A ``Slide`` instance.
+
+        Returns:
+            The HTML string for the slide.
+        """
         return self._render_slide_html(slide)
 
     def render_panel(self, panel: object, rect: object) -> object:
+        """Render a panel (no-op in HTML renderer).
+
+        Args:
+            panel: A ``Panel`` instance.
+            rect: A ``Rect`` bounding box.
+
+        Returns:
+            ``None``.
+        """
         return None

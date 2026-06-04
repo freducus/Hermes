@@ -28,4 +28,6 @@ PowerPoint" with fully decoupled render backends (PDF, HTML).
    :caption: Examples
 
    examples/padding_margin
+   examples/image_demo
+   examples/figure_alignment
    examples/comprehensive

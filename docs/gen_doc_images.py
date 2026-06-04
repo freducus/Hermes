@@ -16,6 +16,8 @@ EXAMPLES = [
     "nested_layouts",
     "padding_margin",
     "comprehensive_report",
+    "image_demo",
+    "figure_alignment",
 ]
 
 

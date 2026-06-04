@@ -2,13 +2,16 @@
 
 Export public API for convenient imports::
 
-    from reporting.tablespec import TableSpec, Column, Row, Cell, TableBuilder
+    from reporting.tablespec import (
+        TableSpec, Column, TableCell, TableRow, Cell, Row, TableBuilder,
+        cell, parse_coord, parse_range,
+    )
 """
 
 from __future__ import annotations
 
 from reporting.tablespec.builder import TableBuilder
-from reporting.tablespec.cell import Cell
+from reporting.tablespec.cell import Cell, TableCell
 from reporting.tablespec.column import Column
 from reporting.tablespec.exceptions import (
     ColumnNotFoundError,
@@ -19,16 +22,24 @@ from reporting.tablespec.exceptions import (
     InvalidSpanError,
     TableSpecError,
 )
-from reporting.tablespec.row import Row
+from reporting.tablespec.helpers import cell
+from reporting.tablespec.range_parser import parse_coord, parse_range
+from reporting.tablespec.row import Row, TableRow
+from reporting.tablespec.sizing import ColumnDistrib, TableFitMode, TableSizing
 from reporting.tablespec.spec import TableSpec
 from reporting.tablespec.style import CellStyle, ColumnStyle, RowStyle, TableStyle
 
 __all__ = [
     "TableSpec",
     "Column",
-    "Row",
+    "TableCell",
+    "TableRow",
     "Cell",
+    "Row",
     "TableBuilder",
+    "cell",
+    "parse_coord",
+    "parse_range",
     "TableStyle",
     "CellStyle",
     "ColumnStyle",
@@ -40,4 +51,7 @@ __all__ = [
     "InvalidFormatError",
     "DuplicateColumnError",
     "ColumnNotFoundError",
+    "ColumnDistrib",
+    "TableFitMode",
+    "TableSizing",
 ]

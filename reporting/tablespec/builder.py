@@ -21,6 +21,7 @@ from typing import Any, Optional
 
 from reporting.tablespec.column import Column
 from reporting.tablespec.exceptions import TableSpecError
+from reporting.tablespec.sizing import ColumnDistrib, TableFitMode, TableSizing
 from reporting.tablespec.spec import TableSpec
 from reporting.tablespec.style import TableStyle
 
@@ -35,6 +36,7 @@ class TableBuilder:
         self._columns: list[Column] = []
         self._rows: list[tuple[Any, ...]] = []
         self._style: TableStyle = TableStyle()
+        self._sizing: TableSizing = TableSizing()
         self._highlights: list[tuple[str, str]] = []  # (method, column)
         self._heatmaps: list[str] = []
         self._zebra: bool = False
@@ -69,6 +71,29 @@ class TableBuilder:
         self._rows.append((values, kwargs))
         return self
 
+    def sizing(
+        self,
+        mode: TableFitMode = TableFitMode.STRETCH,
+        min_font_size: Optional[float] = None,
+        percent_width: float = 1.0,
+        column_distrib: ColumnDistrib = ColumnDistrib.CONTENT,
+    ) -> TableBuilder:
+        """Set the table sizing configuration.
+
+        Args:
+            mode: Sizing strategy (default: ``TableFitMode.STRETCH``).
+            min_font_size: Override ``TableStyle.min_font_size``.
+            percent_width: Fraction of available width to use in PERCENT mode.
+            column_distrib: How columns are distributed.
+        """
+        self._sizing = TableSizing(
+            fit_mode=mode,
+            min_font_size=min_font_size,
+            percent_width=percent_width,
+            column_distrib=column_distrib,
+        )
+        return self
+
     def highlight_max(self, column: str) -> TableBuilder:
         """Mark *column* for max-highlighting."""
         self._highlights.append(("max", column))
@@ -98,7 +123,7 @@ class TableBuilder:
         if not self._columns:
             raise TableSpecError("TableBuilder needs at least one column")
 
-        table = TableSpec(columns=self._columns, style=self._style)
+        table = TableSpec(columns=self._columns, style=self._style, sizing=self._sizing)
 
         for values, kwargs in self._rows:
             if kwargs:

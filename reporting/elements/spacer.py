@@ -9,6 +9,21 @@ from reporting.elements.base import BaseElement, ElementType
 
 @dataclasses.dataclass
 class SpacerElement(BaseElement):
+    """An invisible element that reserves space in a layout.
+
+    Useful for creating blank rows / columns or fine-tuning
+    alignment without padding.
+
+    Args:
+        width: Horizontal space in points (default ``0.0``).
+        height: Vertical space in points (default ``0.0``).
+
+    Example::
+
+        from reporting.elements.spacer import SpacerElement
+
+        el = SpacerElement(width=20, height=10)
+    """
     width: float = 0.0
     height: float = 0.0
 

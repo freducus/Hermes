@@ -1,7 +1,8 @@
-"""Cell entity — a single cell within a TableSpec row."""
+"""TableCell — a single cell within a TableSpec."""
 
 from __future__ import annotations
 
+import dataclasses
 from typing import Any, Optional
 
 from reporting.elements.text import TextAlignment
@@ -9,42 +10,71 @@ from reporting.styles.colors import ColorValue, normalize_color
 from reporting.tablespec.style import CellStyle
 
 
-class Cell:
-    """A single cell in a TableSpec table.
+@dataclasses.dataclass
+class TableCell:
+    """A single cell in a ``TableSpec`` table.
 
-    Attributes:
-        value: The raw cell value (any type).
-        text: Display text. If None, it will be computed by TableSpec
-            from *value* and the column's format/formatter at row-insertion time.
-        rowspan: Number of rows this cell spans (>= 1).
-        colspan: Number of columns this cell spans (>= 1).
-        alignment: Per-cell alignment override.
-        background_color: Per-cell background override.
-        text_color: Per-cell text color override.
-        style: Optional per-cell style override.
+    Cells are created automatically by ``TableSpec.add_row()``.
+    For merged cells, set ``rowspan`` / ``colspan`` after
+    creation.
+
+    Args:
+        value: The raw cell value (any type; default ``None``).
+        text: Display text.  If ``None``, the ``TableSpec``
+            computes it from ``value`` and the column's
+            format / formatter (default ``None``).
+        rowspan: Number of rows this cell spans (>= 1;
+            default ``1``).
+        colspan: Number of columns this cell spans (>= 1;
+            default ``1``).
+        alignment: Per-cell alignment override
+            (default ``None``).
+        background_color: Per-cell background colour override
+            (default ``None``).
+        text_color: Per-cell text colour override
+            (default ``None``).
+        style: Per-cell ``CellStyle`` override
+            (default ``None``).
+
+    Example::
+
+        from reporting.tablespec.cell import TableCell
+
+        cell = TableCell(value=42, text="42.0")
+        merged = TableCell(value="Header", colspan=3)
     """
+    value: Any = None
+    text: Optional[str] = None
+    rowspan: int = 1
+    colspan: int = 1
+    alignment: Optional[TextAlignment] = None
+    background_color: Optional[ColorValue] = None
+    text_color: Optional[ColorValue] = None
+    style: Optional[CellStyle] = None
 
-    def __init__(
-        self,
-        value: Any = None,
-        text: Optional[str] = None,
-        rowspan: int = 1,
-        colspan: int = 1,
-        alignment: Optional[TextAlignment] = None,
-        background_color: Optional[ColorValue] = None,
-        text_color: Optional[ColorValue] = None,
-        style: Optional[CellStyle] = None,
-    ) -> None:
-        self.value = value
-        self.text = text
-        self.rowspan = rowspan
-        self.colspan = colspan
-        self.alignment = alignment
-        self.background_color = normalize_color(background_color) if background_color is not None else None
-        self.text_color = normalize_color(text_color) if text_color is not None else None
-        self.style = style
+    def __post_init__(self) -> None:
+        self.background_color = normalize_color(self.background_color) if self.background_color is not None else None
+        self.text_color = normalize_color(self.text_color) if self.text_color is not None else None
 
     def __repr__(self) -> str:
         if self.text is not None:
-            return f"Cell({self.text!r})"
-        return f"Cell(value={self.value!r})"
+            return f"TableCell({self.text!r})"
+        return f"TableCell(value={self.value!r})"
+
+    @property
+    def display_text(self) -> str:
+        """Return the display text or stringified value.
+
+        Returns:
+            The explicit ``text`` if set, otherwise
+            ``str(value)``, otherwise ``""``.
+        """
+        if self.text is not None:
+            return self.text
+        if self.value is not None:
+            return str(self.value)
+        return ""
+
+
+# Backward-compatible alias
+Cell = TableCell

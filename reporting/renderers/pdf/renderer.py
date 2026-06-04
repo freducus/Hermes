@@ -5,11 +5,14 @@ from __future__ import annotations
 import math
 import os
 import tempfile
+import warnings
+
 from typing import TYPE_CHECKING, Any, Optional
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
 from reportlab.lib.styles import ParagraphStyle
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Frame, Paragraph, Table, TableStyle
 
@@ -19,10 +22,13 @@ from reporting.elements.text import TextElement, TextAlignment
 from reporting.elements.image import ImageElement
 from reporting.elements.table import TableElement
 from reporting.elements.tablespec_element import TableSpecElement
-from reporting.layout.geometry import Rect, Size
+from reporting.layout.geometry import Edges, Rect, Size
+from reporting.layout.panel import HAlign, VAlign, Panel
 from reporting.renderers.base import BaseRenderer
 from reporting.background import BackgroundType, SolidBackground, GradientBackground, ImageBackground
 from reporting.styles.colors import Color
+from reporting.tablespec.sizing import ColumnDistrib, TableFitMode
+from reporting.tablespec.style import CellStyle
 
 if TYPE_CHECKING:
     from reporting.document import Document
@@ -40,8 +46,42 @@ def _align_to_reportlab(align: TextAlignment) -> int:
     }.get(align, TA_LEFT)
 
 
+def _h_align_to_str(align_h: Optional[str]) -> str:
+    return {"left": "LEFT", "center": "CENTER", "right": "RIGHT"}.get(align_h or "", "LEFT")
+
+
+def _v_align_to_str(align_v: Optional[str]) -> str:
+    return {"top": "TOP", "middle": "MIDDLE", "bottom": "BOTTOM"}.get(align_v or "", "MIDDLE")
+
+
+def _resolve_font_name(base: str, bold: Optional[bool], italic: Optional[bool]) -> str:
+    b = bold or False
+    i = italic or False
+    if b and i:
+        return base + "-BoldOblique"
+    elif b:
+        return base + "-Bold"
+    elif i:
+        return base + "-Oblique"
+    return base
+
+
+def _cell_padding(padding: Any) -> tuple[float, float, float, float]:
+    """Return (top, bottom, left, right) padding in pt."""
+    if padding is None:
+        return 1.0, 1.0, 2.0, 2.0
+    if isinstance(padding, (int, float)):
+        return padding, padding, padding, padding
+    return padding.top or 1, padding.bottom or 1, padding.left or 2, padding.right or 2
+
+
 def _px_to_pt(v: float) -> float:
     return v * _PX_TO_PT
+
+
+def _pt_to_px(v: float) -> float:
+    """Convert points → pixels at 96 dpi."""
+    return v / _PX_TO_PT  # = v * 96/72
 
 
 def _rect_to_canvas(slide_pt_h: float, rx: float, ry: float, rw: float, rh: float) -> tuple[float, float, float, float]:
@@ -53,12 +93,45 @@ def _rect_to_canvas(slide_pt_h: float, rx: float, ry: float, rw: float, rh: floa
 
 
 class PDFRenderer(BaseRenderer):
+    """Render a report to PDF using ReportLab with absolute positioning.
+
+    Each ``Slide`` becomes a PDF page.  The title panel is rendered
+    at the top, followed by the grid layout with all elements
+    positioned absolutely.
+
+    Supported element types: ``TextElement``, ``ImageElement``,
+    ``FigureElement``, ``TableElement``, ``TableSpecElement``,
+    ``ContainerElement``.
+
+    Example::
+
+        from reporting.document import Document
+        from reporting.renderers.pdf.renderer import PDFRenderer
+
+        doc = Document()
+        slide = doc.new_slide("Results")
+        slide.grid_layout(rows=1, cols=1)
+        slide[0, 0].text("Hello, PDF!")
+
+        renderer = PDFRenderer()
+        renderer.render_document(doc, "output.pdf")
+    """
     def __init__(self) -> None:
         self._canvas: Optional[canvas.Canvas] = None
         self._slide_pt_h: float = 0
         self._temp_files: list[str] = []
 
     def render_document(self, document: "Document", output_path: str) -> None:
+        """Render all slides of a document to a single PDF file.
+
+        Each slide becomes one page.  Temporary figure images
+        are cleaned up after rendering.
+
+        Args:
+            document: The report document.
+            output_path: Output PDF file path
+                (e.g. ``"report.pdf"``).
+        """
         slide = document.slides[0] if document.slides else None
         slide_w = slide.width if slide else 960.0
         slide_h = slide.height if slide else 540.0
@@ -85,6 +158,14 @@ class PDFRenderer(BaseRenderer):
             self._canvas = None
 
     def render_slide(self, slide: object) -> object:
+        """Render a single slide (add to current PDF page, then ``showPage``).
+
+        Args:
+            slide: A ``Slide`` instance.
+
+        Returns:
+            The slide object.
+        """
         if self._canvas is not None:
             self._render_slide(slide)
         return slide
@@ -111,7 +192,7 @@ class PDFRenderer(BaseRenderer):
                 element = cell.element
                 if element is None:
                     continue
-                self._render_element(element, adj)
+                self._render_element(element, adj, panel=cell.panel)
 
     def _render_background(self, slide: Any) -> None:
         bg = getattr(slide, "background", None)
@@ -276,7 +357,9 @@ class PDFRenderer(BaseRenderer):
         except Exception:
             pass
 
-    def _render_element(self, element: Any, rect: Any) -> None:
+    def _render_element(self, element: Any, rect: Any, panel: Optional[Any] = None) -> None:
+        if panel:
+            rect = self._compute_content_rect(rect, element, panel)
         if element.element_type == ElementType.TEXT:
             self._render_text(element, rect)
         elif element.element_type == ElementType.IMAGE:
@@ -286,9 +369,174 @@ class PDFRenderer(BaseRenderer):
         elif element.element_type == ElementType.TABLE:
             self._render_table(element, rect)
         elif element.element_type == ElementType.TABLESPEC:
-            self._render_tablespec(element, rect)
+            self._render_tablespec(element, rect, panel)
         elif element.element_type == ElementType.CONTAINER:
             self._render_container(element, rect)
+
+    def _estimate_content_size(
+        self,
+        element: Any,
+        rect: Rect,
+    ) -> Size:
+        """Return the natural (unscaled) content size of *element* in **points**.
+
+        ``rect`` is the panel rect (pixels) — used for percentage-of-container
+        computations.
+        """
+        if element.element_type == ElementType.TEXT:
+            blocks = element.blocks
+            if not blocks or not blocks[0].runs:
+                return Size(rect.width, rect.height)
+            run = blocks[0].runs[0]
+            font_name = run.font_name or "Helvetica"
+            font_size = run.size or 10
+            try:
+                text_w = stringWidth(run.text, font_name, font_size)
+            except Exception:
+                text_w = font_size * len(run.text) * 0.4
+            text_h = font_size * 1.4
+            return Size(text_w + 8, text_h + 8)
+
+        if element.element_type == ElementType.TABLESPEC:
+            spec = element.tablespec
+            pad = spec.style.padding
+            font_name = spec.style.font_name
+            body_fs = spec.style.font_size
+            header_fs = spec.style.header_font_size
+            try:
+                nat_widths = self._measure_column_widths(
+                    spec, font_name, body_fs, header_fs, pad,
+                )
+                table_w = sum(nat_widths)
+            except Exception:
+                table_w = 80.0
+            pad_h = sum(_cell_padding(pad)[:2])
+            hr = spec.style.header_rows
+            row_h = spec.style.font_size * spec.style.line_height + pad_h
+            header_row_h = spec.style.header_font_size * spec.style.line_height + pad_h
+            table_h = len(spec.rows) * row_h + hr * header_row_h
+            return Size(table_w, table_h)
+
+        if element.element_type == ElementType.TABLE:
+            df = element.data
+            if df is None:
+                return Size(_px_to_pt(rect.width), _px_to_pt(rect.height))
+            n_cols = len(df.columns)
+            n_rows = len(df) + 1
+            font_size = 10
+            col_w = 40 * n_cols
+            row_h = font_size * 1.4 + 6
+            return Size(col_w, n_rows * row_h)
+
+        if element.element_type == ElementType.FIGURE:
+            fig = element.figure
+            if fig is None:
+                return Size(_px_to_pt(rect.width), _px_to_pt(rect.height))
+
+            fig_w = fig.get_figwidth() * 72
+            fig_h = fig.get_figheight() * 72
+
+            if element.container_width_pct is not None:
+                fig_w = _px_to_pt(rect.width) * element.container_width_pct / 100.0
+            if element.container_height_pct is not None:
+                fig_h = _px_to_pt(rect.height) * element.container_height_pct / 100.0
+
+            return Size(fig_w, fig_h)
+
+        if element.element_type == ElementType.IMAGE:
+            img_w_pt = _px_to_pt(rect.width)
+            img_h_pt = _px_to_pt(rect.height)
+            try:
+                from PIL import Image as PILImage
+                if os.path.exists(element.source):
+                    with PILImage.open(element.source) as img:
+                        img_w_px, img_h_px = img.size
+                    img_w_pt = img_w_px
+                    img_h_pt = img_h_px
+            except Exception:
+                pass
+
+            img_w_pt *= element.scale
+            img_h_pt *= element.scale
+
+            if element.width is not None:
+                img_w_pt = element.width
+            if element.height is not None:
+                img_h_pt = element.height
+
+            panel_w_pt = _px_to_pt(rect.width)
+            panel_h_pt = _px_to_pt(rect.height)
+
+            if element.fit_mode.value == "original":
+                if img_w_pt > panel_w_pt or img_h_pt > panel_h_pt:
+                    aspect = img_w_pt / max(img_h_pt, 1)
+                    if img_w_pt / panel_w_pt > img_h_pt / panel_h_pt:
+                        img_w_pt = panel_w_pt
+                        img_h_pt = img_w_pt / aspect
+                    else:
+                        img_h_pt = panel_h_pt
+                        img_w_pt = img_h_pt * aspect
+            elif element.fit_mode.value == "fit_vertical":
+                aspect = img_w_pt / max(img_h_pt, 1)
+                img_h_pt = panel_h_pt
+                img_w_pt = img_h_pt * aspect
+            elif element.fit_mode.value == "fit_horizontal":
+                aspect = img_w_pt / max(img_h_pt, 1)
+                img_w_pt = panel_w_pt
+                img_h_pt = img_w_pt / aspect
+
+            return Size(max(img_w_pt, 1), max(img_h_pt, 1))
+
+        return Size(_px_to_pt(rect.width), _px_to_pt(rect.height))
+
+    def _compute_content_rect(
+        self,
+        rect: Rect,
+        element: Any,
+        panel: Any,
+    ) -> Rect:
+        """Compute the rendering rect from element sizing + panel alignment + margin.
+
+        Flow:
+          1. Subtract ``panel.margin`` from the cell rect.
+          2. Compute the element's natural size (via ``_estimate_content_size``).
+          3. Per-axis sizing: if alignment is STRETCH, use the full container
+             dimension; otherwise clamp natural size to the container.
+          4. Position according to ``panel.h_align`` / ``panel.v_align``.
+
+        ``_estimate_content_size`` returns **points**;  the rect
+        dimensions are in pixels, so convert before comparing.
+        """
+        # 1 — margin
+        if panel.margin and any(getattr(panel.margin, a) for a in ("top", "bottom", "left", "right")):
+            m = panel.margin
+            rect = Rect(
+                rect.x + (m.left or 0),
+                rect.y + (m.top or 0),
+                rect.width - (m.left or 0) - (m.right or 0),
+                rect.height - (m.top or 0) - (m.bottom or 0),
+            )
+
+        if rect.width <= 0 or rect.height <= 0:
+            return Rect(rect.x, rect.y, max(rect.width, 1), max(rect.height, 1))
+
+        nat = self._estimate_content_size(element, rect)
+        cw = rect.width if panel.h_align == HAlign.STRETCH else min(_pt_to_px(nat.width), rect.width)
+        ch = rect.height if panel.v_align == VAlign.STRETCH else min(_pt_to_px(nat.height), rect.height)
+
+        x = rect.x
+        if panel.h_align == HAlign.CENTER:
+            x = rect.x + (rect.width - cw) / 2
+        elif panel.h_align == HAlign.RIGHT:
+            x = rect.x + rect.width - cw
+
+        y = rect.y
+        if panel.v_align == VAlign.MIDDLE:
+            y = rect.y + (rect.height - ch) / 2
+        elif panel.v_align == VAlign.BOTTOM:
+            y = rect.y + rect.height - ch
+
+        return Rect(x, y, cw, ch)
 
     def _render_text(self, element: TextElement, rect: Any) -> None:
         c = self._canvas
@@ -337,8 +585,11 @@ class PDFRenderer(BaseRenderer):
                 spaceAfter=1,
             )
             p = Paragraph(html, style)
-            frame = Frame(x, y, w, h, leftPadding=4, rightPadding=4, topPadding=4, bottomPadding=4, id="cell")
+            c.saveState()
+            c.translate(x, y)
+            frame = Frame(0, 0, w, h, leftPadding=4, rightPadding=4, topPadding=4, bottomPadding=4, id="cell")
             frame.addFromList([p], c)
+            c.restoreState()
 
     def _render_image(self, element: ImageElement, rect: Any) -> None:
         c = self._canvas
@@ -346,7 +597,7 @@ class PDFRenderer(BaseRenderer):
             return
         x, y, w, h = _rect_to_canvas(self._slide_pt_h, rect.x, rect.y, rect.width, rect.height)
         try:
-            c.drawImage(element.source, x + 2, y + 2, width=w - 4, height=h - 4, preserveAspectRatio=True, anchor='c')
+            c.drawImage(element.source, x, y, width=w, height=h, preserveAspectRatio=True, anchor='sw')
         except Exception:
             pass
 
@@ -359,55 +610,121 @@ class PDFRenderer(BaseRenderer):
             x, y, w, h = _rect_to_canvas(self._slide_pt_h, rect.x, rect.y, rect.width, rect.height)
 
             if element.format == "pdf":
-                self._render_figure_vector(fig, c, x, y, w, h)
+                self._render_figure_vector(fig, c, x, y, w, h, element.preserve_aspect)
             else:
-                self._render_figure_raster(fig, element, c, x, y, w, h)
+                self._render_figure_raster(fig, element, c, x, y, w, h, element.preserve_aspect)
         except Exception:
             pass
 
-    def _render_figure_vector(self, fig: Any, c: Any, x: float, y: float, w: float, h: float) -> None:
+    @staticmethod
+    def _fitted_size(fig: Any, w: float, h: float) -> tuple[float, float]:
+        fig_w_in, fig_h_in = fig.get_size_inches()
+        aspect = fig_w_in / max(fig_h_in, 1e-6)
+        container_aspect = w / max(h, 1e-6)
+        if aspect > container_aspect:
+            fw = w
+            fh = w / aspect
+        else:
+            fh = h
+            fw = h * aspect
+        return fw, fh
+
+    def _render_figure_vector(self, fig: Any, c: Any, x: float, y: float, w: float, h: float,
+                               preserve_aspect: bool = False) -> None:
         try:
             import io
             from pdfrw import PdfReader
             from pdfrw.buildxobj import pagexobj
             from pdfrw.toreportlab import makerl
         except ImportError:
-            self._render_figure_raster(fig, None, c, x, y, w, h)
+            self._render_figure_raster(fig, None, c, x, y, w, h, preserve_aspect)
             return
 
         old_size = fig.get_size_inches()
         try:
-            fig.set_size_inches(w / 72, h / 72)
             buf = io.BytesIO()
-            fig.savefig(buf, format="pdf", bbox_inches="tight")
-            buf.seek(0)
-            reader = PdfReader(buf)
-            xobj = pagexobj(reader.pages[0])
-            name = makerl(c, xobj)
-            bbox = xobj.BBox
-            scale_x = w / bbox[2]
-            scale_y = h / bbox[3]
-            scale = min(scale_x, scale_y)
-            c.saveState()
-            c.translate(x + (w - bbox[2] * scale) / 2, y + (h - bbox[3] * scale) / 2)
-            c.scale(scale, scale)
-            c.doForm(name)
-            c.restoreState()
+            if preserve_aspect:
+                fw_pt, fh_pt = self._fitted_size(fig, w, h)
+                fig.set_size_inches(fw_pt / 72, fh_pt / 72)
+                fig.savefig(buf, format="pdf", bbox_inches="tight")
+                buf.seek(0)
+                reader = PdfReader(buf)
+                xobj = pagexobj(reader.pages[0])
+                name = makerl(c, xobj)
+                bbox = xobj.BBox
+                bw_pt = bbox[2] - bbox[0]
+                bh_pt = bbox[3] - bbox[1]
+                if bw_pt > w or bh_pt > h:
+                    scale = min(w / max(bw_pt, 1), h / max(bh_pt, 1))
+                    bw_pt *= scale
+                    bh_pt *= scale
+                dx = x + (w - bw_pt) / 2
+                dy = y + (h - bh_pt) / 2
+                c.saveState()
+                c.translate(dx, dy)
+                c.doForm(name)
+                c.restoreState()
+            else:
+                fig.set_size_inches(w / 72, h / 72)
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fig.tight_layout(pad=0.3)
+                except Exception:
+                    pass
+                fig.savefig(buf, format="pdf")
+                buf.seek(0)
+                reader = PdfReader(buf)
+                xobj = pagexobj(reader.pages[0])
+                name = makerl(c, xobj)
+                c.saveState()
+                c.translate(x, y)
+                c.doForm(name)
+                c.restoreState()
         except Exception:
-            self._render_figure_raster(fig, None, c, x, y, w, h)
+            self._render_figure_raster(fig, None, c, x, y, w, h, preserve_aspect)
         finally:
             fig.set_size_inches(old_size)
 
-    def _render_figure_raster(self, fig: Any, element: Any, c: Any, x: float, y: float, w: float, h: float) -> None:
+    def _render_figure_raster(self, fig: Any, element: Any, c: Any, x: float, y: float,
+                               w: float, h: float, preserve_aspect: bool = False) -> None:
         dpi = element.dpi if element else 150
         old_size = fig.get_size_inches()
-        fig.set_size_inches(w / 72, h / 72)
         fd, tmp_path = tempfile.mkstemp(suffix=".png")
         os.close(fd)
-        fig.savefig(tmp_path, dpi=dpi, bbox_inches="tight", format="png")
-        fig.set_size_inches(old_size)
-        self._temp_files.append(tmp_path)
-        c.drawImage(tmp_path, x + 2, y + 2, width=w - 4, height=h - 4, preserveAspectRatio=True, anchor='c')
+        try:
+            if preserve_aspect:
+                fw_pt, fh_pt = self._fitted_size(fig, w, h)
+                fig.set_size_inches(fw_pt / 72, fh_pt / 72)
+                fig.savefig(tmp_path, dpi=dpi, bbox_inches="tight", format="png")
+                try:
+                    from PIL import Image as PILImage
+                    with PILImage.open(tmp_path) as img:
+                        tw_px, th_px = img.size
+                    tw_pt = tw_px * 72.0 / dpi
+                    th_pt = th_px * 72.0 / dpi
+                except Exception:
+                    tw_pt, th_pt = fw_pt, fh_pt
+                if tw_pt > w or th_pt > h:
+                    scale = min(w / max(tw_pt, 1), h / max(th_pt, 1))
+                    tw_pt *= scale
+                    th_pt *= scale
+                dx = x + (w - tw_pt) / 2
+                dy = y + (h - th_pt) / 2
+                c.drawImage(tmp_path, dx, dy, width=tw_pt, height=th_pt, anchor='sw')
+            else:
+                fig.set_size_inches(w / 72, h / 72)
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fig.tight_layout(pad=0.3)
+                except Exception:
+                    pass
+                fig.savefig(tmp_path, dpi=dpi, format="png")
+                c.drawImage(tmp_path, x, y, width=w, height=h, anchor='sw')
+        finally:
+            fig.set_size_inches(old_size)
+            self._temp_files.append(tmp_path)
 
     def _render_table(self, element: TableElement, rect: Any) -> None:
         c = self._canvas
@@ -429,7 +746,12 @@ class PDFRenderer(BaseRenderer):
             n_rows_t = len(rows_data)
             pad = 8
             avail_w = max(w - 2 * pad, 10)
-            col_w = max(avail_w / max(n_cols, 1), 10)
+
+            if element.column_widths and len(element.column_widths) == n_cols:
+                col_widths = element.column_widths
+            else:
+                col_w = max(avail_w / max(n_cols, 1), 10)
+                col_widths = [col_w] * n_cols
 
             row_h_pt = max(h / max(n_rows_t, 1), 10)
             body_size = max(min(row_h_pt * 0.3, 8), 3)
@@ -454,14 +776,15 @@ class PDFRenderer(BaseRenderer):
                 for i in range(2, len(rows_data), 2):
                     cmds.append(("BACKGROUND", (0, i), (-1, i), colors.Color(0.95, 0.95, 0.95)))
 
-            t = Table(rows_data, colWidths=[col_w] * n_cols)
+            t = Table(rows_data, colWidths=col_widths)
             t.setStyle(TableStyle(cmds))
             frame = Frame(x, y, w, h, leftPadding=pad, rightPadding=pad, topPadding=4, bottomPadding=4, id="table_cell")
             frame.addFromList([t], c)
         except Exception:
-            pass
+            import traceback
+            traceback.print_exc()
 
-    def _render_tablespec(self, element: Any, rect: Any) -> None:
+    def _render_tablespec(self, element: Any, rect: Any, panel: Any = None) -> None:
         c = self._canvas
         if c is None:
             return
@@ -473,84 +796,373 @@ class PDFRenderer(BaseRenderer):
         try:
             x, y, w, h = _rect_to_canvas(self._slide_pt_h, rect.x, rect.y, rect.width, rect.height)
 
-            headers = [col.label for col in spec.columns]
-            num_cols = len(headers)
-            num_rows = len(spec.rows) + 1
+            panel = panel or Panel()
+
+            ts = spec.style
+            sizing = spec.sizing
+            num_cols = len(spec.columns)
+            num_rows = len(spec.rows)
+            hr = ts.header_rows
 
             pad = 4
-            avail_w = max(w - 2 * pad, 10)
-            col_w = max(avail_w / max(num_cols, 1), 8)
+            content_w = max(w - 2 * pad, 10)
+            avail_h = max(h, 10)
 
-            row_height = max(h / max(num_rows, 1), 10)
-            body_size = max(min(row_height * 0.3, 8), 3)
-            header_size = max(min(row_height * 0.35, 9), 4)
+            if sizing.fit_mode == TableFitMode.PERCENT:
+                pct_w = max(content_w * sizing.percent_width, 10)
+                col_widths, body_fs, header_fs = self._compute_table_layout(
+                    spec, pct_w, avail_h,
+                )
+                frame_w = pct_w + 2 * pad
+                if panel.h_align == HAlign.CENTER:
+                    frame_x = x + (w - frame_w) / 2
+                elif panel.h_align == HAlign.RIGHT:
+                    frame_x = x + w - frame_w
+                else:
+                    frame_x = x
+            else:
+                col_widths, body_fs, header_fs = self._compute_table_layout(
+                    spec, content_w, avail_h,
+                )
+                frame_w = w
+                frame_x = x
 
-            data_rows: list[list[str]] = [list(headers)]
-            data_rows.extend(
-                [""] * num_cols for _ in range(len(spec.rows))
-            )
+            add_header = 1 if ts.header_rows > 0 else 0
+            row_offset = add_header
+            total_rows = num_rows + row_offset
 
-            cmds: list[tuple] = [
-                ("FONTNAME", (0, 0), (num_cols - 1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (num_cols - 1, 0), header_size),
-                ("FONTSIZE", (0, 1), (num_cols - 1, num_rows - 1), body_size),
-                ("ALIGN", (0, 0), (num_cols - 1, num_rows - 1), "CENTER"),
-                ("VALIGN", (0, 0), (num_cols - 1, num_rows - 1), "MIDDLE"),
-                ("GRID", (0, 0), (num_cols - 1, num_rows - 1), 0.5, colors.Color(0.85, 0.85, 0.85)),
-                ("BACKGROUND", (0, 0), (num_cols - 1, 0), colors.Color(0.27, 0.45, 0.77)),
-                ("TEXTCOLOR", (0, 0), (num_cols - 1, 0), colors.white),
-                ("TOPPADDING", (0, 0), (-1, -1), 1),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                ("LEFTPADDING", (0, 0), (-1, -1), 2),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+            data_rows: list[list[str]] = [
+                [""] * num_cols for _ in range(total_rows)
             ]
 
-            if spec.style.zebra:
-                for i in range(2, num_rows, 2):
-                    cmds.append(("BACKGROUND", (0, i), (num_cols - 1, i),
-                                 colors.Color(0.95, 0.95, 0.95)))
+            cmds: list[tuple] = []
 
-            occupied = [[False] * num_cols for _ in range(num_rows)]
-            for r in range(len(spec.rows)):
-                row = spec.rows[r]
-                rr = r + 1
-                for c_idx in range(min(len(row.cells), num_cols)):
-                    if occupied[rr][c_idx]:
-                        continue
-                    cell = row.cells[c_idx]
+            if add_header:
+                for ci in range(num_cols):
+                    data_rows[0][ci] = spec.columns[ci].label or spec.columns[ci].name
 
-                    txt = cell.text if cell.text is not None else (str(cell.value) if cell.value is not None else "")
-                    data_rows[rr][c_idx] = txt
+            self._build_tablespec_cells(
+                spec, data_rows, cmds, num_cols, num_rows, hr,
+                body_fs, header_fs, ts, row_offset=row_offset,
+            )
 
-                    if cell.colspan > 1 or cell.rowspan > 1:
-                        c2 = min(c_idx + cell.colspan - 1, num_cols - 1)
-                        r2 = min(rr + cell.rowspan - 1, num_rows - 1)
-                        cmds.append(("SPAN", (c_idx, rr), (c2, r2)))
-                        for span_r in range(rr, r2 + 1):
-                            for span_c in range(c_idx, c2 + 1):
-                                occupied[span_r][span_c] = True
-                        occupied[rr][c_idx] = False
+            if add_header:
+                hl_font = _resolve_font_name(
+                    ts.font_name or "Helvetica", True, False,
+                )
+                hl_leading = max(header_fs * ts.line_height, 8)
+                cmds.append(("FONTNAME", (0, 0), (num_cols - 1, 0), hl_font))
+                cmds.append(("FONTSIZE", (0, 0), (num_cols - 1, 0), header_fs))
+                cmds.append(("LEADING", (0, 0), (num_cols - 1, 0), hl_leading))
+                cmds.append(("ALIGN", (0, 0), (num_cols - 1, 0), "CENTER"))
+                cmds.append(("VALIGN", (0, 0), (num_cols - 1, 0), "MIDDLE"))
+                top_pad, bot_pad, left_pad, right_pad = _cell_padding(ts.padding)
+                cmds.append(("TOPPADDING", (0, 0), (num_cols - 1, 0), top_pad))
+                cmds.append(("BOTTOMPADDING", (0, 0), (num_cols - 1, 0), bot_pad))
+                cmds.append(("LEFTPADDING", (0, 0), (num_cols - 1, 0), left_pad))
+                cmds.append(("RIGHTPADDING", (0, 0), (num_cols - 1, 0), right_pad))
 
-                    if cell.background_color:
-                        try:
-                            bg = Color.parse(cell.background_color).reportlab_color
-                            cmds.append(("BACKGROUND", (c_idx, rr), (c_idx, rr), bg))
-                        except Exception:
-                            pass
-
-                    if cell.text_color:
-                        try:
-                            tc = Color.parse(cell.text_color).reportlab_color
-                            cmds.append(("TEXTCOLOR", (c_idx, rr), (c_idx, rr), tc))
-                        except Exception:
-                            pass
-
-            t = Table(data_rows, colWidths=[col_w] * num_cols)
+            t = Table(data_rows, colWidths=col_widths)
             t.setStyle(TableStyle(cmds))
-            frame = Frame(x, y, w, h, leftPadding=pad, rightPadding=pad, topPadding=2, bottomPadding=2, id="tablespec_cell")
+
+            # Wrap the table to get its actual rendered height
+            table_w, table_h = t.wrap(content_w, h)
+
+            # Natural content height for vertical alignment
+            if panel.v_align == VAlign.BOTTOM:
+                top_padding = max(h - table_h, 0)
+                bottom_padding = 0
+            elif panel.v_align == VAlign.MIDDLE:
+                excess = max(h - table_h, 0)
+                top_padding = excess / 2
+                bottom_padding = excess / 2
+            else:
+                top_padding = 0
+                bottom_padding = max(h - table_h, 0)
+
+            frame = Frame(
+                frame_x, y, frame_w, h,
+                leftPadding=pad, rightPadding=pad,
+                topPadding=top_padding, bottomPadding=bottom_padding,
+                id="tablespec_cell",
+            )
             frame.addFromList([t], c)
         except Exception:
-            pass
+            import traceback
+            traceback.print_exc()
+
+    def _compute_table_layout(
+        self,
+        spec: Any,
+        avail_w: float,
+        avail_h: float,
+    ) -> tuple[list[float], float, float]:
+        """Compute column widths and font sizes from the sizing mode.
+
+        Returns:
+            Tuple of (col_widths, body_font_size, header_font_size).
+        """
+        ts = spec.style
+        sizing = spec.sizing
+        num_rows = len(spec.rows)
+        distrib = sizing.column_distrib
+
+        body_fs = ts.font_size
+        header_fs = ts.header_font_size
+        min_fs = sizing.min_font_size if sizing.min_font_size is not None else ts.min_font_size
+        line_h = ts.line_height
+
+        pad = ts.padding
+        pad_top = pad if isinstance(pad, (int, float)) else (pad.top if pad else 4)
+        pad_bot = pad if isinstance(pad, (int, float)) else (pad.bottom if pad else 4)
+        pad_h = pad_top + pad_bot
+
+        if sizing.fit_mode == TableFitMode.SHRINK_FONT:
+            if distrib == ColumnDistrib.EQUAL:
+                raise ValueError("ColumnDistrib.EQUAL is not supported with SHRINK_FONT mode")
+
+            body_fs, header_fs = self._shrink_font(
+                spec, body_fs, header_fs, min_fs, line_h, pad_h,
+                avail_w, avail_h, pad,
+            )
+
+        # Build column widths according to distribution mode
+        if distrib == ColumnDistrib.EQUAL:
+            col_w = max(avail_w / max(len(spec.columns), 1), 8)
+            col_widths = [col_w] * len(spec.columns)
+        elif distrib == ColumnDistrib.FIXED:
+            col_widths = []
+            fixed_total = 0.0
+            flexible = 0
+            for col in spec.columns:
+                if col.width:
+                    cw = max(_px_to_pt(col.width) if col.width < 100 else col.width, 8)
+                    col_widths.append(cw)
+                    fixed_total += cw
+                else:
+                    col_widths.append(None)
+                    flexible += 1
+            remaining = max(avail_w - fixed_total, 0)
+            flex_w = remaining / max(flexible, 1) if flexible else 0
+            col_widths = [w if w is not None else flex_w for w in col_widths]
+        else:
+            # CONTENT — content-aware proportional distribution
+            font_name = ts.font_name
+            nat_widths = self._measure_column_widths(
+                spec, font_name, body_fs, header_fs, pad,
+            )
+            total_nat = sum(nat_widths)
+            if total_nat > 0:
+                scale = avail_w / total_nat
+                col_widths = [max(w * scale, 8) for w in nat_widths]
+            else:
+                col_widths = [max(avail_w / max(len(spec.columns), 1), 8)] * len(spec.columns)
+
+        return col_widths, body_fs, header_fs
+
+    def _shrink_font(
+        self,
+        spec: Any,
+        body_fs: float,
+        header_fs: float,
+        min_fs: float,
+        line_h: float,
+        pad_h: float,
+        avail_w: float,
+        avail_h: float,
+        pad: Any,
+    ) -> tuple[float, float]:
+        """Reduce font sizes if content overflows available space."""
+        font_name = spec.style.font_name
+        num_rows = len(spec.rows)
+
+        nat_widths = self._measure_column_widths(
+            spec, font_name, body_fs, header_fs, pad,
+        )
+        total_nat = sum(nat_widths)
+        row_h = body_fs * line_h + pad_h
+        total_h = row_h * num_rows
+
+        if total_nat > avail_w or total_h > avail_h:
+            w_ratio = avail_w / total_nat if total_nat > 0 else 1
+            h_ratio = avail_h / total_h if total_h > 0 else 1
+            ratio = min(w_ratio, h_ratio)
+            body_fs = max(body_fs * ratio, min_fs)
+            header_fs = max(header_fs * ratio, min_fs)
+
+        return body_fs, header_fs
+
+    def _measure_column_widths(
+        self,
+        spec: Any,
+        font_name: str,
+        body_fs: float,
+        header_fs: float,
+        pad: Any,
+    ) -> list[float]:
+        """Measure the widest text per column at the given font sizes.
+
+        Returns unscaled natural widths (points).
+        """
+        pad_left = pad if isinstance(pad, (int, float)) else (pad.left if pad else 4)
+        pad_right = pad if isinstance(pad, (int, float)) else (pad.right if pad else 4)
+        pad_w = pad_left + pad_right
+
+        col_widths: list[float] = []
+        for col_idx, col in enumerate(spec.columns):
+            max_w = 0.0
+            for r_idx, row in enumerate(spec.rows):
+                if col_idx >= len(row.cells):
+                    continue
+                is_header = r_idx < spec.style.header_rows
+                fs = header_fs if is_header else body_fs
+
+                cell = row.cells[col_idx]
+                display = cell.text if cell.text is not None else str(cell.value or "")
+                try:
+                    tw = stringWidth(display, font_name, fs)
+                except Exception:
+                    tw = 0
+                max_w = max(max_w, tw)
+
+            base = max_w + pad_w
+
+            if col.width:
+                base = _px_to_pt(col.width) if col.width < 100 else col.width
+            elif col.width_ratio:
+                base *= col.width_ratio
+
+            col_widths.append(max(base, 10))
+
+        return col_widths
+
+    def _build_tablespec_cells(
+        self,
+        spec: Any,
+        data_rows: list[list[str]],
+        cmds: list[tuple],
+        num_cols: int,
+        num_rows: int,
+        header_rows: int,
+        body_size: float,
+        header_size: float,
+        ts: Any,
+        row_offset: int = 0,
+    ) -> None:
+        """Fill data_rows and cmds from the TableSpec style cascade."""
+        from reportlab.lib import colors as rl_colors
+
+        total_rows = num_rows + row_offset
+        occupied = [[False] * num_cols for _ in range(total_rows)]
+
+        has_auto_header = row_offset > 0
+        for r in range(num_rows):
+            tr = r + row_offset
+            row = spec.rows[r]
+            is_header = False if has_auto_header else (r < header_rows)
+            font_size = header_size if is_header else body_size
+            grid_c = 0
+            cell_idx = 0
+
+            while grid_c < num_cols and cell_idx < len(row.cells):
+                if occupied[tr][grid_c]:
+                    grid_c += 1
+                    cell_idx += 1
+                    continue
+
+                cell = row.cells[cell_idx]
+                colspan = max(cell.colspan, 1)
+                rowspan = max(cell.rowspan, 1)
+                c_end = min(grid_c + colspan - 1, num_cols - 1)
+
+                resolved = spec.resolve_cell_style(r, grid_c, cell_idx=cell_idx)
+
+                display = cell.text
+                if display is None:
+                    col = spec.columns[grid_c] if grid_c < len(spec.columns) else None
+                    if col and col.formatter:
+                        display = col.formatter(cell.value)
+                    elif col and col.format:
+                        from reporting.tablespec.formatters import apply_format
+                        try:
+                            display = apply_format(cell.value, col.format)
+                        except Exception:
+                            display = str(cell.value) if cell.value is not None else ""
+                    else:
+                        display = str(cell.value) if cell.value is not None else ""
+                data_rows[tr][grid_c] = display
+
+                rl_font_name = _resolve_font_name(
+                    resolved.font_name or "Helvetica",
+                    resolved.bold,
+                    resolved.italic,
+                )
+                rl_font_size = resolved.font_size if resolved.font_size is not None else font_size
+                rl_font_size = max(rl_font_size, 3)
+
+                rl_leading = max(rl_font_size * ts.line_height, 8)
+                cmds.append(("FONTNAME", (grid_c, tr), (c_end, tr), rl_font_name))
+                cmds.append(("FONTSIZE", (grid_c, tr), (c_end, tr), rl_font_size))
+                cmds.append(("LEADING", (grid_c, tr), (c_end, tr), rl_leading))
+                cmds.append(("ALIGN", (grid_c, tr), (c_end, tr), _h_align_to_str(resolved.align_h)))
+                cmds.append(("VALIGN", (grid_c, tr), (c_end, tr), _v_align_to_str(resolved.align_v)))
+
+                top_pad, bot_pad, left_pad, right_pad = _cell_padding(resolved.padding)
+                cmds.append(("TOPPADDING", (grid_c, tr), (c_end, tr), top_pad))
+                cmds.append(("BOTTOMPADDING", (grid_c, tr), (c_end, tr), bot_pad))
+                cmds.append(("LEFTPADDING", (grid_c, tr), (c_end, tr), left_pad))
+                cmds.append(("RIGHTPADDING", (grid_c, tr), (c_end, tr), right_pad))
+
+                if resolved.background_color:
+                    try:
+                        bg = Color.parse(resolved.background_color).reportlab_color
+                        cmds.append(("BACKGROUND", (grid_c, tr), (c_end, tr), bg))
+                    except Exception:
+                        pass
+
+                if resolved.text_color:
+                    try:
+                        tc = Color.parse(resolved.text_color).reportlab_color
+                        cmds.append(("TEXTCOLOR", (grid_c, tr), (c_end, tr), tc))
+                    except Exception:
+                        pass
+
+                if colspan > 1 or rowspan > 1:
+                    r2 = min(tr + rowspan - 1, total_rows - 1)
+                    cmds.append(("SPAN", (grid_c, tr), (c_end, r2)))
+                    for span_r in range(tr, r2 + 1):
+                        for span_c in range(grid_c, c_end + 1):
+                            occupied[span_r][span_c] = True
+                    occupied[tr][grid_c] = False
+
+                grid_c += colspan
+                cell_idx += 1
+
+            if not is_header and ts.zebra:
+                try:
+                    row_bg = ts.even_row_color if r % 2 == 0 else ts.odd_row_color
+                    if row_bg:
+                        zc = Color.parse(row_bg).reportlab_color
+                        cmds.append(("BACKGROUND", (0, tr), (num_cols - 1, tr), zc))
+                except Exception:
+                    pass
+
+        bc = Color.parse(ts.border_color).reportlab_color
+        bw = max(ts.border_width, 0.1)
+        cmds.insert(0, ("GRID", (0, 0), (num_cols - 1, total_rows - 1), bw, bc))
+
+        if has_auto_header:
+            hr_indices = range(row_offset)
+        else:
+            hr_indices = range(header_rows)
+
+        for thr in hr_indices:
+            hb = Color.parse(ts.header_background).reportlab_color
+            ht = Color.parse(ts.header_text_color).reportlab_color
+            cmds.append(("BACKGROUND", (0, thr), (num_cols - 1, thr), hb))
+            cmds.append(("TEXTCOLOR", (0, thr), (num_cols - 1, thr), ht))
+
+
 
     def _render_container(self, element: Any, rect: Any) -> None:
         inner = element.grid
@@ -571,7 +1183,20 @@ class PDFRenderer(BaseRenderer):
                 inner_el = cell.element
                 if inner_el is None:
                     continue
-                self._render_element(inner_el, abs_rect)
+                self._render_element(inner_el, abs_rect, panel=cell.panel)
 
     def render_panel(self, panel: object, rect: object) -> object:
+        """Render a single panel (no-op in PDF renderer).
+
+        Panels are rendered as part of slide rendering via
+        ``_render_element``.  This method exists for interface
+        conformance.
+
+        Args:
+            panel: A ``Panel`` instance.
+            rect: A ``Rect`` bounding box.
+
+        Returns:
+            ``None``.
+        """
         return None

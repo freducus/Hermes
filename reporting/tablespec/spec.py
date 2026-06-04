@@ -10,16 +10,25 @@ import json
 from collections.abc import Callable
 from typing import Any, Optional, Union
 
-from reporting.tablespec.cell import Cell
+from reporting.tablespec.cell import TableCell
 from reporting.tablespec.column import Column
+from reporting.tablespec.conditional import (
+    CellCondition,
+    HeatmapDef,
+    HighlightExtremeDef,
+    resolve_conditional_styles,
+    resolve_extreme_styles,
+)
 from reporting.tablespec.exceptions import (
     ColumnNotFoundError,
     InvalidRowError,
     InvalidSpanError,
 )
 from reporting.tablespec.formatters import apply_custom_formatter, apply_format
-from reporting.tablespec.row import Row
-from reporting.tablespec.style import TableStyle
+from reporting.tablespec.range_parser import parse_coord, parse_range
+from reporting.tablespec.row import TableRow
+from reporting.tablespec.sizing import TableFitMode, TableSizing
+from reporting.tablespec.style import CellStyle, TableStyle
 from reporting.tablespec.validation import (
     resolve_column_index,
     validate_columns,
@@ -27,11 +36,84 @@ from reporting.tablespec.validation import (
     validate_span,
 )
 
+# backward compat imports
+from reporting.tablespec.cell import Cell  # noqa: F401
+from reporting.tablespec.row import Row    # noqa: F401
+
+
+class RangeSelector:
+    """A selected cell range returned by ``TableSpec.range()``.
+
+    Supports chained ``.style(**kwargs)`` and ``.merge()`` calls.
+
+    Do not instantiate directly; obtain via ``table.range("A1:C4")``.
+
+    Example::
+
+        table.range("A1:D4").style(background_color="#D9EAF7", bold=True)
+        table.range("A1:D1").merge()
+    """
+
+    def __init__(self, spec: TableSpec, r1: int, c1: int, r2: int, c2: int) -> None:
+        self._spec = spec
+        self._r1 = r1
+        self._c1 = c1
+        self._r2 = r2
+        self._c2 = c2
+
+    def style(self, **kwargs: Any) -> RangeSelector:
+        """Apply a ``CellStyle`` built from *kwargs* to every cell in the range.
+
+        Args:
+            **kwargs: ``CellStyle`` field values (background_color, bold, etc.).
+
+        Returns:
+            ``self`` for chaining.
+        """
+        cs = CellStyle(**kwargs)
+        for r in range(self._r1, self._r2 + 1):
+            for c in range(self._c1, self._c2 + 1):
+                if r < len(self._spec.rows) and c < len(self._spec.columns):
+                    self._spec.rows[r].cells[c].style = cs
+        return self
+
+    def merge(self) -> RangeSelector:
+        """Merge the range: set colspan/rowspan on the top-left cell.
+
+        Returns:
+            ``self`` for chaining.
+        """
+        if self._r1 < len(self._spec.rows) and self._c1 < len(self._spec.columns):
+            cell = self._spec.rows[self._r1].cells[self._c1]
+            cell.colspan = self._c2 - self._c1 + 1
+            cell.rowspan = self._r2 - self._r1 + 1
+        return self
+
 
 class TableSpec:
     """A flexible, backend-agnostic table data model.
 
-    Usage::
+    ``TableSpec`` supports merged cells, per-cell styling,
+    deferred conditional formatting, Excel-style cell access,
+    and multiple data-source constructors (DataFrame, Polars,
+    dataclasses, records).
+
+    Sizing modes: ``STRETCH`` (default), ``SHRINK_FONT``
+    (shrink font to fit), ``PERCENT`` (occupy a percentage
+    of the available width).
+
+    Args:
+        columns: List of ``Column`` definitions.
+        rows: List of ``TableRow`` instances
+            (default ``None``).
+        style: ``TableStyle`` instance (default
+            ``TableStyle()``).
+        sizing: ``TableSizing`` instance (default
+            ``TableSizing()``).
+
+    Example::
+
+        from reporting.tablespec import TableSpec, Column
 
         table = TableSpec(
             columns=[
@@ -42,19 +124,39 @@ class TableSpec:
         )
         table.add_row("Case A", 0.80, 0.92)
         table.add_row("Case B", 0.90, 0.94)
+
+        # Excel-style access
+        table["A1"] = "Results"
+        table.merge("A1:D1")
     """
 
     def __init__(
         self,
         columns: Optional[list[Column]] = None,
-        rows: Optional[list[Row]] = None,
+        rows: Optional[list[TableRow]] = None,
         style: Optional[TableStyle] = None,
+        sizing: Optional[TableSizing] = None,
     ) -> None:
         self.columns: list[Column] = list(columns) if columns else []
-        self.rows: list[Row] = list(rows) if rows else []
+        self.rows: list[TableRow] = list(rows) if rows else []
         self.style: TableStyle = style or TableStyle()
+        self.sizing: TableSizing = sizing or TableSizing()
         self._current_group: Optional[str] = None
+        self._conditions: list[CellCondition] = []
+        self._heatmaps: list[HeatmapDef] = []
+        self._highlights: list[HighlightExtremeDef] = []
         validate_columns(self.columns)
+
+    @classmethod
+    def build(cls) -> "TableBuilder":
+        """Return a ``TableBuilder`` for chained construction.
+
+        Example::
+
+            table = TableSpec.build().columns("a","b").add_row(1,2).build()
+        """
+        from reporting.tablespec.builder import TableBuilder
+        return TableBuilder()
 
     # ------------------------------------------------------------------
     # Fluent builder helpers
@@ -72,7 +174,25 @@ class TableSpec:
         visible: bool = True,
         style: Optional[object] = None,
     ) -> TableSpec:
-        """Add a column and return self for chaining."""
+        """Append a column definition and return ``self`` for chaining.
+
+        Args:
+            name: Column identifier (must be unique).
+            label: Header display text (defaults to ``name``).
+            width: Fixed width in points (default ``None``).
+            width_ratio: Relative width factor (default ``None``).
+            format: Python format string e.g. ``"{:.2f}"``
+                (default ``None``).
+            formatter: Custom callable ``(value) -> str``
+                (default ``None``).
+            alignment: Default text alignment (default ``None``).
+            visible: Whether the column appears in output
+                (default ``True``).
+            style: ``ColumnStyle`` or ``None`` (default ``None``).
+
+        Returns:
+            ``self`` for chaining.
+        """
         from reporting.tablespec.style import ColumnStyle
 
         col = Column(
@@ -91,10 +211,21 @@ class TableSpec:
         return self
 
     def add_row(self, *values: Any, **kwargs: Any) -> TableSpec:
-        """Add a row and return self for chaining.
+        """Add a row and return ``self`` for chaining.
 
-        Accepts positional values (one per column) or keyword arguments
-        mapping column names to values.
+        Accepts positional values (one per column) or keyword
+        arguments mapping column names to values (not both).
+
+        Args:
+            *values: One value per column, in order.
+            **kwargs: Column-name → value mappings.
+
+        Returns:
+            ``self`` for chaining.
+
+        Raises:
+            InvalidRowError: if both positional and keyword
+                arguments are provided.
         """
         if values and kwargs:
             raise InvalidRowError("Provide positional values OR keyword arguments, not both")
@@ -104,16 +235,33 @@ class TableSpec:
         else:
             validate_row_values(values, len(self.columns))
 
-        cells: list[Cell] = []
+        cells: list[TableCell] = []
         for col, val in zip(self.columns, values):
             text: Optional[str] = None
             if col.format is not None:
                 text = apply_format(val, col.format)
             elif col.formatter is not None:
                 text = apply_custom_formatter(val, col.formatter)
-            cells.append(Cell(value=val, text=text))
+            cells.append(TableCell(value=val, text=text))
 
-        self.rows.append(Row(cells=cells, group=self._current_group))
+        self.rows.append(TableRow(cells=cells, group=self._current_group))
+        return self
+
+    def row(self, *items: Any) -> TableSpec:
+        """Fluent row builder. Accepts a mix of TableCell and plain values.
+
+        Examples::
+
+            table.row("Case A", 0.80, 0.92)
+            table.row(cell("Header", colspan=3))
+        """
+        cells: list[TableCell] = []
+        for item in items:
+            if isinstance(item, TableCell):
+                cells.append(item)
+            else:
+                cells.append(TableCell(value=item))
+        self.rows.append(TableRow(cells=cells, group=self._current_group))
         return self
 
     def _resolve_kwargs(self, kwargs: dict[str, Any]) -> list[Any]:
@@ -171,6 +319,91 @@ class TableSpec:
             existing.style = style
         return self
 
+    # ------------------------------------------------------------------
+    # Excel-style API
+    # ------------------------------------------------------------------
+
+    def __getitem__(self, key: Union[str, tuple[int, int]]) -> Any:
+        """Access a cell by Excel-style reference ``"A1"`` or ``(row, col)``.
+
+        Examples::
+
+            value = table["B2"]       # Excel-style
+            value = table[1, 1]        # zero-based tuple
+        """
+        if isinstance(key, str):
+            r, c = parse_coord(key)
+        elif isinstance(key, tuple):
+            r, c = key
+        else:
+            raise TypeError(f"Expected str or tuple, got {type(key).__name__}")
+        return self.rows[r].cells[c].value
+
+    def __setitem__(self, key: Union[str, tuple[int, int]], value: Any) -> None:
+        """Set a cell value by Excel-style reference ``"A1"`` or ``(row, col)``.
+
+        Examples::
+
+            table["A1"] = "Results"    # Excel-style
+            table[0, 0] = "Results"    # zero-based tuple
+        """
+        if isinstance(key, str):
+            r, c = parse_coord(key)
+        elif isinstance(key, tuple):
+            r, c = key
+        else:
+            raise TypeError(f"Expected str or tuple, got {type(key).__name__}")
+        self.rows[r].cells[c].value = value
+
+    def merge(self, range_ref: str) -> TableSpec:
+        """Merge cells in an Excel-style range.
+
+        Sets colspan/rowspan on the top-left cell of the range.
+
+        Examples::
+
+            table.merge("A1:D1")     # merge header across 4 columns
+            table.merge("A1:A4")     # merge label across 4 rows
+        """
+        r1, c1, r2, c2 = parse_range(range_ref)
+        if r1 < len(self.rows) and c1 < len(self.columns):
+            cell = self.rows[r1].cells[c1]
+            cell.colspan = c2 - c1 + 1
+            cell.rowspan = r2 - r1 + 1
+        return self
+
+    def apply_style(self, range_ref: str, **kwargs: Any) -> TableSpec:
+        """Apply a CellStyle built from *kwargs* to every cell in the range.
+
+        Examples::
+
+            table.apply_style("A1:D1", background_color="#003366",
+                              text_color="white", bold=True)
+            table.apply_style("B2:C5", background_color="#D9EAF7")
+        """
+        r1, c1, r2, c2 = parse_range(range_ref)
+        cs = CellStyle(**kwargs)
+        for r in range(r1, r2 + 1):
+            for c in range(c1, c2 + 1):
+                if r < len(self.rows) and c < len(self.columns):
+                    self.rows[r].cells[c].style = cs
+        return self
+
+    def range(self, range_ref: str) -> RangeSelector:
+        """Return a ``RangeSelector`` for chained operations on a range.
+
+        Examples::
+
+            table.range("A1:D4").style(background_color="#D9EAF7", bold=True)
+            table.range("A1:D1").merge()
+        """
+        r1, c1, r2, c2 = parse_range(range_ref)
+        return RangeSelector(self, r1, c1, r2, c2)
+
+    # ------------------------------------------------------------------
+    # Legacy cell / column helpers
+    # ------------------------------------------------------------------
+
     def column(self, name: str) -> Column:
         """Return the Column with the given name (for chained configuration).
 
@@ -194,7 +427,7 @@ class TableSpec:
         return self
 
     # ------------------------------------------------------------------
-    # Conditional formatting
+    # Conditional formatting (immediate — mutates cells)
     # ------------------------------------------------------------------
 
     def highlight_max(self, column: str) -> TableSpec:
@@ -202,10 +435,16 @@ class TableSpec:
         col_idx = resolve_column_index(self.columns, column)
         col_vals: list[tuple[int, Any]] = []
         for r, row in enumerate(self.rows):
+            if r < self.style.header_rows:
+                continue
             if col_idx < len(row.cells):
                 val = row.cells[col_idx].value
                 if val is not None:
-                    col_vals.append((r, val))
+                    try:
+                        float(val)
+                        col_vals.append((r, val))
+                    except (TypeError, ValueError):
+                        pass
         if not col_vals:
             return self
         max_row = max(col_vals, key=lambda x: x[1])[0]
@@ -217,10 +456,16 @@ class TableSpec:
         col_idx = resolve_column_index(self.columns, column)
         col_vals: list[tuple[int, Any]] = []
         for r, row in enumerate(self.rows):
+            if r < self.style.header_rows:
+                continue
             if col_idx < len(row.cells):
                 val = row.cells[col_idx].value
                 if val is not None:
-                    col_vals.append((r, val))
+                    try:
+                        float(val)
+                        col_vals.append((r, val))
+                    except (TypeError, ValueError):
+                        pass
         if not col_vals:
             return self
         min_row = min(col_vals, key=lambda x: x[1])[0]
@@ -231,21 +476,27 @@ class TableSpec:
         """Apply a green-to-red heatmap to *column*."""
         col_idx = resolve_column_index(self.columns, column)
         col_vals: list[float] = []
-        for row in self.rows:
+        for row in self.rows[self.style.header_rows:]:
             if col_idx < len(row.cells):
                 val = row.cells[col_idx].value
                 if val is not None:
-                    col_vals.append(float(val))
+                    try:
+                        col_vals.append(float(val))
+                    except (TypeError, ValueError):
+                        pass
         if not col_vals:
             return self
         mn, mx = min(col_vals), max(col_vals)
         span = mx - mn or 1.0
 
-        for row in self.rows:
+        for row in self.rows[self.style.header_rows:]:
             if col_idx < len(row.cells):
                 val = row.cells[col_idx].value
                 if val is not None:
-                    ratio = (float(val) - mn) / span
+                    try:
+                        ratio = (float(val) - mn) / span
+                    except (TypeError, ValueError):
+                        continue
                     r_ = int(255 * ratio)
                     g_ = int(255 * (1 - ratio))
                     row.cells[col_idx].background_color = f"#{r_:02X}{g_:02X}00"
@@ -254,8 +505,150 @@ class TableSpec:
 
     def zebra(self) -> TableSpec:
         """Enable alternating row colors."""
-        self.style = TableStyle(zebra=True)
+        kwargs: dict[str, Any] = {k: getattr(self.style, k) for k in _dataclass_fields(TableStyle)}
+        kwargs["zebra"] = True
+        self.style = TableStyle(**kwargs)
         return self
+
+    # ------------------------------------------------------------------
+    # Deferred conditional formatting (resolved at render time)
+    # ------------------------------------------------------------------
+
+    def add_condition(
+        self,
+        column: str | int,
+        rule: Callable[[Any], bool],
+        **style_kwargs: Any,
+    ) -> TableSpec:
+        """Add a conditional format rule for *column*.
+
+        The *rule* callable receives the cell value; when it returns True,
+        the *style_kwargs* are applied as a CellStyle.
+
+        Examples::
+
+            table.add_condition("Temperature", lambda v: v > 1200,
+                                background_color="red")
+            table.add_condition("Efficiency", lambda v: v > 0.90,
+                                background_color="green")
+        """
+        col_idx: int = resolve_column_index(self.columns, column) if isinstance(column, str) else column
+        self._conditions.append(
+            CellCondition(column=col_idx, rule=rule, style=CellStyle(**style_kwargs))
+        )
+        return self
+
+    def add_heatmap(
+        self,
+        column: str | int,
+        min_color: str = "#FFFFCC",
+        max_color: str = "#FF0000",
+    ) -> TableSpec:
+        """Add a heatmap for *column* (deferred — resolved at render time)."""
+        col_idx: int = resolve_column_index(self.columns, column) if isinstance(column, str) else column
+        self._heatmaps.append(HeatmapDef(column=col_idx, min_color=min_color, max_color=max_color))
+        return self
+
+    def add_highlight_max(
+        self,
+        column: str | int,
+        color: str = "#C6EFCE",
+    ) -> TableSpec:
+        """Add a highlight-max rule for *column* (deferred — resolved at render time)."""
+        col_idx: int = resolve_column_index(self.columns, column) if isinstance(column, str) else column
+        self._highlights.append(HighlightExtremeDef(column=col_idx, mode="max", color=color))
+        return self
+
+    def add_highlight_min(
+        self,
+        column: str | int,
+        color: str = "#FFC7CE",
+    ) -> TableSpec:
+        """Add a highlight-min rule for *column* (deferred — resolved at render time)."""
+        col_idx: int = resolve_column_index(self.columns, column) if isinstance(column, str) else column
+        self._highlights.append(HighlightExtremeDef(column=col_idx, mode="min", color=color))
+        return self
+
+    # ------------------------------------------------------------------
+    # Style resolution for renderers
+    # ------------------------------------------------------------------
+
+    def resolve_cell_style(
+        self,
+        row_idx: int,
+        col_idx: int,
+        cell_idx: Optional[int] = None,
+    ) -> CellStyle:
+        """Resolve the effective CellStyle for a cell by merging all layers.
+
+        Merge order (last wins): TableStyle → RowStyle → ColumnStyle → CellStyle.
+        Then applies deferred conditionals/heatmaps/highlights.
+        Finally applies inline background_color/text_color overrides.
+
+        Args:
+            row_idx: Row index.
+            col_idx: Visual column index (for column lookups).
+            cell_idx: Cell index in the row (defaults to *col_idx*). Use this
+                when rowspan/colspan causes visual and cell indices to differ.
+        """
+        ts = self.style
+        row = self.rows[row_idx] if row_idx < len(self.rows) else None
+        col = self.columns[col_idx] if col_idx < len(self.columns) else None
+        ci = cell_idx if cell_idx is not None else col_idx
+        cell = row.cells[ci] if row and ci < len(row.cells) else None
+
+        resolved = CellStyle(
+            font_name=ts.font_name,
+            font_size=ts.font_size,
+            border_color=ts.border_color,
+            border_width=ts.border_width,
+            padding=ts.padding,
+        )
+
+        row_style = row.style if row else None
+        col_style = col.style if col else None
+        cell_style = cell.style if cell else None
+
+        for override in [row_style, col_style, cell_style]:
+            if override is not None:
+                resolved = _merge_styles(resolved, override)
+
+        cell_value = cell.value if cell else None
+
+        col_values: list[Any] = []
+        if col_idx >= 0:
+            col_values = [
+                r.cells[col_idx].value
+                for r in self.rows[self.style.header_rows:]
+                if col_idx < len(r.cells)
+            ]
+
+        is_header = row_idx < self.style.header_rows
+        if not is_header:
+            cond_styles = resolve_conditional_styles(
+                col_idx, cell_value,
+                conditions=self._conditions,
+                heatmaps=self._heatmaps,
+                highlights=self._highlights,
+                column_values=col_values,
+            )
+            extreme_styles = resolve_extreme_styles(
+                col_idx, cell_value,
+                highlights=self._highlights,
+                column_values=col_values,
+            )
+            for cs in cond_styles + extreme_styles:
+                if cs is not None:
+                    resolved = _merge_styles(resolved, cs)
+
+        if cell and cell.background_color is not None:
+            resolved = _rebuild_style(resolved, background_color=cell.background_color)
+        if cell and cell.text_color is not None:
+            resolved = _rebuild_style(resolved, text_color=cell.text_color)
+        if cell and cell.alignment is not None:
+            resolved = _rebuild_style(resolved, alignment=cell.alignment)
+
+        return resolved
 
     # ------------------------------------------------------------------
     # Classmethod constructors (optional dependencies)
@@ -437,3 +830,41 @@ class TableSpec:
             raise ImportError("pandas is required for to_dataframe()") from None
 
         return pd.DataFrame(self.to_records())
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+
+def _merge_styles(base: CellStyle, override: CellStyle) -> CellStyle:
+    """Merge two CellStyles: override wins for non-None fields."""
+    from dataclasses import fields
+    kwargs: dict[str, Any] = {}
+    for f in fields(CellStyle):
+        if f.name == "id":
+            continue
+        val = getattr(override, f.name)
+        if val is not None:
+            kwargs[f.name] = val
+        else:
+            kwargs[f.name] = getattr(base, f.name)
+    return CellStyle(**kwargs)
+
+
+def _rebuild_style(style: CellStyle, **overrides: Any) -> CellStyle:
+    """Rebuild a CellStyle with some fields overridden."""
+    from dataclasses import fields
+    kwargs: dict[str, Any] = {}
+    for f in fields(CellStyle):
+        if f.name == "id":
+            continue
+        kwargs[f.name] = getattr(style, f.name)
+    kwargs.update(overrides)
+    return CellStyle(**kwargs)
+
+
+def _dataclass_fields(cls: type) -> list[str]:
+    """Return list of field names for a dataclass."""
+    from dataclasses import fields
+    return [f.name for f in fields(cls)]

@@ -12,12 +12,57 @@ from reporting.renderers.base import BaseRenderer
 
 @dataclasses.dataclass
 class Document:
+    """A report document that holds slides and coordinates rendering.
+
+    ``Document`` is the top-level container.  Add slides to it and then
+    call ``render()`` with a renderer backend.
+
+    Args:
+        title: Report title (displayed in metadata, not on slides).
+        author: Author name for metadata (default ``""``).
+        theme: Visual theme applied to all slides by default.
+            Built-in choices: ``CorporateTheme()``, ``DarkTheme()``,
+            ``LightTheme()`` (default ``CorporateTheme()``).
+        slides: Initial list of slides.  Prefer ``add_slide()`` or
+            ``new_slide()`` instead of setting this directly.
+
+    Example::
+
+        from reporting.document import Document
+        from reporting.slide import Slide
+        from reporting.renderers.pdf.renderer import PDFRenderer
+
+        doc = Document("My Report", author="Engineer")
+        slide = Slide("Introduction")
+        slide.grid_layout(rows=1, cols=1)
+        slide[0, 0].text("Hello, world!")
+        doc.add_slide(slide)
+        doc.render(PDFRenderer(), "output.pdf")
+    """
+
     title: str
     author: str = ""
     theme: Theme = dataclasses.field(default_factory=CorporateTheme)
     slides: list[Slide] = dataclasses.field(default_factory=list)
 
     def add_slide(self, slide: Slide) -> Slide:
+        """Append an already-built ``Slide`` to the document.
+
+        Args:
+            slide: A fully configured ``Slide`` instance (grid layout
+                and content already set).
+
+        Returns:
+            The same ``slide`` instance (useful for chaining).
+
+        Example::
+
+            doc = Document("Report")
+            s = Slide("Page 1")
+            s.grid_layout(rows=1, cols=1)
+            s[0, 0].text("Content")
+            doc.add_slide(s)
+        """
         self.slides.append(slide)
         return slide
 
@@ -29,6 +74,32 @@ class Document:
         width: float = 960.0,
         height: float = 540.0,
     ) -> Slide:
+        """Create a ``Slide``, add it to the document, and return it.
+
+        Shorthand for ``Slide(...)`` + ``add_slide(...)``.
+
+        Args:
+            title: Slide title (shown in the title panel).
+            subtitle: Optional subtitle shown below the title
+                (default ``None``).
+            theme: Visual theme for this slide.  Falls back to the
+                document-level theme if ``None`` (default ``None``).
+            width: Slide width in pixels (default ``960.0`` —
+                standard 4:3).
+            height: Slide height in pixels (default ``540.0`` —
+                standard 4:3).
+
+        Returns:
+            The newly created ``Slide``, already appended to the
+            document.
+
+        Example::
+
+            doc = Document("Report")
+            slide = doc.new_slide("Results", subtitle="Test data")
+            slide.grid_layout(rows=2, cols=2)
+            slide[0, 0].text("Cell A")
+        """
         slide = Slide(
             title=title,
             subtitle=subtitle,
@@ -40,4 +111,18 @@ class Document:
         return slide
 
     def render(self, renderer: BaseRenderer, output_path: str) -> None:
+        """Render the document to a file using the given backend.
+
+        Args:
+            renderer: A renderer instance such as ``PDFRenderer()``
+                or ``HTMLRenderer()``.
+            output_path: Destination file path (e.g. ``"report.pdf"``
+                or ``"report.html"``).  The renderer creates or
+                overwrites this file.
+
+        Example::
+
+            from reportlab.renderers.pdf.renderer import PDFRenderer
+            doc.render(PDFRenderer(), "final_report.pdf")
+        """
         renderer.render_document(self, output_path)

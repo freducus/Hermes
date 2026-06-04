@@ -50,16 +50,15 @@ TableStyle
 
 .. code-block:: python
 
-   from reporting.styles.table_style import TableStyle, ZebraStyle
+   from reporting.tablespec.style import TableStyle
 
    table_style = TableStyle(
-       zebra=ZebraStyle(
-           even_row_color="#F3F3F3",
-           odd_row_color="#FFFFFF",
-           header_color="#4472C4",
-           header_text_color="#FFFFFF",
-           border_color="#D9D9D9",
-       ),
+       zebra=True,
+       even_row_color="#F3F3F3",
+       odd_row_color="#FFFFFF",
+       header_background="#4472C4",
+       header_text_color="#FFFFFF",
+       border_color="#D9D9D9",
        font_size=10.0,
        header_font_size=11.0,
        font_family="Helvetica",

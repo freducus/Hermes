@@ -5,6 +5,8 @@ from __future__ import annotations
 import dataclasses
 from typing import Union
 
+# Map of CSS named colours → hex (148 entries, lowercase, no spaces).
+# Used by ``Color.parse()`` for resolving colour names.
 NAMED_COLORS: dict[str, str] = {
     "aliceblue": "#F0F8FF",
     "antiquewhite": "#FAEBD7",
@@ -150,13 +152,33 @@ NAMED_COLORS: dict[str, str] = {
 }
 
 ColorValue = Union[str, tuple[int, int, int], "Color"]
+"""Any value that can be resolved to a colour: hex string
+``"#RRGGBB"``, named CSS colour, ``(r, g, b)`` tuple, or
+``Color`` instance."""
 
 
 @dataclasses.dataclass(frozen=True)
 class Color:
-    """Immutable color stored as hex string + int r/g/b + alpha.
+    """Immutable colour stored as a hex string and integer RGB components.
 
-    Use ``Color.parse()`` to auto-detect hex, named, or rgb() strings.
+    Use ``Color.parse()`` to auto-detect any supported input format.
+
+    Args:
+        hex: Hex colour string (with or without ``#``).
+        r: Red component (``0..255``).
+        g: Green component (``0..255``).
+        b: Blue component (``0..255``).
+        alpha: Opacity from ``0.0`` (transparent) to ``1.0``
+            (opaque) (default ``1.0``).
+
+    Example::
+
+        from reporting.styles.colors import Color
+
+        c = Color.parse("#1F4E79")
+        c2 = Color.from_rgb(31, 78, 121)
+        c3 = Color.parse("navy")
+        c4 = Color.parse((31, 78, 121))
     """
 
     hex: str
@@ -167,6 +189,18 @@ class Color:
 
     @staticmethod
     def from_hex(hex_str: str, alpha: float = 1.0) -> Color:
+        """Create a ``Color`` from a hex string.
+
+        Accepts 3-digit (``"#F00"``), 6-digit (``"#FF0000"``),
+        with or without leading ``#``.
+
+        Args:
+            hex_str: Hex colour string.
+            alpha: Opacity (default ``1.0``).
+
+        Returns:
+            A ``Color`` instance.
+        """
         h = hex_str.lstrip("#")
         if len(h) == 3:
             h = "".join(c * 2 for c in h)
@@ -175,6 +209,17 @@ class Color:
 
     @staticmethod
     def from_rgb(r: int, g: int, b: int, alpha: float = 1.0) -> Color:
+        """Create a ``Color`` from integer RGB components.
+
+        Args:
+            r: Red component (``0..255``).
+            g: Green component (``0..255``).
+            b: Blue component (``0..255``).
+            alpha: Opacity (default ``1.0``).
+
+        Returns:
+            A ``Color`` instance.
+        """
         hex_str = f"#{r:02x}{g:02x}{b:02x}"
         return Color(hex=hex_str, r=r, g=g, b=b, alpha=alpha)
 
@@ -216,30 +261,53 @@ class Color:
 
     @property
     def float_rgb(self) -> tuple[float, float, float]:
-        """RGB components as floats in [0, 1] (for ReportLab et al.)."""
+        """RGB components as floats in ``[0, 1]`` (for ReportLab et al.)."""
         return (self.r / 255, self.g / 255, self.b / 255)
 
     @property
     def css(self) -> str:
-        """CSS-compatible hex string starting with ``#``."""
+        """CSS-compatible hex string starting with ``#``.
+
+        Example::
+
+            Color.parse("#1F4E79").css  # "#1F4E79"
+        """
         return self.hex if self.hex.startswith("#") else f"#{self.hex}"
 
     @property
     def reportlab_color(self):
-        """Return a ``reportlab.lib.colors.Color`` object."""
+        """Return a ``reportlab.lib.colors.Color`` object.
+
+        Requires ``reportlab`` to be installed.
+        """
         from reportlab.lib import colors
 
         return colors.Color(*self.float_rgb, alpha=self.alpha)
 
     @property
     def rgba(self) -> str:
+        """CSS ``rgba()`` string.
+
+        Example::
+
+            Color.parse("#1F4E79", alpha=0.5).rgba  # "rgba(31,78,121,0.5)"
+        """
         return f"rgba({self.r},{self.g},{self.b},{self.alpha})"
 
     def with_alpha(self, alpha: float) -> Color:
+        """Return a new ``Color`` with the given opacity.
+
+        Args:
+            alpha: Opacity from ``0.0`` to ``1.0``.
+
+        Returns:
+            A new ``Color`` with the updated alpha.
+        """
         return Color(hex=self.hex, r=self.r, g=self.g, b=self.b, alpha=alpha)
 
     @property
     def hue(self) -> float:
+        """Hue angle in degrees (``0..360``) in the HSL model."""
         r, g, b = self.float_rgb
         mx = max(r, g, b)
         mn = min(r, g, b)
@@ -256,11 +324,13 @@ class Color:
 
     @property
     def lightness(self) -> float:
+        """Lightness in ``[0, 1]`` in the HSL model."""
         r, g, b = self.float_rgb
         return (max(r, g, b) + min(r, g, b)) / 2
 
     @property
     def saturation(self) -> float:
+        """Saturation in ``[0, 1]`` in the HSL model."""
         r, g, b = self.float_rgb
         mx = max(r, g, b)
         mn = min(r, g, b)
@@ -272,7 +342,14 @@ class Color:
 
     @staticmethod
     def sort_by_hue(items: list[tuple[str, str]]) -> list[tuple[str, str]]:
-        """Sort (name, hex) pairs by hue, then lightness, then saturation."""
+        """Sort ``(name, hex)`` pairs by hue, then lightness, then saturation.
+
+        Args:
+            items: List of ``(colour_name, hex_value)`` tuples.
+
+        Returns:
+            A new list sorted by hue, lightness, saturation.
+        """
         def _key(item: tuple[str, str]) -> tuple[float, float, float, str]:
             c = Color.parse(item[1])
             return (c.hue, c.lightness, c.saturation, item[0])
@@ -280,12 +357,50 @@ class Color:
 
 
 def normalize_color(value: ColorValue) -> str:
-    """Normalize any color input to a canonical hex string (with ``#``)."""
+    """Normalize any colour input to a canonical hex string with ``#``.
+
+    Args:
+        value: Any supported colour value.
+
+    Returns:
+        Hex string like ``"#1F4E79"``.
+    """
     return Color.parse(value).css
 
 
 @dataclasses.dataclass(frozen=True)
 class ColorPalette:
+    """A set of named colours defining a visual theme.
+
+    Args:
+        primary: Brand primary colour.
+        secondary: Brand secondary colour.
+        accent: Accent / call-to-action colour.
+        background: Page / slide background colour.
+        text_primary: Primary text colour.
+        text_secondary: Secondary / muted text colour.
+        border: Border and divider colour.
+        error: Error / danger colour.
+        warning: Warning / caution colour.
+        success: Success / positive colour.
+
+    Example::
+
+        from reporting.styles.colors import ColorPalette, Color
+
+        palette = ColorPalette(
+            primary=Color.from_hex("#1F4E79"),
+            secondary=Color.from_hex("#2E75B6"),
+            accent=Color.from_hex("#ED7D31"),
+            background=Color.from_hex("#FFFFFF"),
+            text_primary=Color.from_hex("#333333"),
+            text_secondary=Color.from_hex("#666666"),
+            border=Color.from_hex("#D9D9D9"),
+            error=Color.from_hex("#C00000"),
+            warning=Color.from_hex("#FFC000"),
+            success=Color.from_hex("#70AD47"),
+        )
+    """
     primary: Color
     secondary: Color
     accent: Color

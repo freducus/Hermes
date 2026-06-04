@@ -11,6 +11,7 @@ from reporting.tablespec import (
     TableBuilder,
     TableSpec,
 )
+from reporting.tablespec.style import TableStyle
 from reporting.tablespec.exceptions import (
     ColumnNotFoundError,
     DuplicateColumnError,
@@ -144,19 +145,19 @@ class TestTableSpecGrouping:
 
 class TestTableSpecConditionalFormatting:
     def test_highlight_max(self):
-        t = TableSpec(columns=[Column("val")])
+        t = TableSpec(columns=[Column("val")], style=TableStyle(header_rows=0))
         t.add_row(10).add_row(20).add_row(30)
         t.highlight_max("val")
         assert t.rows[2].cells[0].background_color == t.style.highlight_max_color
 
     def test_highlight_min(self):
-        t = TableSpec(columns=[Column("val")])
+        t = TableSpec(columns=[Column("val")], style=TableStyle(header_rows=0))
         t.add_row(10).add_row(20).add_row(30)
         t.highlight_min("val")
         assert t.rows[0].cells[0].background_color == t.style.highlight_min_color
 
     def test_heatmap(self):
-        t = TableSpec(columns=[Column("val")])
+        t = TableSpec(columns=[Column("val")], style=TableStyle(header_rows=0))
         t.add_row(0.0).add_row(0.5).add_row(1.0)
         t.heatmap("val")
         colors = [r.cells[0].background_color for r in t.rows]
