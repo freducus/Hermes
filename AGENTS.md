@@ -62,6 +62,13 @@ slide[2, :].table(df, zebra=True)
 
 Slices auto-compute `colspan`/`rowspan`. Text kwargs (`bold`, `italic`, `color`, `size`, `alignment`) are extracted from `**kwargs` and applied to the auto-created `TextRun`.
 
+You may also use `style="heading_1"` (or `"h1"`, `"body"`, `"caption"`, etc.) to inherit all font properties from the slide's theme typography. Explicit kwargs override the resolved values:
+
+```python
+slide[0, 0].text("Title", style="h1")
+slide[1, 0].text("Body with custom colour", style="body", color="#FF0000")
+```
+
 ## Tech stack
 
 | Layer | Technology |

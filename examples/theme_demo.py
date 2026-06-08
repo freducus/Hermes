@@ -17,12 +17,12 @@ def _build_theme_slide(name: str, theme) -> Slide:
     slide.grid_layout(rows=7, cols=3, gap=6)
 
     pal = theme.palette
-    h1 = theme.typography.heading_1
     body = theme.typography.body
-    h2 = theme.typography.heading_2
 
     # --- Column 0: font samples (one row per variant) ---
     # Row 0 — font info
+    h1 = theme.typography.heading_1
+    h2 = theme.typography.heading_2
     slide[0, 0].text(
         f"heading_1: {h1.family} size={h1.size}"
         f"{' bold' if h1.bold else ''}{' italic' if h1.italic else ''}\n"
@@ -30,40 +30,33 @@ def _build_theme_slide(name: str, theme) -> Slide:
         f"{' bold' if h2.bold else ''}{' italic' if h2.italic else ''}\n"
         f"body:      {body.family} size={body.size}"
         f"{' bold' if body.bold else ''}{' italic' if body.italic else ''}",
-        font_name=body.family,
+        style="body",
         size=9,
         color=pal.text_secondary.css,
     )
     # Row 1 — body text in theme body font
     slide[1, 0].text(
         f"{name} body — regular weight.",
-        font_name=body.family,
-        size=body.size,
-        bold=body.bold,
-        italic=body.italic,
+        style="body",
         color=pal.text_primary.css,
     )
-    # Row 2 — bold weight
+    # Row 2 — bold heading
     slide[2, 0].text(
         "Bold weight in heading_2 font.",
-        font_name=h2.family,
-        size=h2.size,
-        bold=True,
+        style="heading_2",
         color=pal.primary.css,
     )
-    # Row 3 — italic
+    # Row 3 — italic body
     slide[3, 0].text(
         "Italic styled for emphasis.",
-        font_name=body.family,
-        size=body.size,
+        style="body",
         italic=True,
         color=pal.text_secondary.css,
     )
-    # Row 4 — bold + italic
+    # Row 4 — bold + italic body
     slide[4, 0].text(
         "Bold + italic combined.",
-        font_name=body.family,
-        size=body.size,
+        style="body",
         bold=True,
         italic=True,
         color=pal.primary.css,
@@ -73,20 +66,18 @@ def _build_theme_slide(name: str, theme) -> Slide:
         cap = theme.typography.caption
         slide[5, 0].text(
             f"Caption ({cap.family} size={cap.size})",
-            size=cap.size,
-            color=cap.color or pal.text_secondary.css,
+            style="caption",
         )
     # Row 6 — code font
     if theme.typography.code:
-        code = theme.typography.code
+        code_ = theme.typography.code
         slide[6, 0].text(
-            f"Code: print('hello')  # {code.family}",
-            size=code.size,
-            color=code.color or pal.text_secondary.css,
+            f"Code: print('hello')  # {code_.family}",
+            style="code",
         )
 
     # --- Column 1: color palette ---
-    slide[0, 1].text("Color Palette", bold=True, size=h2.size, color=pal.text_primary.css)
+    slide[0, 1].text("Color Palette", style="heading_2")
     slide[1, 1].text(
         f"■ primary        #{pal.primary.hex.lstrip('#')}\n"
         f"■ background     #{pal.background.hex.lstrip('#')}\n"
@@ -96,7 +87,7 @@ def _build_theme_slide(name: str, theme) -> Slide:
         size=9,
         color=pal.text_secondary.css,
     )
-    # Fill remaining palette rows with empty text to keep layout clean
+    # Fill remaining palette rows with empty text
     for r in range(2, 7):
         slide[r, 1].text("")
 

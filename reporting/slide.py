@@ -60,6 +60,12 @@ class Slide:
         slide.grid_layout(rows=2, cols=2, gap=8)
         slide[0, 0].text("Top-left", bold=True)
         slide[1, :].text("Spanning bottom row")
+
+    Text can also inherit all font properties from the slide's theme::
+
+        slide[0, 0].text("Heading", style="h1")
+        slide[0, 1].text("Body text", style="body",
+                          color=palette.primary.css)
     """
 
     def __init__(
@@ -202,6 +208,13 @@ class Slide:
         self._elements[(cell.panel.row, cell.panel.col)] = element
 
 
+_STYLE_ALIASES: dict[str, str] = {
+    "h1": "heading_1",
+    "h2": "heading_2",
+    "h3": "heading_3",
+}
+
+
 class _CellProxy:
     """Intermediate object returned by ``slide[r, c]``.
 
@@ -261,11 +274,22 @@ class _CellProxy:
         the entire string.  Use ``TextElement`` directly for
         multi-run (mixed-format) text.
 
+        When ``style`` is given (e.g. ``"heading_1"``, ``"body"``,
+        ``"caption"``), font properties are resolved from the
+        slide's theme.  Explicit kwargs override the resolved
+        values.
+
         Args:
             content: The text to display.  May contain ``\\n`` for
                 line breaks.
 
         Keyword Args:
+            style: A theme typography style name —
+                ``"heading_1"`` (or ``"h1"``), ``"heading_2"``
+                (or ``"h2"``), ``"heading_3"`` (or ``"h3"``),
+                ``"body"``, ``"caption"``, ``"code"``, ``"mono"``.
+                Resolves family, size, bold, italic, and colour
+                from the slide's theme (default ``None``).
             bold: Whether the text is bold (default ``False``).
             italic: Whether the text is italic (default ``False``).
             size: Font size in points (default ``None`` = theme
@@ -287,11 +311,24 @@ class _CellProxy:
 
         Example::
 
-            slide[0, 0].text("Hello", bold=True, size=14,
-                              color="#1F4E79")
+            slide[0, 0].text("Hello", style="heading_1")
+            slide[0, 0].text("Bold text", style="h2",
+                              color=pal.primary.css)
             slide[1, 0].text("Line 1\\nLine 2",
                               alignment=TextAlignment.CENTER)
         """
+        style_name = kwargs.pop("style", None)
+        if style_name is not None:
+            typo = self._slide.theme.typography
+            name = _STYLE_ALIASES.get(style_name, style_name)
+            spec = getattr(typo, name, None)
+            if spec is not None:
+                kwargs.setdefault("font_name", spec.family)
+                kwargs.setdefault("size", spec.size)
+                kwargs.setdefault("bold", spec.bold)
+                kwargs.setdefault("italic", spec.italic)
+                if spec.color is not None and "color" not in kwargs:
+                    kwargs["color"] = spec.color
         el = TextElement(content, **kwargs)
         self._slide._set_cell_element(self._cell, el)
         return el
