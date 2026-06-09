@@ -12,7 +12,6 @@ from reporting.slide import Slide
 from reporting.layout.geometry import Edges
 from reporting.layout.grid import Grid
 from reporting.layout.sizing import Fill, Percent
-from reporting.elements.container import ContainerElement
 from reporting.elements.text import TextElement, TextAlignment
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
@@ -22,6 +21,25 @@ from reporting.background import SolidBackground, GradientBackground, ImageBackg
 from reporting.title_config import TitleConfig, SubtitleConfig, TitlePanelConfig, SubtitlePlacement
 
 OUT_DIR = Path(__file__).parent
+
+
+def create_logo() -> str:
+    """Generate a small PE logo PNG for the footer."""
+    path = OUT_DIR / "_logo.png"
+    if path.exists():
+        return str(path)
+    fig, ax = plt.subplots(figsize=(0.5, 0.25))
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 0.5)
+    ax.set_facecolor("none")
+    ax.text(0.02, 0.25, "PE", fontsize=14, fontweight="bold",
+            color="#1565C0", va="center", ha="left")
+    ax.axis("off")
+    fig.subplots_adjust(0, 0, 1, 1)
+    fig.savefig(path, dpi=96, bbox_inches="tight", pad_inches=0,
+                transparent=True)
+    plt.close(fig)
+    return str(path)
 
 
 def create_bg_image() -> str:
@@ -73,41 +91,42 @@ def create_table_data() -> pd.DataFrame:
 
 def main() -> None:
     doc = Document(title="Comprehensive Report", author="pyreportengine Demo")
+    LOGO_PATH = create_logo()
 
     # ---- Slide 1: Typography showcase ----
-    slide = Slide("Typography Showcase")
+    slide = Slide("Typography Showcase", footer_logo=LOGO_PATH)
     slide.grid_layout(rows=3, cols=3, gap=10, padding=Edges.all(15))
 
-    slide[0, 0]._cell.panel.background_color = "aliceblue"
+    slide[0, 0].background_color = "aliceblue"
     slide[0, 0].text("Helvetica Bold 14", font_name="Helvetica-Bold", size=14)
 
-    slide[0, 1]._cell.panel.background_color = "moccasin"
+    slide[0, 1].background_color = "moccasin"
     slide[0, 1].text("Times-Roman 12 italic", font_name="Times-Roman", size=12, italic=True)
 
-    slide[0, 2]._cell.panel.background_color = "honeydew"
+    slide[0, 2].background_color = "honeydew"
     slide[0, 2].text("Courier 10 bold red", font_name="Courier", size=10, bold=True, color="firebrick")
 
-    slide[1, 0]._cell.panel.background_color = "rgb(243, 229, 245)"
+    slide[1, 0].background_color = "rgb(243, 229, 245)"
     slide[1, 0].text("Times-Bold 16 blue", font_name="Times-Bold", size=16, color="royalblue")
 
-    slide[1, 1]._cell.panel.background_color = "rgb(251, 233, 231)"
+    slide[1, 1].background_color = "rgb(251, 233, 231)"
     slide[1, 1].text("Helvetica 11 black", size=11, color=(33, 33, 33))
 
-    slide[1, 2]._cell.panel.background_color = "lightcyan"
+    slide[1, 2].background_color = "lightcyan"
     slide[1, 2].text("Courier-Bold 9 green", font_name="Courier-Bold", size=9, color="forestgreen")
 
-    slide[2, 0]._cell.panel.background_color = "cornsilk"
+    slide[2, 0].background_color = "cornsilk"
     slide[2, 0].text("Helvetica-Oblique 13 gray", font_name="Helvetica-Oblique", size=13, color="dimgray")
 
-    slide[2, 1]._cell.panel.background_color = "rgb(237, 231, 246)"
+    slide[2, 1].background_color = "rgb(237, 231, 246)"
     slide[2, 1].text("Times-Italic 15 dark magenta", font_name="Times-Italic", size=15, color=(106, 27, 154))
 
-    slide[2, 2]._cell.panel.background_color = "rgb(225, 245, 254)"
+    slide[2, 2].background_color = "rgb(225, 245, 254)"
     slide[2, 2].text("Helvetica 9 teal center", size=9, color="teal", alignment="center")
     doc.add_slide(slide)
 
     # ---- Slide 2: Matplotlib plots ----
-    slide = Slide("Plots Gallery")
+    slide = Slide("Plots Gallery", footer_logo=LOGO_PATH)
     slide.grid_layout(rows=1, cols=3, gap=12, padding=Edges.all(15))
 
     plots = [
@@ -120,12 +139,12 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 3: Tables ----
-    slide = Slide("Data Tables")
+    slide = Slide("Data Tables", footer_logo=LOGO_PATH)
     slide.grid_layout(rows=2, cols=2, gap=15, padding=Edges.all(15))
 
     df = create_table_data()
     slide[0, 0].text("Zebra table", font_name="Helvetica-Bold", size=12)
-    slide[0, 0]._cell.panel.background_color = "lightblue"
+    slide[0, 0].background_color = "lightblue"
 
     df2 = pd.DataFrame({
         "Metric": ["Iterations", "Residual", "Lift Coeff", "Drag Coeff"],
@@ -133,13 +152,13 @@ def main() -> None:
         "Converged": [True, True, True, True],
     })
     slide[0, 1].text("Engineering data", font_name="Times-Bold", size=12, color="midnightblue")
-    slide[0, 1]._cell.panel.background_color = "cornsilk"
+    slide[0, 1].background_color = "cornsilk"
 
     slide[1, :].table(df, zebra=True)
     doc.add_slide(slide)
 
     # ---- Slide 4: Dashboard mix ----
-    slide = Slide("Dashboard")
+    slide = Slide("Dashboard", footer_logo=LOGO_PATH)
     slide.grid_layout(rows=3, cols=3, gap=8, padding=Edges.all(12))
 
     slide[0, 0].plot(create_plot("Efficiency", "C2"), format="pdf")
@@ -147,13 +166,13 @@ def main() -> None:
     slide[0, 2].plot(create_plot("Temperature", "C3"), format="pdf")
 
     slide[1, 0].text("Summary:\nAll systems nominal.", font_name="Times-Roman", size=10)
-    slide[1, 0]._cell.panel.background_color = "honeydew"
+    slide[1, 0].background_color = "honeydew"
 
     slide[1, 1].text("Warnings: 1\nCritical: 0", font_name="Helvetica-Bold", size=11, color="orangered")
-    slide[1, 1]._cell.panel.background_color = "moccasin"
+    slide[1, 1].background_color = "moccasin"
 
     slide[1, 2].text("Uptime: 99.8%\nStatus: OK", font_name="Courier", size=9)
-    slide[1, 2]._cell.panel.background_color = "lightblue"
+    slide[1, 2].background_color = "lightblue"
 
     df_dash = pd.DataFrame({
         "Component": ["Pump", "Valve", "Sensor", "Actuator", "Controller"],
@@ -164,7 +183,7 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 5: Nested containers ----
-    slide = Slide("Nested Layouts", subtitle="Container element with sub-grids")
+    slide = Slide("Nested Layouts", footer_logo=LOGO_PATH, subtitle="Container element with sub-grids")
     slide.grid_layout(rows=1, cols=2, gap=15, padding=Edges.all(15))
 
     inner = Grid(rows=3, cols=1, row_sizes=[Fill, Fill, Fill], gap=6)
@@ -174,8 +193,7 @@ def main() -> None:
     inner[1, 0].element = TextElement("Middle panel with info", font_name="Times-Roman", size=10, color="rgb(51, 51, 51)")
     inner[2, 0].panel.background_color = "honeydew"
     inner[2, 0].element = TextElement("Bottom panel, all good", font_name="Courier", size=9, color="forestgreen", italic=True)
-    container = ContainerElement(grid=inner)
-    slide._set_cell_element(slide._grid[0, 0], container)
+    slide[0, 0].grid_layout(inner)
 
     inner2 = Grid(rows=2, cols=2, row_sizes=[Fill, Fill], col_sizes=[Fill, Fill], gap=6)
     inner2[0, 0].panel.background_color = "rgb(243, 229, 245)"
@@ -186,12 +204,11 @@ def main() -> None:
     inner2[1, 0].element = TextElement("C", font_name="Courier-Bold", size=14, color="teal", alignment="center")
     inner2[1, 1].panel.background_color = "cornsilk"
     inner2[1, 1].element = TextElement("D", font_name="Times-Italic", size=14, color="orangered", alignment="center")
-    container2 = ContainerElement(grid=inner2)
-    slide._set_cell_element(slide._grid[0, 1], container2)
+    slide[0, 1].grid_layout(inner2)
     doc.add_slide(slide)
 
     # ---- Slide 6: Long-form text content ----
-    slide = Slide("Detailed Analysis", subtitle="Technical notes across multiple columns")
+    slide = Slide("Detailed Analysis", footer_logo=LOGO_PATH, subtitle="Technical notes across multiple columns")
     slide.grid_layout(rows=2, cols=3, gap=10, padding=Edges.all(15))
 
     slide[0, 0].text(
@@ -199,32 +216,33 @@ def main() -> None:
         "The residual dropped below 1e-6. Mesh quality was adequate.",
         font_name="Times-Roman", size=9, color=(33, 33, 33),
     )
-    slide[0, 0]._cell.panel.background_color = "whitesmoke"
+    slide[0, 0].background_color = "whitesmoke"
     slide[0, 1].text(
         "Temperature distribution shows a maximum gradient of "
         "15 K/m near the leading edge. Further refinement recommended.",
         font_name="Helvetica", size=9, color="rgb(66, 66, 66)",
     )
-    slide[0, 1]._cell.panel.background_color = "whitesmoke"
+    slide[0, 1].background_color = "whitesmoke"
     slide[0, 2].text(
         "Pressure coefficient matches experimental data within 3% "
         "across the entire chord. Validation criteria met.",
         font_name="Courier", size=8, color="rgb(51, 51, 51)",
     )
-    slide[0, 2]._cell.panel.background_color = "whitesmoke"
+    slide[0, 2].background_color = "whitesmoke"
 
     slide[1, 0].text("WARNING: Temperature exceeds limits.", font_name="Helvetica-Bold", size=10, color="firebrick")
-    slide[1, 0]._cell.panel.background_color = "mistyrose"
+    slide[1, 0].background_color = "mistyrose"
     slide[1, 1].text("All other parameters nominal.", font_name="Times-Roman", size=10, color="forestgreen", italic=True)
-    slide[1, 1]._cell.panel.background_color = "honeydew"
+    slide[1, 1].background_color = "honeydew"
     slide[1, 2].text("Report generated automatically.", font_name="Helvetica", size=10, color="dimgray")
-    slide[1, 2]._cell.panel.background_color = "rgb(245, 245, 245)"
+    slide[1, 2].background_color = "rgb(245, 245, 245)"
     doc.add_slide(slide)
 
     # ---- Slide 7: TableSpec tables ----
     slide = Slide(
         "TableSpec Demo",
         subtitle="For-loops, spans, column formatting, heatmap",
+        footer_logo=LOGO_PATH,
     )
     slide.grid_layout(rows=2, cols=2, gap=12, padding=Edges.all(15))
 
@@ -265,7 +283,7 @@ def main() -> None:
     ts2.highlight_max("Continuity")
     ts2.highlight_min("Y-Momentum")
     slide[0, 1].text("For-loop + highlight_max/min + formatter", font_name="Helvetica-Bold", size=10)
-    slide[0, 0]._cell.panel.background_color = "lightblue"
+    slide[0, 0].background_color = "lightblue"
     slide[0, 1].table_spec(ts2)
 
     # --- Table 3 (bottom-left): rowspan groups + for-loop over stages ---
@@ -320,6 +338,7 @@ def main() -> None:
         "Solid Background",
         subtitle="SolidBackground('aliceblue')",
         background=SolidBackground("aliceblue"),
+        footer_logo=LOGO_PATH,
     )
     slide.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide[0, 0].text(
@@ -333,6 +352,7 @@ def main() -> None:
         "Gradient Background",
         subtitle="GradientBackground('midnightblue', 'tomato', angle=135)",
         background=GradientBackground("midnightblue", "tomato", angle=135),
+        footer_logo=LOGO_PATH,
     )
     slide.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide[0, 0].text(
@@ -347,6 +367,7 @@ def main() -> None:
         "Image Background",
         subtitle=f"ImageBackground('{Path(bg_path).name}', opacity=0.85)",
         background=ImageBackground(bg_path, opacity=0.85),
+        footer_logo=LOGO_PATH,
     )
     slide.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide[0, 0].text(
@@ -380,6 +401,7 @@ def main() -> None:
             subtitle_width_ratio=0.3,
         ),
         title_panel_height=70,
+        footer_logo=LOGO_PATH,
     )
     slide.grid_layout(
         rows=1, cols=2,
@@ -395,7 +417,7 @@ def main() -> None:
         "40% column: right panel.",
         font_name="Helvetica", size=12, color="dimgray",
     )
-    slide[0, 1]._cell.panel.background_color = "rgb(232, 234, 246)"
+    slide[0, 1].background_color = "rgb(232, 234, 246)"
     doc.add_slide(slide)
 
     # ---- Slide 12: BELOW placement (green theme) ----
@@ -420,6 +442,7 @@ def main() -> None:
             alignment=TextAlignment.CENTER,
         ),
         title_panel_height=80,
+        footer_logo=LOGO_PATH,
     )
     slide.grid_layout(
         rows=1, cols=2,
@@ -435,7 +458,7 @@ def main() -> None:
         "40% column: right panel.",
         font_name="Helvetica", size=12, color="dimgray",
     )
-    slide[0, 1]._cell.panel.background_color = "rgb(232, 234, 246)"
+    slide[0, 1].background_color = "rgb(232, 234, 246)"
     doc.add_slide(slide)
 
     # ---- Slide 13: BELOW placement (green theme, duplicate) ----
@@ -458,6 +481,7 @@ def main() -> None:
             alignment=TextAlignment.CENTER,
         ),
         title_panel_height=80,
+        footer_logo=LOGO_PATH,
     )
     slide.grid_layout(
         rows=1, cols=2,
@@ -473,8 +497,8 @@ def main() -> None:
         "40% column: secondary info.",
         font_name="Helvetica", size=12, color="dimgray",
     )
-    slide[0, 1]._cell.panel.background_color = "honeydew"
-    slide[0, 0]._cell.panel.background_color = "dimgray"
+    slide[0, 1].background_color = "honeydew"
+    slide[0, 0].background_color = "dimgray"
     doc.add_slide(slide)
 
     # ---- Slide Final: Named colors swatch sorted by hue ----
@@ -490,6 +514,7 @@ def main() -> None:
         f"All {n} Named Colors",
         subtitle=f"Sorted by hue — {cols}×{rows} grid",
         title_panel_height=50,
+        footer_logo=LOGO_PATH,
     )
     slide.grid_layout(rows=rows, cols=cols, gap=1, padding=Edges.all(8))
 
@@ -497,7 +522,7 @@ def main() -> None:
         r_idx = i // cols
         c_idx = i % cols
         cell = slide[r_idx, c_idx]
-        cell._cell.panel.background_color = name
+        cell.background_color = name
         c = Color.parse(hex_str)
         lum = _luminance(c.r, c.g, c.b)
         text_color = "white" if lum <= 128 else "black"

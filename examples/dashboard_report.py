@@ -12,7 +12,6 @@ from reporting.document import Document
 from reporting.slide import Slide
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
-from reporting.renderers.html.renderer import HTMLRenderer
 
 
 def create_plot(title: str) -> plt.Figure:
@@ -45,8 +44,7 @@ def main() -> None:
 
     out = Path(__file__).parent / "dashboard_report"
     PDFRenderer().render_document(doc, str(out) + ".pdf")
-    HTMLRenderer().render_document(doc, str(out) + ".html")
-    print("Generated dashboard_report.{pdf,html}")
+    print("Generated dashboard_report.pdf")
 
 
 if __name__ == "__main__":

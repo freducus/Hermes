@@ -26,24 +26,12 @@ class TestSlide:
     def test_title_panel_height(self):
         slide = Slide("Test", title_panel_height=80)
         assert slide.title_panel_height == 80
-        assert slide.content_size == (960, 460)
+        assert slide.content_size == (960, 432)
 
     def test_content_size(self):
         slide = Slide("Test", width=800, height=600)
         assert slide.content_size.width == 800
-        assert slide.content_size.height == 540
-
-    def test_grid_layout_creates_grid(self):
-        slide = Slide("Test")
-        slide.grid_layout(rows=3, cols=4)
-        assert slide._grid is not None
-        assert slide._grid.rows == 3
-        assert slide._grid.cols == 4
-
-    def test_getitem_requires_grid(self):
-        slide = Slide("Test")
-        with pytest.raises(RuntimeError, match="Call grid_layout"):
-            _ = slide[0, 0]
+        assert slide.content_size.height == 512
 
     def test_get_cell_rects_grid_relative(self):
         slide = Slide("Test", width=800, height=600, title_panel_height=60)
@@ -54,7 +42,7 @@ class TestSlide:
         r = rects[0][0]
         assert r.y == 0
         assert r.width == 800
-        assert r.height == 540
+        assert r.height == 512
 
     def test_text_element(self, sample_slide):
         el = sample_slide[0, :].text("Hello")

@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 
 from reporting.styles.colors import Color, ColorPalette
 from reporting.styles.typography import Typography, FontSpec
+from reporting.footer_config import FooterConfig
+from reporting.slide_type import SlideTypeConfig
 
 if TYPE_CHECKING:
     from reporting.tablespec.style import TableStyle
@@ -26,6 +28,7 @@ class Theme:
         palette: The colour palette.
         typography: Font specifications for all text levels.
         table_style: Table style rules (column widths, zebra, etc.).
+        footer: Footer configuration (height, separator, font).
 
     Example::
 
@@ -48,7 +51,23 @@ class Theme:
     name: str
     palette: ColorPalette
     typography: Typography
-    table_style: TableStyle
+    table_style: "TableStyle"
+    footer: FooterConfig = dataclasses.field(default_factory=FooterConfig)
+    slide_types: dict[str, SlideTypeConfig] = dataclasses.field(default_factory=dict)
+
+    def get_slide_type(self, name: str = "default") -> SlideTypeConfig:
+        """Look up a slide type by name, falling back to a default if missing.
+
+        Args:
+            name: The slide type name.
+
+        Returns:
+            The matching ``SlideTypeConfig`` or a fresh default.
+        """
+        return self.slide_types.get(
+            name,
+            SlideTypeConfig.from_theme(self, name=name),
+        )
 
     def get_heading_style(self, level: int) -> FontSpec:
         """Get the font specification for a heading level.
@@ -105,7 +124,83 @@ class CorporateTheme(Theme):
             mono=FontSpec(family="Courier New", size=10.0, color="#333333"),
         )
         table_style = TableStyle()
-        super().__init__(name="Corporate", palette=palette, typography=typography, table_style=table_style)
+        super().__init__(name="Corporate", palette=palette, typography=typography, table_style=table_style,
+                         footer=FooterConfig(center_text="Corporate Report"),
+                         slide_types=_builtin_slide_types(
+                             theme_palette=palette,
+                             theme_typography=typography,
+                             center_text="Corporate Report",
+                         ))
+
+
+def _builtin_slide_types(
+    theme_palette: ColorPalette,
+    theme_typography: Typography,
+    center_text: str = "",
+) -> dict[str, SlideTypeConfig]:
+    """Create the standard set of slide types for a built-in theme."""
+    from reporting.elements.text import TextAlignment
+    from reporting.title_config import TitleConfig, SubtitleConfig, TitlePanelConfig
+
+    title_fg = TitleConfig(
+        font_name=theme_typography.heading_1.family,
+        font_size=theme_typography.heading_1.size,
+        bold=theme_typography.heading_1.bold,
+        italic=theme_typography.heading_1.italic,
+        color=theme_typography.heading_1.color or theme_palette.primary.css,
+        alignment=TextAlignment.LEFT,
+        show_separator=True,
+        separator_color=theme_palette.border.css,
+        separator_width=1.0,
+        separator_margin=8.0,
+    )
+    subtitle_fg = SubtitleConfig(
+        font_name=theme_typography.body.family,
+        font_size=theme_typography.body.size,
+        bold=theme_typography.body.bold,
+        italic=theme_typography.body.italic,
+        color=theme_typography.body.color or theme_palette.text_secondary.css,
+        alignment=TextAlignment.LEFT,
+    )
+    panel_cfg = TitlePanelConfig()
+
+    # Build footer configs
+    default_footer = FooterConfig(
+        enabled=True,
+        separator_color=theme_palette.border.css,
+        font_name=theme_typography.caption.family,
+        font_size=theme_typography.caption.size,
+        color=theme_palette.text_secondary.css,
+        center_text=center_text,
+    )
+    no_footer = FooterConfig(enabled=False)
+
+    return {
+        "default": SlideTypeConfig(
+            name="default",
+            title_panel_height=60.0,
+            title_config=title_fg,
+            subtitle_config=subtitle_fg,
+            title_panel_config=panel_cfg,
+            footer_config=default_footer,
+        ),
+        "title": SlideTypeConfig(
+            name="title",
+            title_panel_height=80.0,
+            title_config=dataclasses.replace(title_fg, show_separator=False),
+            subtitle_config=subtitle_fg,
+            title_panel_config=panel_cfg,
+            footer_config=no_footer,
+        ),
+        "blank": SlideTypeConfig(
+            name="blank",
+            title_panel_height=0.0,
+            title_config=title_fg,
+            subtitle_config=subtitle_fg,
+            title_panel_config=panel_cfg,
+            footer_config=no_footer,
+        ),
+    }
 
 
 @dataclasses.dataclass(frozen=True)
@@ -146,7 +241,13 @@ class DarkTheme(Theme):
             mono=FontSpec(family="Courier", size=10.0, color="#E0E0E0"),
         )
         table_style = TableStyle()
-        super().__init__(name="Dark", palette=palette, typography=typography, table_style=table_style)
+        super().__init__(name="Dark", palette=palette, typography=typography, table_style=table_style,
+                         footer=FooterConfig(center_text="Dark Report"),
+                         slide_types=_builtin_slide_types(
+                             theme_palette=palette,
+                             theme_typography=typography,
+                             center_text="Dark Report",
+                         ))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -187,4 +288,10 @@ class LightTheme(Theme):
             mono=FontSpec(family="Courier", size=10.0, color="#212121"),
         )
         table_style = TableStyle()
-        super().__init__(name="Light", palette=palette, typography=typography, table_style=table_style)
+        super().__init__(name="Light", palette=palette, typography=typography, table_style=table_style,
+                         footer=FooterConfig(center_text="Light Report"),
+                         slide_types=_builtin_slide_types(
+                             theme_palette=palette,
+                             theme_typography=typography,
+                             center_text="Light Report",
+                         ))

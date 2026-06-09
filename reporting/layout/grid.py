@@ -107,6 +107,23 @@ class Grid:
             for r in range(rows)
         ]
 
+    def copy_structure(self) -> Grid:
+        """Create a new ``Grid`` with the same dimensions, sizing,
+        gap, and padding, but with fresh empty cells.
+
+        Returns:
+            A new ``Grid`` sharing the structural properties
+            of this one.
+        """
+        return Grid(
+            rows=self.rows,
+            cols=self.cols,
+            row_sizes=list(self.row_sizes),
+            col_sizes=list(self.col_sizes),
+            gap=self.gap,
+            padding=self.padding,
+        )
+
     def __getitem__(self, pos: tuple[int | slice, int | slice]) -> GridCell:
         """Access a cell by row and column (NumPy-style indexing).
 

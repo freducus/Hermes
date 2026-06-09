@@ -14,5 +14,6 @@ Example::
 
 from reporting.document import Document
 from reporting.slide import Slide
+from reporting.slide_type import SlideTypeConfig
 
-__all__ = ["Document", "Slide"]
+__all__ = ["Document", "Slide", "SlideTypeConfig"]

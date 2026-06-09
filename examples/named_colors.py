@@ -9,7 +9,6 @@ from reporting.slide import Slide
 from reporting.styles.colors import NAMED_COLORS, Color
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
-from reporting.renderers.html.renderer import HTMLRenderer
 
 OUT = Path(__file__).parent
 
@@ -35,7 +34,7 @@ def main() -> None:
         r_idx = i // cols
         c_idx = i % cols
         cell = slide[r_idx, c_idx]
-        cell._cell.panel.background_color = name
+        cell.background_color = name
 
         c = Color.parse(hex_str)
         lum = _luminance(c.r, c.g, c.b)
@@ -48,8 +47,7 @@ def main() -> None:
 
     out = OUT / "named_colors"
     PDFRenderer().render_document(doc, str(out) + ".pdf")
-    HTMLRenderer().render_document(doc, str(out) + ".html")
-    print(f"Generated named_colors.{{pdf,html}} — {n} colors in {cols}×{rows}")
+    print(f"Generated named_colors.pdf — {n} colors in {cols}×{rows}")
 
 
 if __name__ == "__main__":

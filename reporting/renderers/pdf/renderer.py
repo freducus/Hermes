@@ -138,6 +138,8 @@ class PDFRenderer(BaseRenderer):
         self._canvas: Optional[canvas.Canvas] = None
         self._slide_pt_h: float = 0
         self._temp_files: list[str] = []
+        self._page_num: int = 1
+        self._total_pages: int = 1
 
     def render_document(self, document: "Document", output_path: str) -> None:
         """Render all slides of a document to a single PDF file.
@@ -163,7 +165,10 @@ class PDFRenderer(BaseRenderer):
         self._temp_files = []
 
         try:
-            for slide in document.slides:
+            total = len(document.slides)
+            for i, slide in enumerate(document.slides):
+                self._page_num = i + 1
+                self._total_pages = total
                 self._render_slide(slide)
                 c.showPage()
             c.save()
@@ -196,6 +201,7 @@ class PDFRenderer(BaseRenderer):
         self._current_slide = slide
         self._render_background(slide)
         self._render_title_panel(slide)
+        self._render_footer(slide)
 
         if slide._grid is None:
             return
@@ -359,7 +365,77 @@ class PDFRenderer(BaseRenderer):
             c.setLineWidth(tc.separator_width)
             c.line(margin, sep_y, margin + text_w, sep_y)
 
-    def _render_panel_background(self, rect: Any, bg_color: Optional[str]) -> None:
+    def _render_footer(self, slide: Any) -> None:
+        c = self._canvas
+        if c is None:
+            return
+
+        # Skip entirely when no footer grid has been set up
+        if slide._footer_grid is None:
+            return
+
+        fc = slide.footer_config
+        fh = slide.footer_height
+        pad = fc.padding
+
+        # Footer background area (top of page in canvas coordinates)
+        footer_y_pt = 0  # bottom of slide
+        footer_h_pt = _px_to_pt(fh)
+
+        # Separator line (above the footer)
+        if fc.show_separator:
+            sep_y = footer_y_pt + footer_h_pt + _px_to_pt(fc.separator_margin)
+            slide_w_pt = _px_to_pt(slide.width)
+            sep_x = _px_to_pt(pad.left)
+            sep_w = slide_w_pt - _px_to_pt(pad.left + pad.right)
+            c.setStrokeColor(Color.parse(fc.separator_color).reportlab_color)
+            c.setLineWidth(fc.separator_width)
+            c.line(sep_x, sep_y, sep_x + sep_w, sep_y)
+
+        cell_rects = slide.get_footer_cell_rects()
+        # Offset from top of slide (pixels) → top-left corner of footer content area
+        offset_y_px = slide.height - fh + pad.top
+
+        for r in range(slide._footer_grid.rows):
+            for c2 in range(slide._footer_grid.cols):
+                cell = slide._footer_grid.cells[r][c2]
+                rect = cell_rects[r][c2]
+                # Position in slide-relative pixels
+                adj = Rect(
+                    rect.x + pad.left,
+                    rect.y + offset_y_px,
+                    rect.width,
+                    rect.height,
+                )
+                element = cell.element
+                if element is None:
+                    continue
+                self._render_footer_element(element, adj)
+
+    def _render_footer_element(self, element: Any, rect: Rect) -> None:
+        """Render a single footer element, replacing ``{page}`` / ``{total}`` placeholders."""
+        from reporting.elements.text import TextElement
+
+        if isinstance(element, TextElement):
+            auto_type = element.properties.get("_auto")
+            if auto_type == "page_number":
+                for block in element.blocks:
+                    for run in block.runs:
+                        run.text = str(self._page_num)
+            elif auto_type == "total_pages":
+                for block in element.blocks:
+                    for run in block.runs:
+                        run.text = str(self._total_pages)
+            else:
+                # Replace placeholders in plain text elements
+                for block in element.blocks:
+                    for run in block.runs:
+                        run.text = run.text.replace("{page}", str(self._page_num))
+                        run.text = run.text.replace("{total}", str(self._total_pages))
+        self._render_element(element, rect, frame_padding=0)
+
+    def _render_panel_background(self, rect: Rect, bg_color: Optional[str] = None) -> None:
+        """Fill the panel rectangle with the given background colour."""
         if bg_color is None:
             return
         c = self._canvas
@@ -376,11 +452,11 @@ class PDFRenderer(BaseRenderer):
         except Exception:
             pass
 
-    def _render_element(self, element: Any, rect: Any, panel: Optional[Any] = None) -> None:
+    def _render_element(self, element: Any, rect: Any, panel: Optional[Any] = None, frame_padding: float = 4.0) -> None:
         if panel:
             rect = self._compute_content_rect(rect, element, panel)
         if element.element_type == ElementType.TEXT:
-            self._render_text(element, rect)
+            self._render_text(element, rect, frame_padding=frame_padding)
         elif element.element_type == ElementType.IMAGE:
             self._render_image(element, rect)
         elif element.element_type == ElementType.FIGURE:
@@ -561,7 +637,7 @@ class PDFRenderer(BaseRenderer):
 
         return Rect(x, y, cw, ch)
 
-    def _render_text(self, element: TextElement, rect: Any) -> None:
+    def _render_text(self, element: TextElement, rect: Any, frame_padding: float = 4.0) -> None:
         c = self._canvas
         if c is None:
             return
@@ -615,7 +691,8 @@ class PDFRenderer(BaseRenderer):
             p = Paragraph(html, style)
             c.saveState()
             c.translate(x, y)
-            frame = Frame(0, 0, w, h, leftPadding=4, rightPadding=4, topPadding=4, bottomPadding=4, id="cell")
+            fp = frame_padding
+            frame = Frame(0, 0, w, h, leftPadding=fp, rightPadding=fp, topPadding=fp, bottomPadding=fp, id="cell")
             frame.addFromList([p], c)
             c.restoreState()
 

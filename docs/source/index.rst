@@ -9,25 +9,18 @@ PowerPoint" with fully decoupled render backends (PDF, HTML).
 
 .. toctree::
    :maxdepth: 2
-   :caption: Getting Started
+   :caption: Guides
 
-   quickstart
+   01_basic_example
+   02_elements
+   03_layouts
+   04_header_footer
+   05_tables
+   06_fonts
+   07_themes
 
 .. toctree::
    :maxdepth: 2
    :caption: Reference
 
-   elements
-   layout
-   styles
-   renderers
    api
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Examples
-
-   examples/padding_margin
-   examples/image_demo
-   examples/figure_alignment
-   examples/comprehensive

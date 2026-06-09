@@ -73,6 +73,8 @@ class Document:
         theme: Optional[Theme] = None,
         width: float = 960.0,
         height: float = 540.0,
+        slide_type: str = "default",
+        base_slide: Optional[Slide] = None,
     ) -> Slide:
         """Create a ``Slide``, add it to the document, and return it.
 
@@ -88,6 +90,11 @@ class Document:
                 standard 4:3).
             height: Slide height in pixels (default ``540.0`` —
                 standard 4:3).
+            slide_type: Name of a pre-defined slide type in the
+                theme (default ``"default"``).
+            base_slide: Another ``Slide`` whose config and grid
+                layout are used as a starting point
+                (default ``None``).
 
         Returns:
             The newly created ``Slide``, already appended to the
@@ -106,6 +113,8 @@ class Document:
             theme=theme or self.theme,
             width=width,
             height=height,
+            slide_type=slide_type,
+            base_slide=base_slide,
         )
         self.slides.append(slide)
         return slide

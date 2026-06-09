@@ -6,11 +6,9 @@ from pathlib import Path
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.elements.container import ContainerElement
 from reporting.layout.grid import Grid
 from reporting.layout.sizing import Fill
 from reporting.renderers.pdf.renderer import PDFRenderer
-from reporting.renderers.html.renderer import HTMLRenderer
 
 
 def main() -> None:
@@ -22,8 +20,7 @@ def main() -> None:
     inner = Grid(rows=2, cols=1, row_sizes=[Fill, Fill], gap=5)
     inner[0, 0].panel.background_color = "aliceblue"
     inner[1, 0].panel.background_color = "aliceblue"
-    container = ContainerElement(grid=inner)
-    slide._set_cell_element(slide._grid[0, 0], container)
+    slide[0, 0].grid_layout(inner)
 
     slide[0, 1].text("Side panel content")
 
@@ -31,8 +28,7 @@ def main() -> None:
 
     out = Path(__file__).parent / "nested_layouts"
     PDFRenderer().render_document(doc, str(out) + ".pdf")
-    HTMLRenderer().render_document(doc, str(out) + ".html")
-    print("Generated nested_layouts.{pdf,html}")
+    print("Generated nested_layouts.pdf")
 
 
 if __name__ == "__main__":

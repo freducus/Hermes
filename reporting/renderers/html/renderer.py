@@ -22,6 +22,8 @@ from reporting.renderers.base import BaseRenderer
 from reporting.styles.colors import Color
 from reporting.tablespec.sizing import TableFitMode
 from reporting.title_config import TitleConfig
+from reporting.footer_config import FooterConfig
+from reporting.background import Background, BackgroundType
 
 if TYPE_CHECKING:
     from reporting.document import Document
@@ -57,10 +59,15 @@ class HTMLRenderer(BaseRenderer):
     def __init__(self, standalone: bool = True) -> None:
         self.standalone = standalone
         self._body_parts: list[str] = []
+        self._page_num: int = 1
+        self._total_pages: int = 1
 
     def render_document(self, document: "Document", output_path: str) -> None:
         slides_html: list[str] = []
-        for slide in document.slides:
+        total = len(document.slides)
+        for i, slide in enumerate(document.slides):
+            self._page_num = i + 1
+            self._total_pages = total
             slides_html.append(self._render_slide_html(slide))
 
         slides_content = "\n".join(slides_html)
@@ -168,11 +175,64 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
 
         cells_content = "\n".join(content_parts)
 
+        # Footer rendering
+        footer_html = ""
+        fh = slide.footer_height
+        if fh > 0 and slide._footer_grid is not None:
+            fc = slide.footer_config
+            pad = fc.padding
+            offset_y_px = slide.height - fh + pad.top
+            footer_parts: list[str] = []
+            cell_rects = slide.get_footer_cell_rects()
+            for r in range(slide._footer_grid.rows):
+                for c2 in range(slide._footer_grid.cols):
+                    cell = slide._footer_grid.cells[r][c2]
+                    rect = cell_rects[r][c2]
+                    element = cell.element
+                    if element is None:
+                        continue
+                    # Replace auto placeholders
+                    from reporting.elements.text import TextElement
+
+                    if isinstance(element, TextElement):
+                        auto_type = element.properties.get("_auto")
+                        if auto_type == "page_number":
+                            for block in element.blocks:
+                                for run in block.runs:
+                                    run.text = str(self._page_num)
+                        elif auto_type == "total_pages":
+                            for block in element.blocks:
+                                for run in block.runs:
+                                    run.text = str(self._total_pages)
+                        else:
+                            for block in element.blocks:
+                                for run in block.runs:
+                                    run.text = run.text.replace("{page}", str(self._page_num))
+                                    run.text = run.text.replace("{total}", str(self._total_pages))
+                    adj = Rect(
+                        rect.x + pad.left,
+                        rect.y + offset_y_px,
+                        rect.width,
+                        rect.height,
+                    )
+                    el_html = self._render_element_html(element, adj)
+                    footer_parts.append(el_html)
+            if footer_parts:
+                sep_html = ""
+                if fc.show_separator:
+                    sep_color = Color.parse(fc.separator_color).css
+                    sep_x = pad.left
+                    sep_w = f"calc(100% - {pad.left + pad.right}px)"
+                    sep_y = offset_y_px - pad.top  # just above footer content
+                    sep_html = f'<hr style="border:none;border-top:{fc.separator_width}px solid {sep_color};position:absolute;left:{sep_x}px;top:{sep_y}px;width:{sep_w};margin:0">'
+                footer_html = sep_html + "".join(footer_parts)
+
         return f"""<div class="slide" {slide_extra}>
   {title_html}
-  <div class="slide-content" style="top:{th}px">
+  <div class="slide-content" style="top:{th}px;bottom:{fh}px">
     {cells_content}
   </div>
+  {footer_html if fh > 0 else ""}
 </div>"""
 
     def _background_css(self, slide: Slide) -> str:
@@ -545,18 +605,6 @@ thead th {{ background-color: {header_bg}; color: {header_fg}; }}
 
         return ";".join(css_parts)
 
-
-def _css_padding(padding: Any) -> str:
-    if padding is None:
-        return "4px"
-    if isinstance(padding, (int, float)):
-        return f"{padding}px"
-    top = getattr(padding, "top", 4) or 4
-    right = getattr(padding, "right", 4) or 4
-    bottom = getattr(padding, "bottom", 4) or 4
-    left = getattr(padding, "left", 4) or 4
-    return f"{top}px {right}px {bottom}px {left}px"
-
     def _render_container_html(self, element: Any, parent_rect: Any,
                                panel: Optional[Any] = None) -> str:
         inner = element.grid
@@ -605,3 +653,15 @@ def _css_padding(padding: Any) -> str:
             ``None``.
         """
         return None
+
+
+def _css_padding(padding: Any) -> str:
+    if padding is None:
+        return "4px"
+    if isinstance(padding, (int, float)):
+        return f"{padding}px"
+    top = getattr(padding, "top", 4) or 4
+    right = getattr(padding, "right", 4) or 4
+    bottom = getattr(padding, "bottom", 4) or 4
+    left = getattr(padding, "left", 4) or 4
+    return f"{top}px {right}px {bottom}px {left}px"

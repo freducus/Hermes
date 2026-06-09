@@ -13,9 +13,12 @@ from reporting.elements.image import ImageElement
 from reporting.elements.figure import FigureElement
 from reporting.elements.table import TableElement
 from reporting.elements.tablespec_element import TableSpecElement
+from reporting.elements.container import ContainerElement
 from reporting.styles.theme import Theme, CorporateTheme
 from reporting.background import Background, BackgroundType, SolidBackground, GradientBackground, ImageBackground
 from reporting.title_config import TitleConfig, SubtitleConfig, TitlePanelConfig, SubtitlePlacement
+from reporting.footer_config import FooterConfig
+from reporting.slide_type import SlideTypeConfig
 
 
 class Slide:
@@ -39,18 +42,33 @@ class Slide:
             when ``None`` (default ``None``).
         width: Slide width in pixels (default ``960.0``).
         height: Slide height in pixels (default ``540.0``).
-        title_panel_height: Height of the title panel in pixels
-            (default ``60.0``).
+        title_panel_height: Height of the title panel in pixels.
+            Falls back to the slide type default when ``None``
+            (default ``None``).
         background: Slide background.  Accepts a hex string
             ``"#RRGGBB"``, a named CSS color, or a
             ``SolidBackground`` / ``GradientBackground`` /
             ``ImageBackground`` instance (default ``None``).
         title_config: Configure title font, size, colour, and
-            separator (default ``TitleConfig()``).
-        subtitle_config: Configure subtitle font and colour
-            (default ``SubtitleConfig()``).
+            separator.  Falls back to the slide type default
+            when ``None`` (default ``None``).
+        subtitle_config: Configure subtitle font and colour.
+            Falls back to the slide type default when ``None``
+            (default ``None``).
         title_panel_config: Configure subtitle placement and
-            padding (default ``TitlePanelConfig()``).
+            padding.  Falls back to the slide type default
+            when ``None`` (default ``None``).
+        footer_config: Footer styling and content.
+            Falls back to the slide type default when ``None``
+            (default ``None``).
+        footer_logo: Optional path to a logo image in the left
+            footer cell (default ``None``).
+        slide_type: Name of a pre-defined slide type in the
+            theme (default ``"default"``).  Ignored when a
+            ``base_slide`` is given without an explicit override.
+        base_slide: Another ``Slide`` whose config and grid
+            layout are used as a starting point.  Content cells
+            are **not** copied (default ``None``).
 
     Example::
 
@@ -66,6 +84,19 @@ class Slide:
         slide[0, 0].text("Heading", style="h1")
         slide[0, 1].text("Body text", style="body",
                           color=palette.primary.css)
+
+    Use a pre-defined slide type from the theme::
+
+        slide = Slide("Cover", slide_type="title")
+
+    Or base a slide on another slide to reuse its layout::
+
+        base = Slide("Master")
+        base.grid_layout(rows=2, cols=3, gap=10)
+
+        child = Slide("Child", base_slide=base)
+        # child has the same theme, header/footer config,
+        # background, and 2x3 grid layout
     """
 
     def __init__(
@@ -75,27 +106,109 @@ class Slide:
         theme: Optional[Theme] = None,
         width: float = 960.0,
         height: float = 540.0,
-        title_panel_height: float = 60.0,
+        title_panel_height: Optional[float] = None,
         background: Optional[Union[str, SolidBackground, GradientBackground, ImageBackground]] = None,
         title_config: Optional[TitleConfig] = None,
         subtitle_config: Optional[SubtitleConfig] = None,
         title_panel_config: Optional[TitlePanelConfig] = None,
+        footer_config: Optional[FooterConfig] = None,
+        footer_logo: Optional[str] = None,
+        slide_type: str = "default",
+        base_slide: Optional[Slide] = None,
     ):
         self.title = title
         self.subtitle = subtitle
-        self.theme = theme or CorporateTheme()
+        self._grid = None
+        self._elements = {}
+        self._footer_grid = None
+        self._footer_elements = {}
+
+        # --- Resolution chain: base_slide → slide_type → explicit kwargs ---
+        resolved_theme: Theme
+        resolved_type: Optional[SlideTypeConfig] = None
+        resolved_title_panel_height: Optional[float] = None
+        resolved_title_config: Optional[TitleConfig] = None
+        resolved_subtitle_config: Optional[SubtitleConfig] = None
+        resolved_title_panel_config: Optional[TitlePanelConfig] = None
+        resolved_footer_config: Optional[FooterConfig] = None
+        resolved_background: Optional[Background] = None
+
+        if base_slide is not None:
+            # Step 1: copy from base slide
+            resolved_theme = base_slide.theme
+            resolved_title_panel_height = base_slide.title_panel_height
+            resolved_title_config = base_slide.title_config
+            resolved_subtitle_config = base_slide.subtitle_config
+            resolved_title_panel_config = base_slide.title_panel_config
+            resolved_footer_config = base_slide.footer_config
+            if base_slide.background is not None:
+                resolved_background = base_slide.background
+            # Copy grid structure from base (no content)
+            if base_slide._grid is not None:
+                self._grid = base_slide._grid.copy_structure()
+        else:
+            resolved_theme = theme or CorporateTheme()
+
+        # Step 2: apply slide type from theme
+        resolved_theme = theme or resolved_theme
+        st = resolved_theme.get_slide_type(slide_type)
+        if resolved_title_panel_height is None:
+            resolved_title_panel_height = st.title_panel_height
+        resolved_title_config = resolved_title_config or st.title_config
+        resolved_subtitle_config = resolved_subtitle_config or st.subtitle_config
+        resolved_title_panel_config = resolved_title_panel_config or st.title_panel_config
+        resolved_footer_config = resolved_footer_config or st.footer_config
+        if resolved_background is None and st.background is not None:
+            resolved_background = st.background
+
+        # Step 3: explicit kwargs override everything
+        self.theme = resolved_theme
         self.width = width
         self.height = height
-        self.title_panel_height = title_panel_height
+        self.title_panel_height = resolved_title_panel_height if title_panel_height is None else title_panel_height
         if isinstance(background, str):
-            self.background: Optional[Background] = SolidBackground(background)
+            self.background = SolidBackground(background)
         else:
-            self.background: Optional[Background] = background
-        self.title_config = title_config or TitleConfig.from_theme(self.theme)
-        self.subtitle_config = subtitle_config or SubtitleConfig.from_theme(self.theme)
-        self.title_panel_config = title_panel_config or TitlePanelConfig()
-        self._grid: Optional[Grid] = None
-        self._elements: dict[tuple[int, int], Any] = {}
+            self.background = background if background is not None else resolved_background
+        self.title_config = title_config or resolved_title_config or TitleConfig.from_theme(self.theme)
+        self.subtitle_config = subtitle_config or resolved_subtitle_config or SubtitleConfig.from_theme(self.theme)
+        self.title_panel_config = title_panel_config or resolved_title_panel_config or TitlePanelConfig()
+        self.footer_config = footer_config or resolved_footer_config or self.theme.footer
+        self.footer_height = self.footer_config.height
+        self.footer_logo: Optional[str] = None
+
+        # Resolve footer logo: explicit > base_slide > slide_type
+        ft_logo: Optional[str] = None
+        if footer_logo is not None:
+            ft_logo = footer_logo
+        elif base_slide is not None and base_slide.footer_logo is not None:
+            ft_logo = base_slide.footer_logo
+        elif st.footer_logo is not None:
+            ft_logo = st.footer_logo
+        if ft_logo is not None:
+            self.footer_logo = ft_logo
+
+        if self.footer_config.enabled:
+            self.footer_layout(rows=1, cols=3)
+            if ft_logo:
+                self.footer[0, 0].image(ft_logo)
+            else:
+                self.footer[0, 0].text("")
+            if self.footer_config.center_text:
+                self.footer[0, 1].text(
+                    self.footer_config.center_text,
+                    size=self.footer_config.font_size,
+                    color=self.footer_config.color,
+                    font_name=self.footer_config.font_name,
+                    alignment="center",
+                )
+            self.footer[0, 2].text(
+                "{page} / {total}",
+                size=self.footer_config.font_size,
+                color=self.footer_config.color,
+                font_name=self.footer_config.font_name,
+                alignment="right",
+            )
 
     @property
     def size(self) -> Size:
@@ -110,12 +223,15 @@ class Slide:
     def content_size(self) -> Size:
         """Return the available area below the title panel.
 
-        The content area is the full slide minus the title panel.
+        When a footer grid has been set up via ``footer_layout()``,
+        the footer height is also subtracted.
 
         Returns:
-            ``Size(width, height - title_panel_height)`` in pixels.
+            ``Size(width, height - title_panel_height[- footer_height])``
+            in pixels.
         """
-        return Size(self.width, self.height - self.title_panel_height)
+        footer_h = self.footer_height if self._footer_grid is not None else 0
+        return Size(self.width, self.height - self.title_panel_height - footer_h)
 
     def get_cell_rects(self) -> list[list[Rect]]:
         """Compute the pixel rectangles of every grid cell.
@@ -207,6 +323,95 @@ class Slide:
         cell.element = element
         self._elements[(cell.panel.row, cell.panel.col)] = element
 
+    # --- Footer ---
+
+    def footer_layout(
+        self,
+        rows: int = 1,
+        cols: int = 4,
+        row_sizes: Optional[list[Sizing]] = None,
+        col_sizes: Optional[list[Sizing]] = None,
+        gap: float = 0.0,
+        padding: Optional[Edges] = None,
+    ) -> None:
+        """Divide the footer area into a grid of cells.
+
+        Must be called before accessing footer cells with
+        ``slide.footer[r, c]``.
+
+        Args:
+            rows: Number of rows (default ``1``).
+            cols: Number of columns (default ``4``).
+            row_sizes: Per-row sizing (default ``None`` =
+                all rows use ``Fill``).
+            col_sizes: Per-column sizing (default ``None`` =
+                all columns use ``Fill``).
+            gap: Spacing between cells in pixels
+                (default ``0.0``).
+            padding: Outer padding around the footer grid
+                (default ``None`` = no extra padding; the
+                footer's own ``FooterConfig.padding`` is
+                applied by the renderer).
+
+        Example::
+
+            slide.footer_layout(rows=1, cols=4, gap=4)
+            slide.footer[0, 0].page_number(style="caption")
+            slide.footer[0, 1].text(" | ", style="caption")
+            slide.footer[0, 2].total_pages(style="caption")
+        """
+        self._footer_grid = Grid(
+            rows=rows,
+            cols=cols,
+            row_sizes=row_sizes,
+            col_sizes=col_sizes,
+            gap=gap,
+            padding=padding,
+        )
+
+    def get_footer_cell_rects(self) -> list[list[Rect]]:
+        """Compute the pixel rectangles of every footer grid cell.
+
+        Rectangles are relative to the top-left of the footer
+        content area (inside ``FooterConfig.padding``).
+
+        Returns:
+            A 2-D list of ``Rect``, one per cell in the footer grid.
+        """
+        if self._footer_grid is None:
+            raise RuntimeError("Call footer_layout() before accessing footer cells.")
+        _, rects = self._footer_grid.layout(self._footer_content_size)
+        return [[Rect(r.x, r.y, r.width, r.height) for r in row] for row in rects]
+
+    @property
+    def _footer_content_size(self) -> Size:
+        """Available area inside the footer panel (after padding)."""
+        pad = self.footer_config.padding
+        return Size(
+            self.width - pad.left - pad.right,
+            self.footer_height - pad.top - pad.bottom,
+        )
+
+    @property
+    def footer(self) -> _FooterProxy:
+        """Access the footer grid.
+
+        Returns:
+            A ``_FooterProxy`` for NumPy-style indexing into
+            footer cells.
+
+        Raises:
+            RuntimeError: If ``footer_layout()`` has not been
+                called first.
+        """
+        if self._footer_grid is None:
+            raise RuntimeError("Call footer_layout() before accessing footer cells.")
+        return _FooterProxy(self)
+
+    def _set_footer_element(self, cell: GridCell, element: Any) -> None:
+        cell.element = element
+        self._footer_elements[(cell.panel.row, cell.panel.col)] = element
+
 
 _STYLE_ALIASES: dict[str, str] = {
     "h1": "heading_1",
@@ -225,6 +430,38 @@ class _CellProxy:
     def __init__(self, slide: Slide, cell: GridCell) -> None:
         self._slide = slide
         self._cell = cell
+
+    @property
+    def background_color(self) -> object:
+        """Background colour of the cell's panel (property).
+
+        Setting this is equivalent to
+        ``slide[r, c]._cell.panel.background_color = value``.
+
+        Example::
+
+            slide[0, 0].background_color = "#E3F2FD"
+            slide[1, 0].background_color = (33, 150, 243)
+        """
+        return self._cell.panel.background_color
+
+    @background_color.setter
+    def background_color(self, value: object) -> None:
+        from reporting.styles.colors import normalize_color
+        self._cell.panel.background_color = normalize_color(value)
+
+    @property
+    def padding(self) -> object:
+        """Padding of the cell's panel (property).
+
+        Setting this is equivalent to
+        ``slide[r, c]._cell.panel.padding = value``.
+        """
+        return self._cell.panel.padding
+
+    @padding.setter
+    def padding(self, value: object) -> None:
+        self._cell.panel.padding = value
 
     def align(
         self,
@@ -480,4 +717,153 @@ class _CellProxy:
             spec.style = _TableStyle(**{f.name: getattr(theme_ts, f.name) for f in dataclasses.fields(_TableStyle)})
         el = TableSpecElement(spec, **kwargs)
         self._slide._set_cell_element(self._cell, el)
+        return el
+
+    def grid_layout(self, grid: Grid) -> ContainerElement:
+        """Add a nested sub-grid inside this cell.
+
+        Wraps a ``Grid`` in a ``ContainerElement`` so you can
+        place multiple items inside one cell.
+
+        Args:
+            grid: A ``Grid`` instance defining the sub-layout.
+
+        Returns:
+            The created ``ContainerElement``.
+
+        Example::
+
+            from reporting.layout.grid import Grid
+
+            inner = Grid(rows=2, cols=1, gap=6)
+            inner[0, 0].element = TextElement("Top")
+            inner[1, 0].element = TextElement("Bottom")
+            slide[2, :].grid_layout(inner)
+        """
+        el = ContainerElement(grid=grid)
+        self._slide._set_cell_element(self._cell, el)
+        return el
+
+
+class _FooterProxy:
+    """Intermediate object returned by ``slide.footer``.
+
+    Do **not** instantiate directly.  Use ``slide.footer_layout()``
+    first, then ``slide.footer[r, c]``.
+    """
+
+    def __init__(self, slide: Slide) -> None:
+        self._slide = slide
+
+    def __getitem__(self, pos: tuple[Union[int, slice], Union[int, slice]]) -> _FooterCellProxy:
+        """Access a footer grid cell by row and column.
+
+        Args:
+            pos: A ``(row, col)`` tuple.  Each coordinate can be an
+                ``int`` or a ``slice``.
+
+        Returns:
+            A ``_FooterCellProxy`` for placing content.
+        """
+        cell = self._slide._footer_grid[pos]
+        return _FooterCellProxy(self._slide, cell)
+
+
+class _FooterCellProxy:
+    """Proxy for individual footer cells returned by ``slide.footer[r, c]``.
+
+    Do **not** instantiate directly.
+    """
+
+    def __init__(self, slide: Slide, cell: GridCell) -> None:
+        self._slide = slide
+        self._cell = cell
+
+    def text(self, content: str = "", **kwargs: object) -> TextElement:
+        """Add a text element to this footer cell.
+
+        Args:
+            content: The text to display.
+
+        Keyword Args:
+            Same as ``_CellProxy.text()`` — ``bold``, ``italic``,
+            ``size``, ``color``, ``font_name``, ``alignment``,
+            ``style``.
+
+        Returns:
+            The created ``TextElement``.
+        """
+        style_name = kwargs.pop("style", None)
+        if style_name is not None:
+            typo = self._slide.theme.typography
+            name = _STYLE_ALIASES.get(style_name, style_name)
+            spec = getattr(typo, name, None)
+            if spec is not None:
+                kwargs.setdefault("font_name", spec.family)
+                kwargs.setdefault("size", spec.size)
+                kwargs.setdefault("bold", spec.bold)
+                kwargs.setdefault("italic", spec.italic)
+                if spec.color is not None and "color" not in kwargs:
+                    kwargs["color"] = spec.color
+        el = TextElement(content, **kwargs)
+        self._slide._set_footer_element(self._cell, el)
+        return el
+
+    def image(
+        self,
+        source: str = "",
+        scale: float = 1.0,
+        fit_mode: str = "fit_vertical",
+        **kwargs: object,
+    ) -> ImageElement:
+        """Add an image to this footer cell.
+
+        Args:
+            source: Path to the image file.
+            scale: Uniform scale factor (default ``1.0``).
+            fit_mode: How to fit the image in the cell
+                (default ``"fit_vertical"``).
+
+        Returns:
+            The created ``ImageElement``.
+        """
+        from reporting.elements.image import ImageFitMode
+
+        mode = ImageFitMode(fit_mode)
+        el = ImageElement(source=source, scale=scale, fit_mode=mode, **kwargs)
+        self._slide._set_footer_element(self._cell, el)
+        return el
+
+    def page_number(self, **kwargs: object) -> TextElement:
+        """Add a page-number placeholder in this footer cell.
+
+        The renderer replaces this with the current page number
+        (e.g. ``"1"``, ``"2"``, …).
+
+        Keyword Args:
+            Same as ``text()`` — ``bold``, ``italic``, ``size``,
+            ``color``, ``font_name``, ``alignment``, ``style``.
+
+        Returns:
+            The created ``TextElement`` with an auto placeholder.
+        """
+        el = self.text("{page}", **kwargs)
+        el.properties["_auto"] = "page_number"
+        return el
+
+    def total_pages(self, **kwargs: object) -> TextElement:
+        """Add a total-pages placeholder in this footer cell.
+
+        The renderer replaces this with the total number of pages
+        (e.g. ``"5"``, ``"12"``, …).
+
+        Keyword Args:
+            Same as ``text()`` — ``bold``, ``italic``, ``size``,
+            ``color``, ``font_name``, ``alignment``, ``style``.
+
+        Returns:
+            The created ``TextElement`` with an auto placeholder.
+        """
+        el = self.text("{total}", **kwargs)
+        el.properties["_auto"] = "total_pages"
         return el
