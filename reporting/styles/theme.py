@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from reporting.styles.colors import Color, ColorPalette
 from reporting.styles.typography import Typography, FontSpec
-from reporting.footer_config import FooterConfig
+from reporting.footer_config import FooterPanel
 from reporting.slide_type import SlideTypeConfig
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ class Theme:
         palette: The colour palette.
         typography: Font specifications for all text levels.
         table_style: Table style rules (column widths, zebra, etc.).
-        footer: Footer configuration (height, separator, font).
+        footer_panel: Footer panel configuration (height, separator, font).
 
     Example::
 
@@ -52,7 +52,7 @@ class Theme:
     palette: ColorPalette
     typography: Typography
     table_style: "TableStyle"
-    footer: FooterConfig = dataclasses.field(default_factory=FooterConfig)
+    footer_panel: FooterPanel = dataclasses.field(default_factory=FooterPanel)
     slide_types: dict[str, SlideTypeConfig] = dataclasses.field(default_factory=dict)
 
     def get_slide_type(self, name: str = "default") -> SlideTypeConfig:
@@ -125,7 +125,7 @@ class CorporateTheme(Theme):
         )
         table_style = TableStyle()
         super().__init__(name="Corporate", palette=palette, typography=typography, table_style=table_style,
-                         footer=FooterConfig(center_text="Corporate Report"),
+                         footer_panel=FooterPanel(center_text="Corporate Report"),
                          slide_types=_builtin_slide_types(
                              theme_palette=palette,
                              theme_typography=typography,
@@ -139,33 +139,29 @@ def _builtin_slide_types(
     center_text: str = "",
 ) -> dict[str, SlideTypeConfig]:
     """Create the standard set of slide types for a built-in theme."""
-    from reporting.elements.text import TextAlignment
-    from reporting.title_config import TitleConfig, SubtitleConfig, TitlePanelConfig
+    from reporting.title_config import TitlePanel
 
-    title_fg = TitleConfig(
-        font_name=theme_typography.heading_1.family,
-        font_size=theme_typography.heading_1.size,
-        bold=theme_typography.heading_1.bold,
-        italic=theme_typography.heading_1.italic,
-        color=theme_typography.heading_1.color or theme_palette.primary.css,
-        alignment=TextAlignment.LEFT,
+    default_title_panel = TitlePanel(
+        height=60.0,
         show_separator=True,
         separator_color=theme_palette.border.css,
         separator_width=1.0,
         separator_margin=8.0,
     )
-    subtitle_fg = SubtitleConfig(
-        font_name=theme_typography.body.family,
-        font_size=theme_typography.body.size,
-        bold=theme_typography.body.bold,
-        italic=theme_typography.body.italic,
-        color=theme_typography.body.color or theme_palette.text_secondary.css,
-        alignment=TextAlignment.LEFT,
+    title_slide_panel = TitlePanel(
+        height=80.0,
+        show_separator=False,
+        separator_color=theme_palette.border.css,
+        separator_width=1.0,
+        separator_margin=8.0,
     )
-    panel_cfg = TitlePanelConfig()
+    blank_panel = TitlePanel(
+        height=0.0,
+        show_separator=False,
+    )
 
-    # Build footer configs
-    default_footer = FooterConfig(
+    # Build footer panels
+    default_footer = FooterPanel(
         enabled=True,
         separator_color=theme_palette.border.css,
         font_name=theme_typography.caption.family,
@@ -173,32 +169,23 @@ def _builtin_slide_types(
         color=theme_palette.text_secondary.css,
         center_text=center_text,
     )
-    no_footer = FooterConfig(enabled=False)
+    no_footer = FooterPanel(enabled=False)
 
     return {
         "default": SlideTypeConfig(
             name="default",
-            title_panel_height=60.0,
-            title_config=title_fg,
-            subtitle_config=subtitle_fg,
-            title_panel_config=panel_cfg,
-            footer_config=default_footer,
+            title_panel=default_title_panel,
+            footer_panel=default_footer,
         ),
         "title": SlideTypeConfig(
             name="title",
-            title_panel_height=80.0,
-            title_config=dataclasses.replace(title_fg, show_separator=False),
-            subtitle_config=subtitle_fg,
-            title_panel_config=panel_cfg,
-            footer_config=no_footer,
+            title_panel=title_slide_panel,
+            footer_panel=no_footer,
         ),
         "blank": SlideTypeConfig(
             name="blank",
-            title_panel_height=0.0,
-            title_config=title_fg,
-            subtitle_config=subtitle_fg,
-            title_panel_config=panel_cfg,
-            footer_config=no_footer,
+            title_panel=blank_panel,
+            footer_panel=no_footer,
         ),
     }
 
@@ -242,7 +229,7 @@ class DarkTheme(Theme):
         )
         table_style = TableStyle()
         super().__init__(name="Dark", palette=palette, typography=typography, table_style=table_style,
-                         footer=FooterConfig(center_text="Dark Report"),
+                         footer_panel=FooterPanel(center_text="Dark Report"),
                          slide_types=_builtin_slide_types(
                              theme_palette=palette,
                              theme_typography=typography,
@@ -289,7 +276,7 @@ class LightTheme(Theme):
         )
         table_style = TableStyle()
         super().__init__(name="Light", palette=palette, typography=typography, table_style=table_style,
-                         footer=FooterConfig(center_text="Light Report"),
+                         footer_panel=FooterPanel(center_text="Light Report"),
                          slide_types=_builtin_slide_types(
                              theme_palette=palette,
                              theme_typography=typography,

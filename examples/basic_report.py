@@ -6,21 +6,21 @@ from pathlib import Path
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterConfig
+from reporting.footer_config import FooterPanel
 from reporting.renderers.pdf.renderer import PDFRenderer
 
 
 def main() -> None:
     doc = Document(title="Basic Report", author="Engineer")
 
-    slide = Slide("Executive Summary", footer_config=FooterConfig(center_text="Basic Report | Engineering Dept"))
+    slide = Slide("Executive Summary", footer_panel=FooterPanel(center_text="Basic Report | Engineering Dept"))
     slide.grid_layout(rows=2, cols=2, gap=10)
     slide[0, 0].text("Key metrics and findings.")
     slide[0, 1].text("Recommendations: proceed with optimization.")
     slide[1, :].text("Detailed analysis in subsequent sections.")
     doc.add_slide(slide)
 
-    slide2 = Slide("Results", footer_config=FooterConfig(center_text="Basic Report | Engineering Dept"))
+    slide2 = Slide("Results", footer_panel=FooterPanel(center_text="Basic Report | Engineering Dept"))
     slide2.grid_layout(rows=1, cols=1)
     slide2[0, 0].text("Detailed results go here.")
     doc.add_slide(slide2)
@@ -32,3 +32,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+

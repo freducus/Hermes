@@ -4,9 +4,9 @@ from pathlib import Path
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterConfig
+from reporting.footer_config import FooterPanel
 from reporting.title_config import (
-    TitleConfig, SubtitleConfig, TitlePanelConfig,
+    TitleText, SubtitleText, TitlePanel,
     SubtitlePlacement,
 )
 from reporting.elements.text import TextAlignment
@@ -24,13 +24,13 @@ def main() -> None:
     slide1 = Slide(
         "Default Header & Footer",
         subtitle="Built-in title panel and auto-footer",
-        footer_config=FooterConfig(center_text="Page {page} of {total}"),
+        footer_panel=FooterPanel(center_text="Page {page} of {total}"),
     )
     slide1.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide1[0, 0].text(
         "This slide uses the default title panel (60px, separator)\n"
         "and the auto-generated footer with page numbering.\n\n"
-        "FooterConfig(center_text=\"Page {page} of {total}\")",
+        "FooterPanel(center_text=\"Page {page} of {total}\")",
         size=11,
     )
     doc.add_slide(slide1)
@@ -38,12 +38,12 @@ def main() -> None:
     # ---- Slide 2: Disabled footer ----
     slide2 = Slide(
         "No Footer",
-        subtitle="FooterConfig(enabled=False)",
-        footer_config=FooterConfig(enabled=False),
+        subtitle="FooterPanel(enabled=False)",
+        footer_panel=FooterPanel(enabled=False),
     )
     slide2.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide2[0, 0].text(
-        "Footer is disabled via FooterConfig(enabled=False).\n"
+        "Footer is disabled via FooterPanel(enabled=False).\n"
         "The content area extends to the bottom of the slide.",
         size=11,
     )
@@ -53,7 +53,7 @@ def main() -> None:
     slide3 = Slide(
         "Custom Footer",
         subtitle="Styled footer with separator and logo",
-        footer_config=FooterConfig(
+        footer_panel=FooterPanel(
             height=36,
             separator_color="#1565C0",
             separator_width=2,
@@ -61,8 +61,8 @@ def main() -> None:
             color="#1565C0",
             center_text="Confidential",
             padding=Edges(left=24, right=24, top=6, bottom=6),
+            logo=str(OUT_DIR / "_docs_elements_logo.png"),
         ),
-        footer_logo=str(OUT_DIR / "_docs_elements_logo.png"),
     )
     slide3.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide3[0, 0].text(
@@ -74,29 +74,29 @@ def main() -> None:
 
     # ---- Slide 4: Custom title formatting ----
     slide4 = Slide(
-        "Custom Title Panel",
-        subtitle="TitleConfig + SubtitleConfig + SubtitlePlacement.BESIDE",
-        title_config=TitleConfig(
+        TitleText(
+            "Custom Title Panel",
             font_name="Times-Bold",
             font_size=28,
             bold=False,
             color="#1565C0",
             alignment=TextAlignment.LEFT,
-            show_separator=False,
         ),
-        subtitle_config=SubtitleConfig(
+        subtitle=SubtitleText(
+            "TitleText + SubtitleText + SubtitlePlacement.BESIDE",
             font_name="Helvetica-Oblique",
             font_size=12,
             italic=True,
             color="#666666",
             alignment=TextAlignment.RIGHT,
         ),
-        title_panel_config=TitlePanelConfig(
+        title_panel=TitlePanel(
+            height=70,
+            show_separator=False,
             subtitle_placement=SubtitlePlacement.BESIDE,
             subtitle_width_ratio=0.35,
         ),
-        title_panel_height=70,
-        footer_config=FooterConfig(center_text="Styled title | Docs"),
+        footer_panel=FooterPanel(center_text="Styled title | Docs"),
     )
     slide4.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide4[0, 0].text(
@@ -109,24 +109,26 @@ def main() -> None:
 
     # ---- Slide 5: Subtitle below with separator ----
     slide5 = Slide(
-        "Title with Separator",
-        subtitle="Subtitle placed below with a visible separator",
-        title_config=TitleConfig(
+        TitleText(
+            "Title with Separator",
             font_size=24,
             bold=True,
             color="#2E7D32",
             alignment=TextAlignment.CENTER,
-            show_separator=True,
-            separator_color="#A5D6A7",
-            separator_width=2,
         ),
-        subtitle_config=SubtitleConfig(
+        subtitle=SubtitleText(
+            "Subtitle placed below with a visible separator",
             font_size=13,
             color="#558B2F",
             alignment=TextAlignment.CENTER,
         ),
-        title_panel_height=80,
-        footer_config=FooterConfig(enabled=False),
+        title_panel=TitlePanel(
+            height=80,
+            show_separator=True,
+            separator_color="#A5D6A7",
+            separator_width=2,
+        ),
+        footer_panel=FooterPanel(enabled=False),
     )
     slide5.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide5[0, 0].text(

@@ -6,7 +6,7 @@ import pandas as pd
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterConfig
+from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.elements.text import TextAlignment
 from reporting.tablespec import TableSpec, TableStyle
@@ -23,7 +23,7 @@ def main() -> None:
     slide1 = Slide(
         "Table from DataFrame",
         subtitle="zebra=True, include_index=False",
-        footer_config=FooterConfig(center_text="Tables | Docs"),
+        footer_panel=FooterPanel(center_text="Tables | Docs"),
     )
     slide1.grid_layout(rows=1, cols=1, gap=0, padding=Edges.all(20))
 
@@ -40,7 +40,7 @@ def main() -> None:
     slide2 = Slide(
         "TableSpec: for-loop, formats, highlights",
         subtitle="add_column, add_row, highlight_max/min, zebra",
-        footer_config=FooterConfig(center_text="Tables | Docs"),
+        footer_panel=FooterPanel(center_text="Tables | Docs"),
     )
     slide2.grid_layout(rows=1, cols=1, gap=0, padding=Edges.all(20))
 
@@ -68,7 +68,7 @@ def main() -> None:
     slide3 = Slide(
         "Merged Cells & Range Styling",
         subtitle="cell() with colspan, range().style(), range().merge()",
-        footer_config=FooterConfig(center_text="Tables | Docs"),
+        footer_panel=FooterPanel(center_text="Tables | Docs"),
     )
     slide3.grid_layout(rows=1, cols=1, gap=0, padding=Edges.all(20))
 
@@ -95,7 +95,7 @@ def main() -> None:
     slide4 = Slide(
         "Heatmap & from_dataframe",
         subtitle="from_dataframe, heatmap, set_format",
-        footer_config=FooterConfig(center_text="Tables | Docs"),
+        footer_panel=FooterPanel(center_text="Tables | Docs"),
     )
     slide4.grid_layout(rows=1, cols=1, gap=0, padding=Edges.all(20))
 
@@ -121,7 +121,7 @@ def main() -> None:
     slide5 = Slide(
         "Text Alignment",
         subtitle="LEFT, CENTER, RIGHT via cell() and column defaults",
-        footer_config=FooterConfig(center_text="Tables | Docs"),
+        footer_panel=FooterPanel(center_text="Tables | Docs"),
     )
     slide5.grid_layout(rows=1, cols=1, gap=0, padding=Edges.all(20))
 
@@ -146,3 +146,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+

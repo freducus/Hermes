@@ -21,8 +21,7 @@ from reporting.layout.panel import HAlign, VAlign
 from reporting.renderers.base import BaseRenderer
 from reporting.styles.colors import Color
 from reporting.tablespec.sizing import TableFitMode
-from reporting.title_config import TitleConfig
-from reporting.footer_config import FooterConfig
+from reporting.footer_config import FooterPanel
 from reporting.background import Background, BackgroundType
 
 if TYPE_CHECKING:
@@ -113,47 +112,47 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
         slide_bg_style = self._background_css(slide)
         slide_extra = f'style="{slide_bg_style}"' if slide_bg_style else ""
 
-        tc = slide.title_config
-        sc = slide.subtitle_config
-        tpc = slide.title_panel_config
-        th = slide.title_panel_height
+        t = slide.title
+        s = slide.subtitle
+        tp = slide.title_panel
+        th = slide.title_panel.height
 
-        h1_weight = "bold" if tc.bold else "normal"
-        h1_style = (f"font-size:{tc.font_size}px;color:{Color.parse(tc.color).css};"
-                    f"font-weight:{h1_weight};font-family:{tc.font_name};"
-                    f"text-align:{tc.alignment.value}")
+        h1_weight = "bold" if t.bold else "normal"
+        h1_style = (f"font-size:{t.font_size}px;color:{Color.parse(t.color).css};"
+                    f"font-weight:{h1_weight};font-family:{t.font_name};"
+                    f"text-align:{t.alignment.value}")
 
         is_beside = (
-            slide.subtitle
-            and tpc.subtitle_placement.value == "beside"
+            s
+            and tp.subtitle_placement.value == "beside"
         )
 
         panel_cls = "title-panel beside" if is_beside else "title-panel"
-        panel_style = f"height:{th}px;padding:{tpc.padding.top}px {tpc.padding.right}px {tpc.padding.bottom}px {tpc.padding.left}px;"
+        panel_style = f"height:{th}px;padding:{tp.padding.top}px {tp.padding.right}px {tp.padding.bottom}px {tp.padding.left}px;"
 
         if is_beside:
-            sub_w = tpc.subtitle_width_ratio
-            sub_weight = "bold" if sc.bold else "normal"
-            sub_style = (f"font-size:{sc.font_size}px;color:{Color.parse(sc.color).css};"
-                         f"font-weight:{sub_weight};font-family:{sc.font_name};"
-                         f"text-align:{sc.alignment.value};width:{sub_w*100}%")
+            sub_w = tp.subtitle_width_ratio
+            sub_weight = "bold" if s.bold else "normal"
+            sub_style = (f"font-size:{s.font_size}px;color:{Color.parse(s.color).css};"
+                         f"font-weight:{sub_weight};font-family:{s.font_name};"
+                         f"text-align:{s.alignment.value};width:{sub_w*100}%")
             title_html = (
                 f"""<div class="{panel_cls}" style="{panel_style}">"""
-                f"""<h1 style="{h1_style}">{slide.title}</h1>"""
-                f"""<p style="{sub_style}">{slide.subtitle}</p>"""
+                f"""<h1 style="{h1_style}">{t}</h1>"""
+                f"""<p style="{sub_style}">{s}</p>"""
                 f"""</div>"""
             )
         else:
-            title_html = f"""<div class="{panel_cls}" style="{panel_style}"><h1 style="{h1_style}">{slide.title}</h1>"""
-            if slide.subtitle:
-                sub_weight = "bold" if sc.bold else "normal"
-                sub_style = (f"font-size:{sc.font_size}px;color:{Color.parse(sc.color).css};"
-                             f"font-weight:{sub_weight};font-family:{sc.font_name};"
-                             f"text-align:{sc.alignment.value}")
-                title_html += f"<p style=\"{sub_style}\">{slide.subtitle}</p>"
-            if tc.show_separator:
-                title_html += (f"<hr style=\"border:none;border-top:{tc.separator_width}px solid "
-                               f"{Color.parse(tc.separator_color).css};margin-top:{tc.separator_margin}px;margin-bottom:0\">")
+            title_html = f"""<div class="{panel_cls}" style="{panel_style}"><h1 style="{h1_style}">{t}</h1>"""
+            if s:
+                sub_weight = "bold" if s.bold else "normal"
+                sub_style = (f"font-size:{s.font_size}px;color:{Color.parse(s.color).css};"
+                             f"font-weight:{sub_weight};font-family:{s.font_name};"
+                             f"text-align:{s.alignment.value}")
+                title_html += f"<p style=\"{sub_style}\">{s}</p>"
+            if tp.show_separator:
+                title_html += (f"<hr style=\"border:none;border-top:{tp.separator_width}px solid "
+                               f"{Color.parse(tp.separator_color).css};margin-top:{tp.separator_margin}px;margin-bottom:0\">")
             title_html += "</div>"
 
         content_parts: list[str] = []
@@ -177,10 +176,10 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
 
         # Footer rendering
         footer_html = ""
-        fh = slide.footer_height
+        fh = slide.footer_panel.height
         if fh > 0 and slide._footer_grid is not None:
-            fc = slide.footer_config
-            pad = fc.padding
+            fp = slide.footer_panel
+            pad = fp.padding
             offset_y_px = slide.height - fh + pad.top
             footer_parts: list[str] = []
             cell_rects = slide.get_footer_cell_rects()
@@ -219,12 +218,12 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
                     footer_parts.append(el_html)
             if footer_parts:
                 sep_html = ""
-                if fc.show_separator:
-                    sep_color = Color.parse(fc.separator_color).css
+                if fp.show_separator:
+                    sep_color = Color.parse(fp.separator_color).css
                     sep_x = pad.left
                     sep_w = f"calc(100% - {pad.left + pad.right}px)"
                     sep_y = offset_y_px - pad.top  # just above footer content
-                    sep_html = f'<hr style="border:none;border-top:{fc.separator_width}px solid {sep_color};position:absolute;left:{sep_x}px;top:{sep_y}px;width:{sep_w};margin:0">'
+                    sep_html = f'<hr style="border:none;border-top:{fp.separator_width}px solid {sep_color};position:absolute;left:{sep_x}px;top:{sep_y}px;width:{sep_w};margin:0">'
                 footer_html = sep_html + "".join(footer_parts)
 
         return f"""<div class="slide" {slide_extra}>

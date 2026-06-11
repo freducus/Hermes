@@ -18,7 +18,8 @@ from reporting.renderers.html.renderer import HTMLRenderer
 from reporting.tablespec import TableSpec
 from reporting.styles.colors import NAMED_COLORS, Color
 from reporting.background import SolidBackground, GradientBackground, ImageBackground
-from reporting.title_config import TitleConfig, SubtitleConfig, TitlePanelConfig, SubtitlePlacement
+from reporting.title_config import TitleText, SubtitleText, TitlePanel, SubtitlePlacement
+from reporting.footer_config import FooterPanel
 
 OUT_DIR = Path(__file__).parent
 
@@ -94,7 +95,8 @@ def main() -> None:
     LOGO_PATH = create_logo()
 
     # ---- Slide 1: Typography showcase ----
-    slide = Slide("Typography Showcase", footer_logo=LOGO_PATH)
+    slide = Slide("Typography Showcase", subtitle="Sixteen theme typography combinations",
+                  title_panel=TitlePanel(height=80), footer_panel=FooterPanel(logo=LOGO_PATH))
     slide.grid_layout(rows=3, cols=3, gap=10, padding=Edges.all(15))
 
     slide[0, 0].background_color = "aliceblue"
@@ -126,7 +128,7 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 2: Matplotlib plots ----
-    slide = Slide("Plots Gallery", footer_logo=LOGO_PATH)
+    slide = Slide("Plots Gallery", footer_panel=FooterPanel(logo=LOGO_PATH))
     slide.grid_layout(rows=1, cols=3, gap=12, padding=Edges.all(15))
 
     plots = [
@@ -139,7 +141,7 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 3: Tables ----
-    slide = Slide("Data Tables", footer_logo=LOGO_PATH)
+    slide = Slide("Data Tables", footer_panel=FooterPanel(logo=LOGO_PATH))
     slide.grid_layout(rows=2, cols=2, gap=15, padding=Edges.all(15))
 
     df = create_table_data()
@@ -158,7 +160,7 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 4: Dashboard mix ----
-    slide = Slide("Dashboard", footer_logo=LOGO_PATH)
+    slide = Slide("Dashboard", footer_panel=FooterPanel(logo=LOGO_PATH))
     slide.grid_layout(rows=3, cols=3, gap=8, padding=Edges.all(12))
 
     slide[0, 0].plot(create_plot("Efficiency", "C2"), format="pdf")
@@ -183,7 +185,7 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 5: Nested containers ----
-    slide = Slide("Nested Layouts", footer_logo=LOGO_PATH, subtitle="Container element with sub-grids")
+    slide = Slide("Nested Layouts", footer_panel=FooterPanel(logo=LOGO_PATH), subtitle="Container element with sub-grids")
     slide.grid_layout(rows=1, cols=2, gap=15, padding=Edges.all(15))
 
     inner = Grid(rows=3, cols=1, row_sizes=[Fill, Fill, Fill], gap=6)
@@ -208,7 +210,7 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 6: Long-form text content ----
-    slide = Slide("Detailed Analysis", footer_logo=LOGO_PATH, subtitle="Technical notes across multiple columns")
+    slide = Slide("Detailed Analysis", footer_panel=FooterPanel(logo=LOGO_PATH), subtitle="Technical notes across multiple columns")
     slide.grid_layout(rows=2, cols=3, gap=10, padding=Edges.all(15))
 
     slide[0, 0].text(
@@ -242,7 +244,7 @@ def main() -> None:
     slide = Slide(
         "TableSpec Demo",
         subtitle="For-loops, spans, column formatting, heatmap",
-        footer_logo=LOGO_PATH,
+        footer_panel=FooterPanel(logo=LOGO_PATH),
     )
     slide.grid_layout(rows=2, cols=2, gap=12, padding=Edges.all(15))
 
@@ -338,7 +340,7 @@ def main() -> None:
         "Solid Background",
         subtitle="SolidBackground('aliceblue')",
         background=SolidBackground("aliceblue"),
-        footer_logo=LOGO_PATH,
+        footer_panel=FooterPanel(logo=LOGO_PATH),
     )
     slide.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide[0, 0].text(
@@ -352,7 +354,7 @@ def main() -> None:
         "Gradient Background",
         subtitle="GradientBackground('midnightblue', 'tomato', angle=135)",
         background=GradientBackground("midnightblue", "tomato", angle=135),
-        footer_logo=LOGO_PATH,
+        footer_panel=FooterPanel(logo=LOGO_PATH),
     )
     slide.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide[0, 0].text(
@@ -367,7 +369,7 @@ def main() -> None:
         "Image Background",
         subtitle=f"ImageBackground('{Path(bg_path).name}', opacity=0.85)",
         background=ImageBackground(bg_path, opacity=0.85),
-        footer_logo=LOGO_PATH,
+        footer_panel=FooterPanel(logo=LOGO_PATH),
     )
     slide.grid_layout(rows=1, cols=1, padding=Edges.all(30))
     slide[0, 0].text(
@@ -378,30 +380,29 @@ def main() -> None:
 
     # ---- Slide 11: Formatted title/subtitle with BESIDE placement ----
     slide = Slide(
-        "Custom Title Formatting",
-        subtitle="Subtitle beside title — panel 70px",
-        background=SolidBackground("rgb(245, 245, 245)"),
-        title_config=TitleConfig(
+        TitleText(
+            "Custom Title Formatting",
             font_name="Times-Bold",
             font_size=26,
             bold=False,
             color="royalblue",
             alignment=TextAlignment.LEFT,
-            show_separator=False,
         ),
-        subtitle_config=SubtitleConfig(
+        subtitle=SubtitleText(
+            "Subtitle beside title — panel 70px",
             font_name="Helvetica-Oblique",
             font_size=12,
             italic=True,
             color="gray",
             alignment=TextAlignment.RIGHT,
         ),
-        title_panel_config=TitlePanelConfig(
+        background=SolidBackground("rgb(245, 245, 245)"),
+        title_panel=TitlePanel(
             subtitle_placement=SubtitlePlacement.BESIDE,
             subtitle_width_ratio=0.3,
+            height=70,
         ),
-        title_panel_height=70,
-        footer_logo=LOGO_PATH,
+        footer_panel=FooterPanel(logo=LOGO_PATH),
     )
     slide.grid_layout(
         rows=1, cols=2,
@@ -421,28 +422,28 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 12: BELOW placement (green theme) ----
-
-    # ---- Slide 12: BELOW placement (green theme) ----
     slide = Slide(
-        "BELOW Subtitle Placement",
-        subtitle="Separator enabled, centered, taller panel (80px)",
-        title_config=TitleConfig(
+        TitleText(
+            "BELOW Subtitle Placement",
             font_size=24,
             bold=True,
             color="forestgreen",
             alignment=TextAlignment.CENTER,
-            show_separator=True,
-            separator_color="lightgreen",
-            separator_width=2,
         ),
-        subtitle_config=SubtitleConfig(
+        subtitle=SubtitleText(
+            "Separator enabled, centered, taller panel (80px)",
             font_name="Helvetica",
             font_size=13,
             color="olivedrab",
             alignment=TextAlignment.CENTER,
         ),
-        title_panel_height=80,
-        footer_logo=LOGO_PATH,
+        title_panel=TitlePanel(
+            height=80,
+            show_separator=True,
+            separator_color="lightgreen",
+            separator_width=2,
+        ),
+        footer_panel=FooterPanel(logo=LOGO_PATH),
     )
     slide.grid_layout(
         rows=1, cols=2,
@@ -463,25 +464,27 @@ def main() -> None:
 
     # ---- Slide 13: BELOW placement (green theme, duplicate) ----
     slide = Slide(
-        "BELOW Subtitle Placement",
-        subtitle="Separator enabled, centered, taller panel (80px)",
-        title_config=TitleConfig(
+        TitleText(
+            "BELOW Subtitle Placement",
             font_size=24,
             bold=True,
             color="forestgreen",
             alignment=TextAlignment.CENTER,
-            show_separator=True,
-            separator_color="lightgreen",
-            separator_width=2,
         ),
-        subtitle_config=SubtitleConfig(
+        subtitle=SubtitleText(
+            "Separator enabled, centered, taller panel (80px)",
             font_name="Helvetica",
             font_size=13,
             color="olivedrab",
             alignment=TextAlignment.CENTER,
         ),
-        title_panel_height=80,
-        footer_logo=LOGO_PATH,
+        title_panel=TitlePanel(
+            height=80,
+            show_separator=True,
+            separator_color="lightgreen",
+            separator_width=2,
+        ),
+        footer_panel=FooterPanel(logo=LOGO_PATH),
     )
     slide.grid_layout(
         rows=1, cols=2,
@@ -513,8 +516,8 @@ def main() -> None:
     slide = Slide(
         f"All {n} Named Colors",
         subtitle=f"Sorted by hue — {cols}×{rows} grid",
-        title_panel_height=50,
-        footer_logo=LOGO_PATH,
+        title_panel=TitlePanel(height=50),
+        footer_panel=FooterPanel(logo=LOGO_PATH),
     )
     slide.grid_layout(rows=rows, cols=cols, gap=1, padding=Edges.all(8))
 
@@ -538,3 +541,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

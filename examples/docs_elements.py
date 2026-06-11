@@ -8,7 +8,7 @@ import pandas as pd
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterConfig
+from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.layout.grid import Grid
 from reporting.elements.text import TextElement
@@ -57,7 +57,7 @@ def main() -> None:
     slide = Slide(
         "Element Types",
         subtitle="Text, Figure, Image, Table, Container",
-        footer_config=FooterConfig(center_text="Element Types | Docs"),
+        footer_panel=FooterPanel(center_text="Element Types | Docs"),
     )
     slide.grid_layout(rows=3, cols=2, gap=12, padding=Edges.all(20))
 
@@ -109,3 +109,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+

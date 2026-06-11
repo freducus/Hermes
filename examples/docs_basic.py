@@ -4,7 +4,7 @@ from pathlib import Path
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterConfig
+from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
@@ -16,7 +16,7 @@ def main() -> None:
     slide = Slide(
         "Introduction",
         subtitle="Getting started",
-        footer_config=FooterConfig(center_text="My Report | Engineering"),
+        footer_panel=FooterPanel(center_text="My Report | Engineering"),
     )
     slide.grid_layout(rows=2, cols=2, gap=10, padding=Edges.all(20))
 
@@ -34,3 +34,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+

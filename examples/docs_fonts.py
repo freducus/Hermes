@@ -4,7 +4,7 @@ from pathlib import Path
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterConfig
+from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
@@ -19,7 +19,7 @@ def main() -> None:
     slide1 = Slide(
         "The ``style`` Keyword",
         subtitle="Inherit font properties from the theme typography",
-        footer_config=FooterConfig(center_text="Fonts | Docs"),
+        footer_panel=FooterPanel(center_text="Fonts | Docs"),
     )
     slide1.grid_layout(rows=3, cols=1, gap=8, padding=Edges.all(20))
 
@@ -35,7 +35,7 @@ def main() -> None:
     slide2 = Slide(
         "Standard Font Families",
         subtitle="font_name accepts any PostScript font name",
-        footer_config=FooterConfig(center_text="Fonts | Docs"),
+        footer_panel=FooterPanel(center_text="Fonts | Docs"),
     )
     slide2.grid_layout(rows=3, cols=2, gap=10, padding=Edges.all(20))
 
@@ -51,7 +51,7 @@ def main() -> None:
     slide3 = Slide(
         "Inline Formatting",
         subtitle="Bold, italic, color, alignment in .text()",
-        footer_config=FooterConfig(center_text="Fonts | Docs"),
+        footer_panel=FooterPanel(center_text="Fonts | Docs"),
     )
     slide3.grid_layout(rows=4, cols=2, gap=8, padding=Edges.all(20))
 
@@ -74,7 +74,7 @@ def main() -> None:
     slide4 = Slide(
         "FontSpec & Typography",
         subtitle="Define custom font configs for the theme",
-        footer_config=FooterConfig(center_text="Fonts | Docs"),
+        footer_panel=FooterPanel(center_text="Fonts | Docs"),
     )
     slide4.grid_layout(rows=1, cols=1, padding=Edges.all(20))
     slide4[0, 0].text(
@@ -99,3 +99,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+

@@ -207,7 +207,7 @@ class PDFRenderer(BaseRenderer):
             return
 
         cell_rects = slide.get_cell_rects()
-        offset_y = slide.title_panel_height
+        offset_y = slide.title_panel.height
         for r in range(slide._grid.rows):
             for c2 in range(slide._grid.cols):
                 cell = slide._grid.cells[r][c2]
@@ -285,31 +285,31 @@ class PDFRenderer(BaseRenderer):
         if c is None:
             return
 
-        tc = slide.title_config
-        sc = slide.subtitle_config
-        tpc = slide.title_panel_config
-        th_pt = _px_to_pt(slide.title_panel_height)
+        t = slide.title
+        s = slide.subtitle
+        panel = slide.title_panel
+        th_pt = _px_to_pt(slide.title_panel.height)
         y0 = self._slide_pt_h - th_pt
         margin = _px_to_pt(20)
         text_w = _px_to_pt(slide.width) - margin * 2
 
         title_style = ParagraphStyle(
             "SlideTitle",
-            fontName=_resolve_font_name(tc.font_name, tc.bold, None),
-            fontSize=tc.font_size,
-            leading=tc.font_size * 1.2,
-            alignment=_align_to_reportlab(tc.alignment),
-            textColor=Color.parse(tc.color).reportlab_color,
+            fontName=_resolve_font_name(t.font_name, t.bold, None),
+            fontSize=t.font_size,
+            leading=t.font_size * 1.2,
+            alignment=_align_to_reportlab(t.alignment),
+            textColor=Color.parse(t.color).reportlab_color,
         )
-        tp = Paragraph(slide.title, title_style)
+        tp = Paragraph(t.text, title_style)
 
         is_beside = (
-            slide.subtitle
-            and tpc.subtitle_placement.value == "beside"
+            s
+            and panel.subtitle_placement.value == "beside"
         )
 
         if is_beside:
-            sub_w = text_w * tpc.subtitle_width_ratio
+            sub_w = text_w * panel.subtitle_width_ratio
             title_w = text_w - sub_w
 
             title_frame = Frame(
@@ -319,38 +319,38 @@ class PDFRenderer(BaseRenderer):
             )
             title_frame.addFromList([tp], c)
 
-            sub_font = _resolve_font_name(sc.font_name, sc.bold, None)
+            sub_font = _resolve_font_name(s.font_name, s.bold, None)
             sub_x = margin + title_w
-            sub_align = _align_to_reportlab(sc.alignment)
-            sub_color = Color.parse(sc.color).reportlab_color
+            sub_align = _align_to_reportlab(s.alignment)
+            sub_color = Color.parse(s.color).reportlab_color
 
             c.saveState()
-            c.setFont(sub_font, sc.font_size)
+            c.setFont(sub_font, s.font_size)
             c.setFillColor(sub_color)
-            sub_leading = sc.font_size * 1.3
-            sub_baseline = y0 + (th_pt - sub_leading) / 2 + sc.font_size * 0.35
+            sub_leading = s.font_size * 1.3
+            sub_baseline = y0 + (th_pt - sub_leading) / 2 + s.font_size * 0.35
             if sub_align == TA_RIGHT:
-                c.drawRightString(sub_x + sub_w, sub_baseline, slide.subtitle)
+                c.drawRightString(sub_x + sub_w, sub_baseline, s.text)
             elif sub_align == TA_CENTER:
-                c.drawCentredString(sub_x + sub_w / 2, sub_baseline, slide.subtitle)
+                c.drawCentredString(sub_x + sub_w / 2, sub_baseline, s.text)
             else:
-                c.drawString(sub_x, sub_baseline, slide.subtitle)
+                c.drawString(sub_x, sub_baseline, s.text)
             c.restoreState()
         else:
             flowables = [tp]
-            if slide.subtitle:
-                sub_font = _resolve_font_name(sc.font_name, sc.bold, None)
+            if s:
+                sub_font = _resolve_font_name(s.font_name, s.bold, None)
                 sub_style = ParagraphStyle(
                     "SlideSubtitle",
                     fontName=sub_font,
-                    fontSize=sc.font_size,
-                    leading=sc.font_size * 1.3,
-                    alignment=_align_to_reportlab(sc.alignment),
-                    textColor=Color.parse(sc.color).reportlab_color,
+                    fontSize=s.font_size,
+                    leading=s.font_size * 1.3,
+                    alignment=_align_to_reportlab(s.alignment),
+                    textColor=Color.parse(s.color).reportlab_color,
                 )
                 from reportlab.platypus import Spacer
                 flowables.append(Spacer(1, 4))
-                flowables.append(Paragraph(slide.subtitle, sub_style))
+                flowables.append(Paragraph(s.text, sub_style))
 
             main_frame = Frame(
                 margin, y0, text_w, th_pt,
@@ -359,10 +359,10 @@ class PDFRenderer(BaseRenderer):
             )
             main_frame.addFromList(flowables, c)
 
-        if tc.show_separator:
-            sep_y = y0 + _px_to_pt(tc.separator_margin)
-            c.setStrokeColor(Color.parse(tc.separator_color).reportlab_color)
-            c.setLineWidth(tc.separator_width)
+        if panel.show_separator:
+            sep_y = y0 + _px_to_pt(panel.separator_margin)
+            c.setStrokeColor(Color.parse(panel.separator_color).reportlab_color)
+            c.setLineWidth(panel.separator_width)
             c.line(margin, sep_y, margin + text_w, sep_y)
 
     def _render_footer(self, slide: Any) -> None:
@@ -374,22 +374,22 @@ class PDFRenderer(BaseRenderer):
         if slide._footer_grid is None:
             return
 
-        fc = slide.footer_config
-        fh = slide.footer_height
-        pad = fc.padding
+        fp = slide.footer_panel
+        fh = slide.footer_panel.height
+        pad = fp.padding
 
         # Footer background area (top of page in canvas coordinates)
         footer_y_pt = 0  # bottom of slide
         footer_h_pt = _px_to_pt(fh)
 
         # Separator line (above the footer)
-        if fc.show_separator:
-            sep_y = footer_y_pt + footer_h_pt + _px_to_pt(fc.separator_margin)
+        if fp.show_separator:
+            sep_y = footer_y_pt + footer_h_pt + _px_to_pt(fp.separator_margin)
             slide_w_pt = _px_to_pt(slide.width)
             sep_x = _px_to_pt(pad.left)
             sep_w = slide_w_pt - _px_to_pt(pad.left + pad.right)
-            c.setStrokeColor(Color.parse(fc.separator_color).reportlab_color)
-            c.setLineWidth(fc.separator_width)
+            c.setStrokeColor(Color.parse(fp.separator_color).reportlab_color)
+            c.setLineWidth(fp.separator_width)
             c.line(sep_x, sep_y, sep_x + sep_w, sep_y)
 
         cell_rects = slide.get_footer_cell_rects()

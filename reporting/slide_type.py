@@ -1,8 +1,8 @@
 """Slide type configuration — pre-defined slide templates within a theme.
 
-A ``SlideTypeConfig`` bundles all defaults for a slide: title panel
-height, title/subtitle font config, footer config, optional background,
-and optional pre-defined grid layout.
+A ``SlideTypeConfig`` bundles panel defaults for a slide: title panel
+layout, footer panel config, optional background, and optional pre-defined
+grid layout.
 
 Slide types live inside a ``Theme.slide_types`` dict.  Users pick one
 via ``Slide(..., slide_type="default")`` and can still override any
@@ -19,9 +19,9 @@ from reporting.layout.geometry import Edges
 if TYPE_CHECKING:
     from reporting.background import Background
     from reporting.elements.text import TextAlignment
-    from reporting.footer_config import FooterConfig
+    from reporting.footer_config import FooterPanel
     from reporting.styles.theme import Theme
-    from reporting.title_config import TitleConfig, SubtitleConfig, TitlePanelConfig
+    from reporting.title_config import TitlePanel
 
 
 @dataclasses.dataclass
@@ -30,18 +30,12 @@ class SlideTypeConfig:
 
     Args:
         name: Type name used as key in ``Theme.slide_types``.
-        title_panel_height: Height of the title panel in pixels
-            (default ``60.0``).
-        title_config: Title font and separator config
-            (default ``None`` = derive from theme typography).
-        subtitle_config: Subtitle font config
-            (default ``None`` = derive from theme typography).
-        title_panel_config: Title/subtitle layout arrangement
-            (default ``TitlePanelConfig()``).
-        footer_config: Footer styling and content
-            (default ``None`` = ``FooterConfig(enabled=False)``).
-        footer_logo: Optional path to a logo image placed in
-            the left footer cell (default ``None``).
+        title_panel: Title panel layout (height, padding, separator,
+            subtitle placement).  Falls back to ``TitlePanel()``
+            when ``None`` (default ``None``).
+        footer_panel: Footer panel styling and content.
+            Falls back to ``FooterPanel(enabled=False)`` when
+            ``None`` (default ``None``).
         background: Optional default slide background
             (default ``None``).
         grid_rows: Pre-defined grid rows (default ``None``).
@@ -51,12 +45,8 @@ class SlideTypeConfig:
     """
 
     name: str = "default"
-    title_panel_height: float = 60.0
-    title_config: Optional[TitleConfig] = None
-    subtitle_config: Optional[SubtitleConfig] = None
-    title_panel_config: Optional[TitlePanelConfig] = None
-    footer_config: Optional["FooterConfig"] = None
-    footer_logo: Optional[str] = None
+    title_panel: Optional[TitlePanel] = None
+    footer_panel: Optional[FooterPanel] = None
     background: Optional["Background"] = None
     grid_rows: Optional[int] = None
     grid_cols: Optional[int] = None
@@ -81,45 +71,25 @@ class SlideTypeConfig:
         Returns:
             A fully-populated ``SlideTypeConfig``.
         """
-        from reporting.elements.text import TextAlignment
-        from reporting.footer_config import FooterConfig
-        from reporting.title_config import TitleConfig, SubtitleConfig, TitlePanelConfig
-
-        title_config = TitleConfig(
-            font_name=theme.typography.heading_1.family,
-            font_size=theme.typography.heading_1.size,
-            bold=theme.typography.heading_1.bold,
-            italic=theme.typography.heading_1.italic,
-            color=theme.typography.heading_1.color or theme.palette.primary.css,
-            alignment=TextAlignment.LEFT,
-            show_separator=True,
-            separator_color=theme.palette.border.css,
-            separator_width=1.0,
-            separator_margin=8.0,
-        )
-        subtitle_config = SubtitleConfig(
-            font_name=theme.typography.body.family,
-            font_size=theme.typography.body.size,
-            bold=theme.typography.body.bold,
-            italic=theme.typography.body.italic,
-            color=theme.typography.body.color or theme.palette.text_secondary.css,
-            alignment=TextAlignment.LEFT,
-        )
-        footer_config = FooterConfig(
-            enabled=footer_enabled,
-            separator_color=theme.palette.border.css,
-            font_name=theme.typography.caption.family,
-            font_size=theme.typography.caption.size,
-            color=theme.palette.text_secondary.css,
-        )
+        from reporting.footer_config import FooterPanel
+        from reporting.title_config import TitlePanel
 
         return cls(
             name=name,
-            title_panel_height=title_panel_height,
-            title_config=title_config,
-            subtitle_config=subtitle_config,
-            title_panel_config=TitlePanelConfig(),
-            footer_config=footer_config,
+            title_panel=TitlePanel(
+                height=title_panel_height,
+                show_separator=True,
+                separator_color=theme.palette.border.css,
+                separator_width=1.0,
+                separator_margin=8.0,
+            ),
+            footer_panel=FooterPanel(
+                enabled=footer_enabled,
+                separator_color=theme.palette.border.css,
+                font_name=theme.typography.caption.family,
+                font_size=theme.typography.caption.size,
+                color=theme.palette.text_secondary.css,
+            ),
         )
 
 

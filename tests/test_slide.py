@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from reporting.slide import Slide
+from reporting.title_config import TitleText, SubtitleText, TitlePanel
 from reporting.elements.text import TextElement
 from reporting.elements.image import ImageElement
 from reporting.elements.figure import FigureElement
@@ -23,9 +24,72 @@ class TestSlide:
         assert slide.size.width == 800
         assert slide.size.height == 600
 
+    def test_title_is_titletext(self):
+        slide = Slide("Test", subtitle="Sub")
+        assert isinstance(slide.title, TitleText)
+        assert isinstance(slide.subtitle, SubtitleText)
+
+    def test_title_text_str_duck(self):
+        slide = Slide("Hello")
+        assert isinstance(slide.title, TitleText)
+        assert str(slide.title) == "Hello"
+        assert f"{slide.title}" == "Hello"
+        assert slide.title.text == "Hello"
+
+    def test_title_properties(self):
+        slide = Slide("Test")
+        assert hasattr(slide.title, "font_name")
+        assert hasattr(slide.title, "font_size")
+        assert hasattr(slide.title, "bold")
+        assert hasattr(slide.title, "color")
+        assert hasattr(slide.title, "alignment")
+
+    def test_mutate_title_text(self):
+        slide = Slide("Test")
+        slide.title.text = "Updated"
+        assert slide.title.text == "Updated"
+        assert str(slide.title) == "Updated"
+        assert f"{slide.title}" == "Updated"
+
+    def test_mutate_subtitle_text(self):
+        slide = Slide("Test", subtitle="Sub")
+        slide.subtitle.text = "Changed"
+        assert slide.subtitle.text == "Changed"
+        assert str(slide.subtitle) == "Changed"
+
+    def test_mutate_title_property(self):
+        slide = Slide("Test")
+        slide.title.font_size = 32
+        assert slide.title.font_size == 32
+        slide.title.bold = False
+        assert slide.title.bold is False
+
+    def test_mutate_subtitle_property(self):
+        slide = Slide("Test", subtitle="Sub")
+        slide.subtitle.color = "#FF0000"
+        assert slide.subtitle.color == "#FF0000"
+        slide.subtitle.font_size = 14
+        assert slide.subtitle.font_size == 14
+
+    def test_titletext_directly(self):
+        title = TitleText("Custom", font_size=28, bold=False, font_name="Times-Roman")
+        slide = Slide(title, subtitle="Sub")
+        assert slide.title == "Custom"
+        assert slide.title.font_size == 28
+        assert slide.title.bold is False
+        assert slide.title.font_name == "Times-Roman"
+
+    def test_subtitletext_directly(self):
+        sub = SubtitleText("Notes", font_size=12, italic=True, color="#00AA00")
+        slide = Slide("Title", subtitle=sub)
+        assert slide.subtitle == "Notes"
+        assert slide.subtitle.font_size == 12
+        assert slide.subtitle.italic is True
+        assert slide.subtitle.color == "#00AA00"
+
     def test_title_panel_height(self):
-        slide = Slide("Test", title_panel_height=80)
-        assert slide.title_panel_height == 80
+        slide = Slide("Test", title_panel=TitlePanel(height=80))
+        assert slide.title_panel.height == 80
         assert slide.content_size == (960, 432)
 
     def test_content_size(self):
@@ -34,7 +98,7 @@ class TestSlide:
         assert slide.content_size.height == 512
 
     def test_get_cell_rects_grid_relative(self):
-        slide = Slide("Test", width=800, height=600, title_panel_height=60)
+        slide = Slide("Test", width=800, height=600, title_panel=TitlePanel(height=60))
         slide.grid_layout(rows=1, cols=1)
         rects = slide.get_cell_rects()
         assert len(rects) == 1

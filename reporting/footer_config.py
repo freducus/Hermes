@@ -1,4 +1,4 @@
-"""Footer configuration — styling for the slide footer panel.
+"""Footer panel configuration — styling for the slide footer panel.
 
 Pure data model with zero renderer dependencies.
 """
@@ -6,7 +6,7 @@ Pure data model with zero renderer dependencies.
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from reporting.layout.geometry import Edges
 from reporting.styles.colors import ColorValue, normalize_color
@@ -14,11 +14,11 @@ from reporting.styles.colors import ColorValue, normalize_color
 if TYPE_CHECKING:
     from reporting.styles.theme import Theme
 
-__all__ = ["FooterConfig"]
+__all__ = ["FooterPanel"]
 
 
 @dataclasses.dataclass
-class FooterConfig:
+class FooterPanel:
     """Styling and layout for the slide footer panel.
 
     Args:
@@ -39,20 +39,27 @@ class FooterConfig:
         padding: Inner padding around the footer content as an
             ``Edges``.  Default: ``Edges(left=20, right=20,
             top=4, bottom=4)``.
+        enabled: Whether the footer is rendered
+            (default ``True``).
+        center_text: Text to display in the centre footer cell;
+            ``{page}`` and ``{total}`` are replaced automatically
+            (default ``""``).
+        logo: Optional path to a logo image placed in the left
+            footer cell (default ``None``).
 
     Example::
 
-        from reporting.footer_config import FooterConfig
+        from reporting.footer_config import FooterPanel
         from reporting.layout.geometry import Edges
 
-        config = FooterConfig(
+        panel = FooterPanel(
             height=32,
             separator_color="#C00000",
             separator_width=2,
             font_size=9,
             padding=Edges(left=24, right=24, top=6, bottom=6),
         )
-        slide = Slide("Title", footer_config=config)
+        slide = Slide("Title", footer_panel=panel)
     """
 
     height: float = 28.0
@@ -68,14 +75,15 @@ class FooterConfig:
     )
     enabled: bool = True
     center_text: str = ""
+    logo: Optional[str] = None
 
     def __post_init__(self) -> None:
         self.separator_color = normalize_color(self.separator_color)
         self.color = normalize_color(self.color)
 
     @classmethod
-    def from_theme(cls, theme: Theme) -> FooterConfig:
-        """Create a ``FooterConfig`` from a ``Theme``.
+    def from_theme(cls, theme: Theme) -> FooterPanel:
+        """Create a ``FooterPanel`` from a ``Theme``.
 
         Derives font family, size, and separator colour from
         the theme's caption typography and palette.
@@ -84,7 +92,7 @@ class FooterConfig:
             theme: The theme to use as a source.
 
         Returns:
-            A fully-populated ``FooterConfig``.
+            A fully-populated ``FooterPanel``.
         """
         cap = theme.typography.caption
         return cls(

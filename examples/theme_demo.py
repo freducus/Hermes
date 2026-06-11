@@ -8,13 +8,13 @@ import pandas as pd
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterConfig
+from reporting.footer_config import FooterPanel
 from reporting.styles.theme import CorporateTheme, DarkTheme, LightTheme
 from reporting.renderers.pdf.renderer import PDFRenderer
 
 
 def _build_theme_slide(name: str, theme) -> Slide:
-    slide = Slide(f"{name} Theme", theme=theme, footer_config=FooterConfig(center_text=f"{name} | Report"))
+    slide = Slide(f"{name} Theme", theme=theme, footer_panel=FooterPanel(center_text=f"{name} | Report"))
     slide.grid_layout(rows=7, cols=3, gap=6)
 
     pal = theme.palette
@@ -122,3 +122,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+

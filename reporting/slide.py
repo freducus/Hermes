@@ -16,8 +16,8 @@ from reporting.elements.tablespec_element import TableSpecElement
 from reporting.elements.container import ContainerElement
 from reporting.styles.theme import Theme, CorporateTheme
 from reporting.background import Background, BackgroundType, SolidBackground, GradientBackground, ImageBackground
-from reporting.title_config import TitleConfig, SubtitleConfig, TitlePanelConfig, SubtitlePlacement
-from reporting.footer_config import FooterConfig
+from reporting.title_config import TitleText, SubtitleText, TitlePanel, SubtitlePlacement
+from reporting.footer_config import FooterPanel
 from reporting.slide_type import SlideTypeConfig
 
 
@@ -36,33 +36,25 @@ class Slide:
         slide[0:2, 1:3]          # sub-grid
 
     Args:
-        title: Slide title displayed in the title panel.
-        subtitle: Optional subtitle (default ``None``).
+        title: Slide title displayed in the title panel.  Can be a
+            plain ``str`` or a ``TitleText`` with embedded styling
+            (default ``""``).
+        subtitle: Optional subtitle (default ``None``).  Can be a
+            plain ``str`` or a ``SubtitleText`` with embedded styling.
         theme: Visual theme. Falls back to ``CorporateTheme()``
             when ``None`` (default ``None``).
         width: Slide width in pixels (default ``960.0``).
         height: Slide height in pixels (default ``540.0``).
-        title_panel_height: Height of the title panel in pixels.
-            Falls back to the slide type default when ``None``
-            (default ``None``).
+        title_panel: Title panel configuration (height, padding,
+            separator, subtitle placement).  Falls back to the
+            slide type default when ``None`` (default ``None``).
         background: Slide background.  Accepts a hex string
             ``"#RRGGBB"``, a named CSS color, or a
             ``SolidBackground`` / ``GradientBackground`` /
             ``ImageBackground`` instance (default ``None``).
-        title_config: Configure title font, size, colour, and
-            separator.  Falls back to the slide type default
-            when ``None`` (default ``None``).
-        subtitle_config: Configure subtitle font and colour.
-            Falls back to the slide type default when ``None``
-            (default ``None``).
-        title_panel_config: Configure subtitle placement and
-            padding.  Falls back to the slide type default
-            when ``None`` (default ``None``).
-        footer_config: Footer styling and content.
-            Falls back to the slide type default when ``None``
-            (default ``None``).
-        footer_logo: Optional path to a logo image in the left
-            footer cell (default ``None``).
+        footer_panel: Footer panel configuration (height, styling,
+            logo).  Falls back to the slide type default when
+            ``None`` (default ``None``).
         slide_type: Name of a pre-defined slide type in the
             theme (default ``"default"``).  Ignored when a
             ``base_slide`` is given without an explicit override.
@@ -101,23 +93,17 @@ class Slide:
 
     def __init__(
         self,
-        title: str,
-        subtitle: Optional[str] = None,
+        title: Union[str, TitleText] = "",
+        subtitle: Optional[Union[str, SubtitleText]] = None,
         theme: Optional[Theme] = None,
         width: float = 960.0,
         height: float = 540.0,
-        title_panel_height: Optional[float] = None,
+        title_panel: Optional[TitlePanel] = None,
         background: Optional[Union[str, SolidBackground, GradientBackground, ImageBackground]] = None,
-        title_config: Optional[TitleConfig] = None,
-        subtitle_config: Optional[SubtitleConfig] = None,
-        title_panel_config: Optional[TitlePanelConfig] = None,
-        footer_config: Optional[FooterConfig] = None,
-        footer_logo: Optional[str] = None,
+        footer_panel: Optional[FooterPanel] = None,
         slide_type: str = "default",
         base_slide: Optional[Slide] = None,
     ):
-        self.title = title
-        self.subtitle = subtitle
         self._grid = None
         self._elements = {}
         self._footer_grid = None
@@ -126,21 +112,15 @@ class Slide:
         # --- Resolution chain: base_slide → slide_type → explicit kwargs ---
         resolved_theme: Theme
         resolved_type: Optional[SlideTypeConfig] = None
-        resolved_title_panel_height: Optional[float] = None
-        resolved_title_config: Optional[TitleConfig] = None
-        resolved_subtitle_config: Optional[SubtitleConfig] = None
-        resolved_title_panel_config: Optional[TitlePanelConfig] = None
-        resolved_footer_config: Optional[FooterConfig] = None
+        resolved_title_panel: Optional[TitlePanel] = None
+        resolved_footer_panel: Optional[FooterPanel] = None
         resolved_background: Optional[Background] = None
 
         if base_slide is not None:
             # Step 1: copy from base slide
             resolved_theme = base_slide.theme
-            resolved_title_panel_height = base_slide.title_panel_height
-            resolved_title_config = base_slide.title_config
-            resolved_subtitle_config = base_slide.subtitle_config
-            resolved_title_panel_config = base_slide.title_panel_config
-            resolved_footer_config = base_slide.footer_config
+            resolved_title_panel = base_slide.title_panel
+            resolved_footer_panel = base_slide.footer_panel
             if base_slide.background is not None:
                 resolved_background = base_slide.background
             # Copy grid structure from base (no content)
@@ -152,12 +132,8 @@ class Slide:
         # Step 2: apply slide type from theme
         resolved_theme = theme or resolved_theme
         st = resolved_theme.get_slide_type(slide_type)
-        if resolved_title_panel_height is None:
-            resolved_title_panel_height = st.title_panel_height
-        resolved_title_config = resolved_title_config or st.title_config
-        resolved_subtitle_config = resolved_subtitle_config or st.subtitle_config
-        resolved_title_panel_config = resolved_title_panel_config or st.title_panel_config
-        resolved_footer_config = resolved_footer_config or st.footer_config
+        resolved_title_panel = resolved_title_panel or st.title_panel
+        resolved_footer_panel = resolved_footer_panel or st.footer_panel
         if resolved_background is None and st.background is not None:
             resolved_background = st.background
 
@@ -165,48 +141,62 @@ class Slide:
         self.theme = resolved_theme
         self.width = width
         self.height = height
-        self.title_panel_height = resolved_title_panel_height if title_panel_height is None else title_panel_height
+        self.title_panel = title_panel or resolved_title_panel or TitlePanel.from_theme(self.theme)
         if isinstance(background, str):
             self.background = SolidBackground(background)
         else:
             self.background = background if background is not None else resolved_background
-        self.title_config = title_config or resolved_title_config or TitleConfig.from_theme(self.theme)
-        self.subtitle_config = subtitle_config or resolved_subtitle_config or SubtitleConfig.from_theme(self.theme)
-        self.title_panel_config = title_panel_config or resolved_title_panel_config or TitlePanelConfig()
-        self.footer_config = footer_config or resolved_footer_config or self.theme.footer
-        self.footer_height = self.footer_config.height
-        self.footer_logo: Optional[str] = None
+        self.footer_panel = footer_panel or resolved_footer_panel or self.theme.footer_panel
 
-        # Resolve footer logo: explicit > base_slide > slide_type
-        ft_logo: Optional[str] = None
-        if footer_logo is not None:
-            ft_logo = footer_logo
-        elif base_slide is not None and base_slide.footer_logo is not None:
-            ft_logo = base_slide.footer_logo
-        elif st.footer_logo is not None:
-            ft_logo = st.footer_logo
-        if ft_logo is not None:
-            self.footer_logo = ft_logo
+        # Step 4: build title/subtitle text objects
+        if isinstance(title, TitleText):
+            self.title = TitleText(
+                title.text,
+                font_name=title.font_name,
+                font_size=title.font_size,
+                bold=title.bold,
+                italic=title.italic,
+                color=title.color,
+                alignment=title.alignment,
+            )
+        else:
+            self.title = TitleText.from_theme(self.theme, text=title)
 
-        if self.footer_config.enabled:
+        if subtitle is not None:
+            if isinstance(subtitle, SubtitleText):
+                self.subtitle = SubtitleText(
+                    subtitle.text,
+                    font_name=subtitle.font_name,
+                    font_size=subtitle.font_size,
+                    bold=subtitle.bold,
+                    italic=subtitle.italic,
+                    color=subtitle.color,
+                    alignment=subtitle.alignment,
+                )
+            else:
+                self.subtitle = SubtitleText.from_theme(self.theme, text=subtitle)
+        else:
+            self.subtitle = None
+
+        if self.footer_panel.enabled:
             self.footer_layout(rows=1, cols=3)
-            if ft_logo:
-                self.footer[0, 0].image(ft_logo)
+            if self.footer_panel.logo:
+                self.footer[0, 0].image(self.footer_panel.logo)
             else:
                 self.footer[0, 0].text("")
-            if self.footer_config.center_text:
+            if self.footer_panel.center_text:
                 self.footer[0, 1].text(
-                    self.footer_config.center_text,
-                    size=self.footer_config.font_size,
-                    color=self.footer_config.color,
-                    font_name=self.footer_config.font_name,
+                    self.footer_panel.center_text,
+                    size=self.footer_panel.font_size,
+                    color=self.footer_panel.color,
+                    font_name=self.footer_panel.font_name,
                     alignment="center",
                 )
             self.footer[0, 2].text(
                 "{page} / {total}",
-                size=self.footer_config.font_size,
-                color=self.footer_config.color,
-                font_name=self.footer_config.font_name,
+                size=self.footer_panel.font_size,
+                color=self.footer_panel.color,
+                font_name=self.footer_panel.font_name,
                 alignment="right",
             )
 
@@ -227,11 +217,11 @@ class Slide:
         the footer height is also subtracted.
 
         Returns:
-            ``Size(width, height - title_panel_height[- footer_height])``
+            ``Size(width, height - title_panel.height[- footer_panel.height])``
             in pixels.
         """
-        footer_h = self.footer_height if self._footer_grid is not None else 0
-        return Size(self.width, self.height - self.title_panel_height - footer_h)
+        footer_h = self.footer_panel.height if self._footer_grid is not None else 0
+        return Size(self.width, self.height - self.title_panel.height - footer_h)
 
     def get_cell_rects(self) -> list[list[Rect]]:
         """Compute the pixel rectangles of every grid cell.
@@ -386,10 +376,10 @@ class Slide:
     @property
     def _footer_content_size(self) -> Size:
         """Available area inside the footer panel (after padding)."""
-        pad = self.footer_config.padding
+        pad = self.footer_panel.padding
         return Size(
             self.width - pad.left - pad.right,
-            self.footer_height - pad.top - pad.bottom,
+            self.footer_panel.height - pad.top - pad.bottom,
         )
 
     @property

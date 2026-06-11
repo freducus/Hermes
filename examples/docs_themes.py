@@ -4,7 +4,7 @@ from pathlib import Path
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterConfig
+from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.styles.theme import CorporateTheme, DarkTheme, LightTheme, Theme
 from reporting.styles.colors import ColorPalette, Color
@@ -25,7 +25,7 @@ def main() -> None:
         "Corporate Theme",
         subtitle="Default theme (blue/grey, Arial)",
         theme=CorporateTheme(),
-        footer_config=FooterConfig(center_text="Corporate | Docs"),
+        footer_panel=FooterPanel(center_text="Corporate | Docs"),
     )
     slide1.grid_layout(rows=1, cols=1, padding=Edges.all(20))
     slide1[0, 0].text(
@@ -40,7 +40,7 @@ def main() -> None:
         "Dark Theme",
         subtitle="Dark background, light text, blue accents",
         theme=DarkTheme(),
-        footer_config=FooterConfig(center_text="Dark | Docs"),
+        footer_panel=FooterPanel(center_text="Dark | Docs"),
     )
     slide2.grid_layout(rows=1, cols=1, padding=Edges.all(20))
     slide2[0, 0].text(
@@ -55,7 +55,7 @@ def main() -> None:
         "Light Theme",
         subtitle="Soft blue on near-white background",
         theme=LightTheme(),
-        footer_config=FooterConfig(center_text="Light | Docs"),
+        footer_panel=FooterPanel(center_text="Light | Docs"),
     )
     slide3.grid_layout(rows=1, cols=1, padding=Edges.all(20))
     slide3[0, 0].text(
@@ -89,14 +89,14 @@ def main() -> None:
         palette=custom_palette,
         typography=custom_typo,
         table_style=TableStyle(),
-        footer=FooterConfig(center_text="GreenFields Report"),
+        footer=FooterPanel(center_text="GreenFields Report"),
     )
 
     slide4 = Slide(
         "Custom Theme: GreenFields",
         subtitle="Green palette, Times serif fonts",
         theme=custom_theme,
-        footer_config=FooterConfig(center_text="Custom | Docs"),
+        footer_panel=FooterPanel(center_text="Custom | Docs"),
     )
     slide4.grid_layout(rows=1, cols=1, padding=Edges.all(20))
     slide4[0, 0].text(
@@ -112,7 +112,7 @@ def main() -> None:
     slide5 = Slide(
         "Theme via Document",
         subtitle="Pass theme= to Document and let slides inherit",
-        footer_config=FooterConfig(center_text="Document theme | Docs"),
+        footer_panel=FooterPanel(center_text="Document theme | Docs"),
     )
     slide5.grid_layout(rows=1, cols=1, padding=Edges.all(20))
     slide5[0, 0].text(
@@ -132,3 +132,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
