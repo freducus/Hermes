@@ -18,8 +18,10 @@ def main() -> None:
     slide.grid_layout(rows=1, cols=2, gap=10)
 
     inner = Grid(rows=2, cols=1, row_sizes=[Fill, Fill], gap=5)
-    inner[0, 0].panel.background_color = "aliceblue"
-    inner[1, 0].panel.background_color = "aliceblue"
+    inner[0, 0].background_color = "aliceblue"
+    inner[0, 0].text("Top panel content", size=12)
+    inner[1, 0].background_color = "aliceblue"
+    inner[1, 0].text("Bottom panel content", size=12)
     slide[0, 0].grid_layout(inner)
 
     slide[0, 1].text("Side panel content")

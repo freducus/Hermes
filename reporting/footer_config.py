@@ -29,8 +29,8 @@ class FooterPanel:
             (default ``"#CCCCCC"``).
         separator_width: Thickness of the separator line in points
             (default ``1.0``).
-        separator_margin: Gap between separator and footer text
-            in points (default ``4.0``).
+        separator_margin: Gap between separator and the top of the
+            footer panel in pixels (default ``4.0``).
         font_name: Default font family for footer text
             (default ``"Helvetica"``).
         font_size: Default font size in points

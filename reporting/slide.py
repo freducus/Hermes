@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Optional, Union
 
 from reporting.layout.geometry import Edges, Rect, Size
-from reporting.layout.grid import Grid, GridCell
+from reporting.layout.grid import Grid, GridCell, GridCellProxy
 from reporting.layout.panel import HAlign, VAlign
 from reporting.layout.sizing import Sizing, Px
 from reporting.elements.text import TextElement
@@ -214,13 +214,19 @@ class Slide:
         """Return the available area below the title panel.
 
         When a footer grid has been set up via ``footer_layout()``,
-        the footer height is also subtracted.
+        the footer height (and separator margin, if shown) is
+        also subtracted.
 
         Returns:
-            ``Size(width, height - title_panel.height[- footer_panel.height])``
-            in pixels.
+            ``Size(width, height - title_panel.height[- footer_panel.height
+            [- separator_margin]])`` in pixels.
         """
-        footer_h = self.footer_panel.height if self._footer_grid is not None else 0
+        if self._footer_grid is not None:
+            fp = self.footer_panel
+            extra = fp.separator_margin if fp.show_separator else 0
+            footer_h = fp.height + extra
+        else:
+            footer_h = 0
         return Size(self.width, self.height - self.title_panel.height - footer_h)
 
     def get_cell_rects(self) -> list[list[Rect]]:
@@ -306,8 +312,8 @@ class Slide:
         """
         if self._grid is None:
             raise RuntimeError("Call grid_layout() before accessing cells.")
-        cell = self._grid[pos]
-        return _CellProxy(self, cell)
+        cell_proxy = self._grid[pos]
+        return _CellProxy(self, cell_proxy)
 
     def _set_cell_element(self, cell: GridCell, element: Any) -> None:
         cell.element = element
@@ -417,9 +423,10 @@ class _CellProxy:
     returns ``self`` or an element, enabling chaining.
     """
 
-    def __init__(self, slide: Slide, cell: GridCell) -> None:
+    def __init__(self, slide: Slide, proxy: GridCellProxy) -> None:
         self._slide = slide
-        self._cell = cell
+        self._proxy = proxy
+        self._cell = proxy.cell
 
     @property
     def background_color(self) -> object:
@@ -433,12 +440,11 @@ class _CellProxy:
             slide[0, 0].background_color = "#E3F2FD"
             slide[1, 0].background_color = (33, 150, 243)
         """
-        return self._cell.panel.background_color
+        return self._proxy.background_color
 
     @background_color.setter
     def background_color(self, value: object) -> None:
-        from reporting.styles.colors import normalize_color
-        self._cell.panel.background_color = normalize_color(value)
+        self._proxy.background_color = value
 
     @property
     def padding(self) -> object:
@@ -447,11 +453,11 @@ class _CellProxy:
         Setting this is equivalent to
         ``slide[r, c]._cell.panel.padding = value``.
         """
-        return self._cell.panel.padding
+        return self._proxy.padding
 
     @padding.setter
     def padding(self, value: object) -> None:
-        self._cell.panel.padding = value
+        self._proxy.padding = value
 
     def align(
         self,
@@ -489,8 +495,7 @@ class _CellProxy:
             slide[0, 0].align(HAlign.CENTER, VAlign.MIDDLE).text("Hi")
             slide[1, 0].align(HAlign.LEFT, VAlign.TOP).image("img.png")
         """
-        self._cell.panel.h_align = h_align
-        self._cell.panel.v_align = v_align
+        self._proxy.align(h_align, v_align)
         return self
 
     def text(self, content: str = "", **kwargs: object) -> TextElement:
@@ -556,9 +561,9 @@ class _CellProxy:
                 kwargs.setdefault("italic", spec.italic)
                 if spec.color is not None and "color" not in kwargs:
                     kwargs["color"] = spec.color
-        el = TextElement(content, **kwargs)
+        el = self._proxy.text(content, **kwargs)
         self._slide._set_cell_element(self._cell, el)
-        return el
+        return el  # type: ignore[return-value]
 
     def image(self, source: str = "", **kwargs: object) -> ImageElement:
         """Add an image from a file to this cell.
@@ -599,9 +604,9 @@ class _CellProxy:
                               fit_mode=ImageFitMode.FIT_VERTICAL)
             slide[1, 0].image("logo.png", width=120, opacity=0.9)
         """
-        el = ImageElement(source, **kwargs)
+        el = self._proxy.image(source, **kwargs)
         self._slide._set_cell_element(self._cell, el)
-        return el
+        return el  # type: ignore[return-value]
 
     def plot(self, figure: object = None, **kwargs: object) -> FigureElement:
         """Embed a matplotlib figure in this cell.
@@ -631,9 +636,9 @@ class _CellProxy:
             ax.plot([1, 2, 3], [4, 5, 6])
             slide[0, 0].plot(fig, format="pdf", preserve_aspect=True)
         """
-        el = FigureElement(figure, **kwargs)
+        el = self._proxy.plot(figure, **kwargs)
         self._slide._set_cell_element(self._cell, el)
-        return el
+        return el  # type: ignore[return-value]
 
     def table(self, data: object = None, **kwargs: object) -> TableElement:
         """Add a table to this cell.
@@ -675,9 +680,9 @@ class _CellProxy:
         from reporting.tablespec.spec import TableSpec
         if isinstance(data, TableSpec):
             return self.table_spec(data, **kwargs)  # type: ignore[return-value]
-        el = TableElement(data, **kwargs)
+        el = self._proxy.table(data, **kwargs)
         self._slide._set_cell_element(self._cell, el)
-        return el
+        return el  # type: ignore[return-value]
 
     def table_spec(self, spec: object = None, **kwargs: object) -> TableSpecElement:
         """Add a ``TableSpec`` to this cell (explicit method).
@@ -705,11 +710,11 @@ class _CellProxy:
             import dataclasses
             theme_ts = self._slide.theme.table_style
             spec.style = _TableStyle(**{f.name: getattr(theme_ts, f.name) for f in dataclasses.fields(_TableStyle)})
-        el = TableSpecElement(spec, **kwargs)
+        el = self._proxy.table_spec(spec, **kwargs)
         self._slide._set_cell_element(self._cell, el)
-        return el
+        return el  # type: ignore[return-value]
 
-    def grid_layout(self, grid: Grid) -> ContainerElement:
+    def grid_layout(self, grid: object) -> ContainerElement:
         """Add a nested sub-grid inside this cell.
 
         Wraps a ``Grid`` in a ``ContainerElement`` so you can
@@ -726,13 +731,13 @@ class _CellProxy:
             from reporting.layout.grid import Grid
 
             inner = Grid(rows=2, cols=1, gap=6)
-            inner[0, 0].element = TextElement("Top")
-            inner[1, 0].element = TextElement("Bottom")
+            inner[0, 0].text("Top")
+            inner[1, 0].text("Bottom")
             slide[2, :].grid_layout(inner)
         """
-        el = ContainerElement(grid=grid)
+        el = self._proxy.grid_layout(grid)
         self._slide._set_cell_element(self._cell, el)
-        return el
+        return el  # type: ignore[return-value]
 
 
 class _FooterProxy:
@@ -755,8 +760,8 @@ class _FooterProxy:
         Returns:
             A ``_FooterCellProxy`` for placing content.
         """
-        cell = self._slide._footer_grid[pos]
-        return _FooterCellProxy(self._slide, cell)
+        proxy = self._slide._footer_grid[pos]
+        return _FooterCellProxy(self._slide, proxy)
 
 
 class _FooterCellProxy:
@@ -765,9 +770,10 @@ class _FooterCellProxy:
     Do **not** instantiate directly.
     """
 
-    def __init__(self, slide: Slide, cell: GridCell) -> None:
+    def __init__(self, slide: Slide, proxy: GridCellProxy) -> None:
         self._slide = slide
-        self._cell = cell
+        self._proxy = proxy
+        self._cell = proxy.cell
 
     def text(self, content: str = "", **kwargs: object) -> TextElement:
         """Add a text element to this footer cell.
@@ -795,9 +801,9 @@ class _FooterCellProxy:
                 kwargs.setdefault("italic", spec.italic)
                 if spec.color is not None and "color" not in kwargs:
                     kwargs["color"] = spec.color
-        el = TextElement(content, **kwargs)
+        el = self._proxy.text(content, **kwargs)
         self._slide._set_footer_element(self._cell, el)
-        return el
+        return el  # type: ignore[return-value]
 
     def image(
         self,
@@ -820,9 +826,9 @@ class _FooterCellProxy:
         from reporting.elements.image import ImageFitMode
 
         mode = ImageFitMode(fit_mode)
-        el = ImageElement(source=source, scale=scale, fit_mode=mode, **kwargs)
+        el = self._proxy.image(source=source, scale=scale, fit_mode=mode, **kwargs)
         self._slide._set_footer_element(self._cell, el)
-        return el
+        return el  # type: ignore[return-value]
 
     def page_number(self, **kwargs: object) -> TextElement:
         """Add a page-number placeholder in this footer cell.

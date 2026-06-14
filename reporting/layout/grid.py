@@ -7,7 +7,7 @@ from typing import Optional
 
 from reporting.layout.geometry import Point, Size, Rect, Edges
 from reporting.layout.sizing import Sizing, LengthValue, SizingType, normalize
-from reporting.layout.panel import Panel
+from reporting.layout.panel import Panel, HAlign, VAlign
 
 
 @dataclasses.dataclass
@@ -37,6 +37,204 @@ class GridCell:
     """
     panel: Panel
     element: Optional[object] = None
+
+
+class GridCellProxy:
+    """Fluent proxy returned by ``Grid.__getitem__`` for adding content to a cell.
+
+    Provides the same chained API as ``Slide`` cells::
+
+        inner = Grid(rows=2, cols=1)
+        inner[0, 0].text("Title", bold=True)
+        inner[1, 0].plot(fig)
+        slide[0, 0].grid_layout(inner)
+
+    When you need the underlying ``GridCell``, use ``.cell``.
+    """
+
+    def __init__(self, cell: GridCell) -> None:
+        self._cell = cell
+
+    @property
+    def cell(self) -> GridCell:
+        """Return the underlying ``GridCell`` for direct access."""
+        return self._cell
+
+    @property
+    def panel(self) -> Panel:
+        """Return the cell's ``Panel``."""
+        return self._cell.panel
+
+    @property
+    def element(self) -> Optional[object]:
+        """Return the element assigned to this cell (or ``None``)."""
+        return self._cell.element
+
+    @element.setter
+    def element(self, value: Optional[object]) -> None:
+        self._cell.element = value
+
+    @property
+    def background_color(self) -> Optional[object]:
+        """Background colour of the cell's panel."""
+        return self._cell.panel.background_color
+
+    @background_color.setter
+    def background_color(self, value: object) -> None:
+        from reporting.styles.colors import normalize_color
+        self._cell.panel.background_color = normalize_color(value)
+
+    @property
+    def padding(self) -> Edges:
+        """Padding of the cell's panel."""
+        return self._cell.panel.padding
+
+    @padding.setter
+    def padding(self, value: Edges) -> None:
+        self._cell.panel.padding = value
+
+    def align(
+        self,
+        h_align: HAlign = HAlign.STRETCH,
+        v_align: VAlign = VAlign.STRETCH,
+    ) -> GridCellProxy:
+        """Set content alignment inside the cell.
+
+        Call before the element-creating method so alignment
+        affects the rendered content.
+
+        Args:
+            h_align: Horizontal alignment.
+            v_align: Vertical alignment.
+
+        Returns:
+            ``self`` for chaining.
+        """
+        self._cell.panel.h_align = h_align
+        self._cell.panel.v_align = v_align
+        return self
+
+    def text(self, content: str = "", **kwargs: object) -> object:
+        """Add a text element to this cell.
+
+        Args:
+            content: The text to display.
+
+        Keyword Args:
+            bold: Whether the text is bold.
+            italic: Whether the text is italic.
+            size: Font size in points.
+            color: Text colour.
+            font_name: Font family name.
+            alignment: Text alignment.
+
+        Returns:
+            The created ``TextElement``.
+        """
+        from reporting.elements.text import TextElement
+        el: object = TextElement(content, **kwargs)
+        self._cell.element = el
+        return el
+
+    def image(self, source: str = "", **kwargs: object) -> object:
+        """Add an image from a file to this cell.
+
+        Args:
+            source: Path to the image file.
+
+        Keyword Args:
+            scale: Uniform scale factor (default ``1.0``).
+            fit_mode: How to fit the image.
+            width: Explicit width in points.
+            height: Explicit height in points.
+            rotation: Rotation angle in degrees.
+            opacity: Opacity from ``0.0`` to ``1.0``.
+
+        Returns:
+            The created ``ImageElement``.
+        """
+        from reporting.elements.image import ImageElement
+        el: object = ImageElement(source, **kwargs)
+        self._cell.element = el
+        return el
+
+    def plot(self, figure: object = None, **kwargs: object) -> object:
+        """Embed a matplotlib figure in this cell.
+
+        Args:
+            figure: A ``matplotlib.figure.Figure`` instance.
+
+        Keyword Args:
+            format: Output format (``"png"``, ``"pdf"``, ``"svg"``).
+            dpi: Resolution for raster output (default ``150``).
+            preserve_aspect: Whether to preserve aspect ratio.
+            container_width_pct: Width as percentage of cell.
+            container_height_pct: Height as percentage of cell.
+
+        Returns:
+            The created ``FigureElement``.
+        """
+        from reporting.elements.figure import FigureElement
+        el: object = FigureElement(figure, **kwargs)
+        self._cell.element = el
+        return el
+
+    def table(self, data: object = None, **kwargs: object) -> object:
+        """Add a table to this cell.
+
+        Accepts either a pandas ``DataFrame`` (rendered as a
+        basic table) or a ``TableSpec`` (rendered with full
+        TableSpec styling).
+
+        Args:
+            data: A pandas ``DataFrame`` or a ``TableSpec``.
+
+        Keyword Args:
+            header: Whether to show a header row.
+            include_index: Whether to show the DataFrame index.
+            zebra: Enable alternating row colours.
+            numeric_format: Format string for numeric values.
+
+        Returns:
+            A ``TableElement`` or ``TableSpecElement``.
+        """
+        from reporting.tablespec.spec import TableSpec
+        if isinstance(data, TableSpec):
+            return self.table_spec(data, **kwargs)
+        from reporting.elements.table import TableElement
+        el: object = TableElement(data, **kwargs)
+        self._cell.element = el
+        return el
+
+    def table_spec(self, spec: object = None, **kwargs: object) -> object:
+        """Add a ``TableSpec`` to this cell (explicit method).
+
+        Args:
+            spec: A ``TableSpec`` instance.
+
+        Returns:
+            The created ``TableSpecElement``.
+        """
+        from reporting.elements.tablespec_element import TableSpecElement
+        el: object = TableSpecElement(spec, **kwargs)
+        self._cell.element = el
+        return el
+
+    def grid_layout(self, grid: Grid) -> object:
+        """Add a nested sub-grid inside this cell.
+
+        Wraps a ``Grid`` in a ``ContainerElement``.
+
+        Args:
+            grid: A ``Grid`` instance defining the sub-layout.
+
+        Returns:
+            The created ``ContainerElement``.
+        """
+        from reporting.elements.container import ContainerElement
+        el: object = ContainerElement(grid=grid)
+        self._cell.element = el
+        return el
 
 
 @dataclasses.dataclass
@@ -124,7 +322,7 @@ class Grid:
             padding=self.padding,
         )
 
-    def __getitem__(self, pos: tuple[int | slice, int | slice]) -> GridCell:
+    def __getitem__(self, pos: tuple[int | slice, int | slice]) -> GridCellProxy:
         """Access a cell by row and column (NumPy-style indexing).
 
         Slices set ``rowspan`` / ``colspan`` on the
@@ -135,9 +333,9 @@ class Grid:
                 an ``int`` or a ``slice``.
 
         Returns:
-            The ``GridCell`` at ``(row, col)``, with
-            ``rowspan`` and ``colspan`` updated if slices
-            were used.
+            A ``GridCellProxy`` wrapping the cell at
+            ``(row, col)``, with ``rowspan`` and ``colspan``
+            updated if slices were used.
         """
         row_key, col_key = pos
         rows_range = self._resolve_range(row_key, self.rows)
@@ -146,7 +344,7 @@ class Grid:
         cell = self.cells[r][c]
         cell.panel.rowspan = rows_range.stop - rows_range.start
         cell.panel.colspan = cols_range.stop - cols_range.start
-        return cell
+        return GridCellProxy(cell)
 
     @staticmethod
     def _resolve_range(key: int | slice, limit: int) -> range:

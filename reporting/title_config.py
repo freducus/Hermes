@@ -209,7 +209,7 @@ class TitlePanel:
         separator_width: Thickness of the separator line
             in points (default ``1.0``).
         separator_margin: Vertical gap between the title
-            baseline and the separator in points
+            panel content and the separator in pixels
             (default ``8.0``).
 
     Example::

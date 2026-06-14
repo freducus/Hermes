@@ -201,23 +201,22 @@ class PDFRenderer(BaseRenderer):
         self._current_slide = slide
         self._render_background(slide)
         self._render_title_panel(slide)
+
+        if slide._grid is not None:
+            cell_rects = slide.get_cell_rects()
+            offset_y = slide.title_panel.height
+            for r in range(slide._grid.rows):
+                for c2 in range(slide._grid.cols):
+                    cell = slide._grid.cells[r][c2]
+                    rect = cell_rects[r][c2]
+                    adj = Rect(rect.x, rect.y + offset_y, rect.width, rect.height)
+                    self._render_panel_background(adj, cell.panel.background_color)
+                    element = cell.element
+                    if element is None:
+                        continue
+                    self._render_element(element, adj, panel=cell.panel)
+
         self._render_footer(slide)
-
-        if slide._grid is None:
-            return
-
-        cell_rects = slide.get_cell_rects()
-        offset_y = slide.title_panel.height
-        for r in range(slide._grid.rows):
-            for c2 in range(slide._grid.cols):
-                cell = slide._grid.cells[r][c2]
-                rect = cell_rects[r][c2]
-                adj = Rect(rect.x, rect.y + offset_y, rect.width, rect.height)
-                self._render_panel_background(adj, cell.panel.background_color)
-                element = cell.element
-                if element is None:
-                    continue
-                self._render_element(element, adj, panel=cell.panel)
 
     def _render_background(self, slide: Any) -> None:
         bg = getattr(slide, "background", None)

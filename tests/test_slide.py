@@ -90,12 +90,12 @@ class TestSlide:
     def test_title_panel_height(self):
         slide = Slide("Test", title_panel=TitlePanel(height=80))
         assert slide.title_panel.height == 80
-        assert slide.content_size == (960, 432)
+        assert slide.content_size == (960, 428)
 
     def test_content_size(self):
         slide = Slide("Test", width=800, height=600)
         assert slide.content_size.width == 800
-        assert slide.content_size.height == 512
+        assert slide.content_size.height == 508
 
     def test_get_cell_rects_grid_relative(self):
         slide = Slide("Test", width=800, height=600, title_panel=TitlePanel(height=60))
@@ -106,7 +106,7 @@ class TestSlide:
         r = rects[0][0]
         assert r.y == 0
         assert r.width == 800
-        assert r.height == 512
+        assert r.height == 508
 
     def test_text_element(self, sample_slide):
         el = sample_slide[0, :].text("Hello")

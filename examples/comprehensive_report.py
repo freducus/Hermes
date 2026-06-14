@@ -12,7 +12,7 @@ from reporting.slide import Slide
 from reporting.layout.geometry import Edges
 from reporting.layout.grid import Grid
 from reporting.layout.sizing import Fill, Percent
-from reporting.elements.text import TextElement, TextAlignment
+from reporting.elements.text import TextAlignment
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
 from reporting.tablespec import TableSpec
@@ -189,23 +189,23 @@ def main() -> None:
     slide.grid_layout(rows=1, cols=2, gap=15, padding=Edges.all(15))
 
     inner = Grid(rows=3, cols=1, row_sizes=[Fill, Fill, Fill], gap=6)
-    inner[0, 0].panel.background_color = "aliceblue"
-    inner[0, 0].element = TextElement("Top panel", font_name="Helvetica-Bold", size=11)
-    inner[1, 0].panel.background_color = "cornsilk"
-    inner[1, 0].element = TextElement("Middle panel with info", font_name="Times-Roman", size=10, color="rgb(51, 51, 51)")
-    inner[2, 0].panel.background_color = "honeydew"
-    inner[2, 0].element = TextElement("Bottom panel, all good", font_name="Courier", size=9, color="forestgreen", italic=True)
+    inner[0, 0].background_color = "aliceblue"
+    inner[0, 0].text("Top panel", font_name="Helvetica-Bold", size=11)
+    inner[1, 0].background_color = "cornsilk"
+    inner[1, 0].text("Middle panel with info", font_name="Times-Roman", size=10, color="rgb(51, 51, 51)")
+    inner[2, 0].background_color = "honeydew"
+    inner[2, 0].text("Bottom panel, all good", font_name="Courier", size=9, color="forestgreen", italic=True)
     slide[0, 0].grid_layout(inner)
 
     inner2 = Grid(rows=2, cols=2, row_sizes=[Fill, Fill], col_sizes=[Fill, Fill], gap=6)
-    inner2[0, 0].panel.background_color = "rgb(243, 229, 245)"
-    inner2[0, 0].element = TextElement("A", font_name="Times-Bold", size=14, color=(106, 27, 154), alignment="center")
-    inner2[0, 1].panel.background_color = "rgb(251, 233, 231)"
-    inner2[0, 1].element = TextElement("B", font_name="Helvetica-Bold", size=14, color="rgb(191, 54, 12)", alignment="center")
-    inner2[1, 0].panel.background_color = "lightcyan"
-    inner2[1, 0].element = TextElement("C", font_name="Courier-Bold", size=14, color="teal", alignment="center")
-    inner2[1, 1].panel.background_color = "cornsilk"
-    inner2[1, 1].element = TextElement("D", font_name="Times-Italic", size=14, color="orangered", alignment="center")
+    inner2[0, 0].background_color = "rgb(243, 229, 245)"
+    inner2[0, 0].text("A", font_name="Times-Bold", size=14, color=(106, 27, 154), alignment="center")
+    inner2[0, 1].background_color = "rgb(251, 233, 231)"
+    inner2[0, 1].text("B", font_name="Helvetica-Bold", size=14, color="rgb(191, 54, 12)", alignment="center")
+    inner2[1, 0].background_color = "lightcyan"
+    inner2[1, 0].text("C", font_name="Courier-Bold", size=14, color="teal", alignment="center")
+    inner2[1, 1].background_color = "cornsilk"
+    inner2[1, 1].text("D", font_name="Times-Italic", size=14, color="orangered", alignment="center")
     slide[0, 1].grid_layout(inner2)
     doc.add_slide(slide)
 

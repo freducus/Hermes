@@ -92,8 +92,8 @@ def main() -> None:
 
     # 5. ContainerElement — nested sub-grid
     inner = Grid(rows=2, cols=1, gap=6)
-    inner[0, 0].element = TextElement("Sub-grid top cell", style="body")
-    inner[1, 0].element = TextElement(
+    inner[0, 0].text("Sub-grid top cell")
+    inner[1, 0].text(
         "Sub-grid bottom cell with\nmultiple lines",
         size=9, color="#666666",
     )
