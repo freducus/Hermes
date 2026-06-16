@@ -18,6 +18,7 @@ EXAMPLES = [
     "comprehensive_report",
     "image_demo",
     "figure_alignment",
+    "docs_themes",
 ]
 
 
@@ -28,9 +29,14 @@ def main() -> None:
             print(f"SKIP  {name}.pdf  (not found)")
             continue
 
+        # Remove old images for this example
+        for old in IMAGES_DIR.glob(f"{name}_*"):
+            old.unlink()
+
         result = subprocess.run(
             [sys.executable, "-m", "pypdfium2_cli", "render", str(pdf_path),
-             "--output", str(IMAGES_DIR), "--scale", "2"],
+             "--output", str(IMAGES_DIR), "--scale", "2",
+             "--format", "png", "--prefix", f"{name}_p"],
             capture_output=True, text=True,
         )
         if result.returncode != 0:

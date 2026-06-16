@@ -205,6 +205,21 @@ class Theme:
             return subclass
         return decorator
 
+    @classmethod
+    def get_registered(cls, name: str) -> type[Theme]:
+        """Look up a registered theme class by name.
+
+        Args:
+            name: The registration key (e.g. ``"corporate"``).
+
+        Returns:
+            The ``Theme`` subclass registered under *name*.
+
+        Raises:
+            KeyError: If no theme is registered with that name.
+        """
+        return cls._registry[name]
+
     @staticmethod
     def load_themes(directory: str) -> dict[str, type[Theme]]:
         """Scan *directory* for ``.py`` files and import them,

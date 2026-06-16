@@ -1,4 +1,7 @@
-"""Built-in themes and custom theme creation — used by docs 07_themes.rst."""
+"""Built-in themes, custom theme creation, slide types & registration.
+
+Used by docs 07_themes.rst.
+"""
 
 from pathlib import Path
 
@@ -10,14 +13,100 @@ from reporting.styles.theme import CorporateTheme, DarkTheme, LightTheme, Theme
 from reporting.styles.colors import ColorPalette, Color
 from reporting.styles.typography import Typography, FontSpec
 from reporting.tablespec.style import TableStyle
+from reporting.layout_config import LayoutConfig
+from reporting.slide_type import SlideTypeConfig
+from reporting.title_config import TitlePanel
+from reporting.background import SolidBackground
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
 
 OUT_DIR = Path(__file__).parent
 
 
+@Theme.register("ocean")
+class OceanTheme(Theme):
+    """Custom ocean-themed palette (teal/blue on light cyan)."""
+
+    def __init__(self) -> None:
+        palette = ColorPalette(
+            primary=Color.from_hex("#006994"),
+            secondary=Color.from_hex("#00B4D8"),
+            accent=Color.from_hex("#FF6B35"),
+            background=Color.from_hex("#E0F7FA"),
+            text_primary=Color.from_hex("#003B5C"),
+            text_secondary=Color.from_hex("#0077B6"),
+            border=Color.from_hex("#90E0EF"),
+            error=Color.from_hex("#C00000"),
+            warning=Color.from_hex("#FFC000"),
+            success=Color.from_hex("#2E7D32"),
+        )
+        typography = Typography(
+            heading_1=FontSpec("Helvetica", 28, bold=True, color="#006994"),
+            heading_2=FontSpec("Helvetica", 22, bold=True, color="#00B4D8"),
+            body=FontSpec("Helvetica", 11, color="#003B5C"),
+            caption=FontSpec("Helvetica", 9, italic=True, color="#0077B6"),
+        )
+        table_style = TableStyle()
+
+        default_tp = TitlePanel(
+            height=60, show_separator=True,
+            separator_color=palette.border.css, separator_width=1,
+            separator_margin=8,
+        )
+        title_tp = TitlePanel(height=80, show_separator=False)
+        blank_tp = TitlePanel(height=0, show_separator=False)
+
+        footer = FooterPanel(
+            enabled=True, separator_color=palette.border.css,
+            font_name=typography.caption.family,
+            font_size=typography.caption.size,
+            color=palette.text_secondary.css,
+            center_text="Ocean Report",
+        )
+        no_footer = FooterPanel(enabled=False)
+
+        layouts = {
+            "default": LayoutConfig(name="default", rows=1, cols=1),
+            "two_col": LayoutConfig(
+                name="two_col", rows=3, cols=2, gap=8,
+                padding=Edges.all(20),
+            ),
+        }
+        bg = SolidBackground(palette.background.css)
+        slide_types = {
+            "default": SlideTypeConfig(
+                name="default", layout="default",
+                title_panel=default_tp, footer_panel=footer,
+                background=bg,
+            ),
+            "title": SlideTypeConfig(
+                name="title", layout="default",
+                title_text="Welcome",
+                subtitle_text="Ocean Theme Demonstration",
+                title_panel=title_tp, footer_panel=no_footer,
+                background=bg,
+            ),
+            "data": SlideTypeConfig(
+                name="data", layout="two_col",
+                title_text="Data Overview",
+                title_panel=default_tp, footer_panel=footer,
+                background=bg,
+                cells={(0, 0): "Metric A", (0, 1): "42.7"},
+            ),
+        }
+        super().__init__(
+            name="Ocean",
+            page_size=(960, 540),
+            palette=palette,
+            typography=typography,
+            table_style=table_style,
+            layouts=layouts,
+            slide_types=slide_types,
+            footer_panel=footer,
+        )
+
+
 def main() -> None:
-    # ---- Documento con CorporateTheme (por defecto) ----
     doc = Document("Themes Demo", author="Docs")
 
     # ---- Slide 1: Corporate theme ----
@@ -65,64 +154,64 @@ def main() -> None:
     )
     doc.add_slide(slide3)
 
-    # ---- Slide 4: Custom theme with green palette ----
-    custom_palette = ColorPalette(
-        primary=Color.from_hex("#2E7D32"),
-        secondary=Color.from_hex("#43A047"),
-        accent=Color.from_hex("#FF8F00"),
-        background=Color.from_hex("#F1F8E9"),
-        text_primary=Color.from_hex("#1B5E20"),
-        text_secondary=Color.from_hex("#558B2F"),
-        border=Color.from_hex("#C8E6C9"),
-        error=Color.from_hex("#C62828"),
-        warning=Color.from_hex("#F57F17"),
-        success=Color.from_hex("#2E7D32"),
-    )
-    custom_typo = Typography(
-        heading_1=FontSpec(family="Times-Bold", size=30, bold=False, color="#1B5E20"),
-        heading_2=FontSpec(family="Times-Roman", size=24, bold=True, color="#2E7D32"),
-        body=FontSpec(family="Times-Roman", size=11, color="#333333"),
-        caption=FontSpec(family="Times-Roman", size=9, italic=True, color="#558B2F"),
-    )
-    custom_theme = Theme(
-        name="GreenFields",
-        palette=custom_palette,
-        typography=custom_typo,
-        table_style=TableStyle(),
-        footer_panel=FooterPanel(center_text="GreenFields Report"),
-    )
-
+    # ---- Slide 4: OceanTheme — custom theme with layouts and slide types ----
     slide4 = Slide(
-        "Custom Theme: GreenFields",
-        subtitle="Green palette, Times serif fonts",
-        theme=custom_theme,
-        footer_panel=FooterPanel(center_text="Custom | Docs"),
+        "Ocean Theme",
+        subtitle="Teal/blue palette, Helvetica, custom slide types",
+        theme=OceanTheme(),
     )
-    slide4.grid_layout(rows=1, cols=1, padding=Edges.all(20))
     slide4[0, 0].text(
-        "This slide uses a custom theme with:\n"
-        "- Green colour palette\n"
-        "- Georgia serif fonts\n"
-        "- Light green background (#F1F8E9)",
+        "This slide uses a fully custom theme:\n"
+        "- Custom ColorPalette (teal/blue/orange)\n"
+        "- Named LayoutConfig layouts\n"
+        "- Custom SlideTypeConfig variants\n"
+        "- @Theme.register('ocean') for name-based lookup\n"
+        "- SolidBackground from palette",
         style="body",
     )
     doc.add_slide(slide4)
 
-    # ---- Slide 5: Theme applied via Document ----
+    # ---- Slide 5: Slide type with title/subtitle/cells inheritance ----
     slide5 = Slide(
+        slide_type="data",
+        theme=OceanTheme(),
+    )
+    slide5[1, 0].text("Manually added cell", style="body")
+    slide5[1, 1].text("Extra content", style="body")
+    slide5[2, :].text("Spans both columns", style="body")
+    doc.add_slide(slide5)
+
+    # ---- Slide 6: Registered theme via name string ----
+    slide6 = Slide(
+        "Ocean by Name",
+        theme="ocean",
+        footer_panel=FooterPanel(center_text="Registered | Docs"),
+    )
+    slide6.grid_layout(rows=1, cols=1, padding=Edges.all(20))
+    slide6[0, 0].text(
+        "Themes can be registered with @Theme.register('name')\n"
+        "and referenced by a plain string.\n\n"
+        'Slide("Title", theme="ocean")',
+        style="body",
+    )
+    doc.add_slide(slide6)
+
+    # ---- Slide 7: Theme via Document ----
+    slide7 = Slide(
         "Theme via Document",
         subtitle="Pass theme= to Document and let slides inherit",
+        theme=DarkTheme(),
         footer_panel=FooterPanel(center_text="Document theme | Docs"),
     )
-    slide5.grid_layout(rows=1, cols=1, padding=Edges.all(20))
-    slide5[0, 0].text(
+    slide7.grid_layout(rows=1, cols=1, padding=Edges.all(20))
+    slide7[0, 0].text(
         "When a theme is set on the Document, new slides\n"
         "inherit it automatically unless overridden.\n\n"
         "doc = Document('Title', theme=DarkTheme())\n"
         "slide = doc.new_slide('Slide')  # inherits DarkTheme",
         style="body",
     )
-    doc.add_slide(slide5)
+    doc.add_slide(slide7)
 
     out = OUT_DIR / "docs_themes"
     PDFRenderer().render_document(doc, str(out) + ".pdf")
@@ -132,5 +221,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

@@ -104,7 +104,7 @@ class Slide:
         self,
         title: Optional[Union[str, TitleText]] = None,
         subtitle: Optional[Union[str, SubtitleText]] = None,
-        theme: Optional[Theme] = None,
+        theme: Optional[Union[str, Theme]] = None,
         width: Optional[float] = None,
         height: Optional[float] = None,
         title_panel: Optional[TitlePanel] = None,
@@ -128,6 +128,14 @@ class Slide:
         resolved_title: Optional[Union[str, TitleText]] = None
         resolved_subtitle: Optional[Union[str, SubtitleText]] = None
 
+        # ── Helper: resolve theme (instance, string name, or default) ──
+        def _resolve_theme(t: Optional[Union[str, Theme]]) -> Theme:
+            if t is None:
+                return CorporateTheme()
+            if isinstance(t, str):
+                return Theme.get_registered(t)()
+            return t
+
         # ── Step 1: base_slide ──────────────────────────────────────
         if base_slide is not None:
             resolved_theme = base_slide.theme
@@ -142,13 +150,13 @@ class Slide:
             if base_slide._grid is not None:
                 self._grid = base_slide._grid.copy_structure()
         else:
-            resolved_theme = theme or CorporateTheme()
+            resolved_theme = _resolve_theme(theme)
             resolved_width = width or resolved_theme.page_size[0]
             resolved_height = height or resolved_theme.page_size[1]
 
         # ── Step 2: explicit theme override ─────────────────────────
         if theme is not None:
-            resolved_theme = theme
+            resolved_theme = _resolve_theme(theme)
 
         # ── Step 3: slide type from theme ────────────────────────────
         st = resolved_theme.get_slide_type(slide_type)
