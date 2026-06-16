@@ -1,27 +1,20 @@
 """Slide type configuration — pre-defined slide templates within a theme.
 
-A ``SlideTypeConfig`` bundles panel defaults for a slide: title panel
-layout, footer panel config, optional background, and optional pre-defined
-grid layout.
-
-Slide types live inside a ``Theme.slide_types`` dict.  Users pick one
-via ``Slide(..., slide_type="default")`` and can still override any
-individual parameter.
+A ``SlideTypeConfig`` bundles default text content (title, subtitle,
+cell texts), a named layout reference, and panel configuration.
+Every field is optional — the resolution chain (base_slide → theme →
+slide_type → explicit) fills in what is missing.
 """
 
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Optional
-
-from reporting.layout.geometry import Edges
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     from reporting.background import Background
-    from reporting.elements.text import TextAlignment
     from reporting.footer_config import FooterPanel
-    from reporting.styles.theme import Theme
-    from reporting.title_config import TitlePanel
+    from reporting.title_config import TitlePanel, TitleText, SubtitleText
 
 
 @dataclasses.dataclass
@@ -30,67 +23,54 @@ class SlideTypeConfig:
 
     Args:
         name: Type name used as key in ``Theme.slide_types``.
-        title_panel: Title panel layout (height, padding, separator,
-            subtitle placement).  Falls back to ``TitlePanel()``
+        title_text: Default title text (plain ``str`` or
+            ``TitleText``).  Falls back to theme typography
             when ``None`` (default ``None``).
+        subtitle_text: Default subtitle text (plain ``str`` or
+            ``SubtitleText``).  Falls back to theme typography
+            when ``None`` (default ``None``).
+        layout: Name of a ``LayoutConfig`` in the parent theme's
+            ``layouts`` dict.  When set, the slide automatically
+            gets a grid with those dimensions (default ``None``).
+        title_panel: Title panel layout (height, padding,
+            separator, subtitle placement).  Falls back to
+            ``TitlePanel.from_theme()`` when ``None``
+            (default ``None``).
         footer_panel: Footer panel styling and content.
-            Falls back to ``FooterPanel(enabled=False)`` when
-            ``None`` (default ``None``).
+            Falls back to ``theme.footer_panel`` when ``None``
+            (default ``None``).
         background: Optional default slide background
             (default ``None``).
-        grid_rows: Pre-defined grid rows (default ``None``).
-        grid_cols: Pre-defined grid columns (default ``None``).
-        grid_kwargs: Extra keyword arguments passed to
-            ``grid_layout()`` (default ``{}``).
+        cells: Default text content for grid cells, keyed by
+            ``(row, col)``.  When the slide is created, each
+            matching cell gets a ``TextElement`` with the
+            given string (default ``{}``).
+
+    Example::
+
+        from reporting.slide_type import SlideTypeConfig
+        from reporting.title_config import TitlePanel
+        from reporting.footer_config import FooterPanel
+
+        st = SlideTypeConfig(
+            name="results",
+            title_text="Results",
+            subtitle_text="Experimental data",
+            layout="two_by_two",
+            title_panel=TitlePanel(height=60),
+            footer_panel=FooterPanel(center_text="Results Report"),
+            cells={(0, 0): "Metric A", (0, 1): "Metric B"},
+        )
     """
 
     name: str = "default"
-    title_panel: Optional[TitlePanel] = None
-    footer_panel: Optional[FooterPanel] = None
+    title_text: Optional[Union[str, "TitleText"]] = None
+    subtitle_text: Optional[Union[str, "SubtitleText"]] = None
+    layout: Optional[str] = None
+    title_panel: Optional["TitlePanel"] = None
+    footer_panel: Optional["FooterPanel"] = None
     background: Optional["Background"] = None
-    grid_rows: Optional[int] = None
-    grid_cols: Optional[int] = None
-    grid_kwargs: dict = dataclasses.field(default_factory=dict)
-
-    @classmethod
-    def from_theme(
-        cls,
-        theme: "Theme",
-        name: str = "default",
-        title_panel_height: float = 60.0,
-        footer_enabled: bool = True,
-    ) -> "SlideTypeConfig":
-        """Create a ``SlideTypeConfig`` deriving defaults from a ``Theme``.
-
-        Args:
-            theme: Theme to derive typography and palette from.
-            name: Type name.
-            title_panel_height: Default title panel height.
-            footer_enabled: Whether the footer is enabled by default.
-
-        Returns:
-            A fully-populated ``SlideTypeConfig``.
-        """
-        from reporting.footer_config import FooterPanel
-        from reporting.title_config import TitlePanel
-
-        return cls(
-            name=name,
-            title_panel=TitlePanel(
-                height=title_panel_height,
-                show_separator=True,
-                separator_color=theme.palette.border.css,
-                separator_width=1.0,
-                separator_margin=8.0,
-            ),
-            footer_panel=FooterPanel(
-                enabled=footer_enabled,
-                separator_color=theme.palette.border.css,
-                font_name=theme.typography.caption.family,
-                font_size=theme.typography.caption.size,
-                color=theme.palette.text_secondary.css,
-            ),
-        )
+    cells: dict[tuple[int, int], str] = dataclasses.field(default_factory=dict)
 
 
 __all__ = ["SlideTypeConfig"]

@@ -89,7 +89,7 @@ def main() -> None:
         palette=custom_palette,
         typography=custom_typo,
         table_style=TableStyle(),
-        footer=FooterPanel(center_text="GreenFields Report"),
+        footer_panel=FooterPanel(center_text="GreenFields Report"),
     )
 
     slide4 = Slide(

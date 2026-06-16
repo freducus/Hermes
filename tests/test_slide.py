@@ -5,13 +5,20 @@ from __future__ import annotations
 import pytest
 
 from reporting.slide import Slide
+from reporting.slide_type import SlideTypeConfig
+from reporting.layout_config import LayoutConfig
+from reporting.layout.sizing import Px, Fill
+from reporting.layout.geometry import Edges, Rect
+from reporting.styles.theme import Theme, CorporateTheme, DarkTheme, LightTheme
+from reporting.styles.colors import Color, ColorPalette
+from reporting.styles.typography import Typography, FontSpec
 from reporting.title_config import TitleText, SubtitleText, TitlePanel
+from reporting.footer_config import FooterPanel
 from reporting.elements.text import TextElement
 from reporting.elements.image import ImageElement
 from reporting.elements.figure import FigureElement
 from reporting.elements.table import TableElement
 from reporting.elements.base import ElementType
-from reporting.layout.geometry import Rect
 
 
 class TestSlide:
@@ -134,3 +141,204 @@ class TestSlide:
         sample_slide[1, 1].text("B")
         assert sample_slide._elements[(0, 0)] is not None
         assert sample_slide._elements[(1, 1)] is not None
+
+    # ── New theme system tests ──────────────────────────────────────
+
+    def test_auto_layout_from_slide_type(self):
+        """SlideType with layout name auto-creates grid."""
+        slide = Slide("Auto", slide_type="title")
+        assert slide._grid is not None
+        assert slide._grid.rows == 1
+        assert slide._grid.cols == 1
+
+    def test_slide_type_blank_no_layout(self):
+        """blank slide type has no layout, so no auto-grid."""
+        slide = Slide("Blank", slide_type="blank")
+        assert slide._grid is None
+
+    def test_slide_type_default_cells(self):
+        """SlideType cells dict auto-populates grid cells."""
+        st = SlideTypeConfig(
+            name="test",
+            layout="default",
+            cells={(0, 0): "Cell A", (0, 1): "Cell B"},
+        )
+        theme = Theme(
+            name="TestTheme",
+            layouts={"default": LayoutConfig(name="default", rows=1, cols=2)},
+            slide_types={"test": st},
+        )
+        slide = Slide("Cells", theme=theme, slide_type="test")
+        assert slide._grid is not None
+        assert slide._grid.rows == 1
+        assert slide._grid.cols == 2
+        assert slide._grid.cells[0][0].element is not None
+        assert slide._grid.cells[0][1].element is not None
+        el = slide._grid.cells[0][0].element
+        assert isinstance(el, TextElement)
+        assert el.blocks[0].runs[0].text == "Cell A"
+
+    def test_theme_page_size_defaults(self):
+        """Theme.page_size controls slide width/height when not explicit."""
+        theme = Theme(
+            name="Wide",
+            page_size=(1280.0, 720.0),
+        )
+        slide = Slide("Wide", theme=theme)
+        assert slide.width == 1280.0
+        assert slide.height == 720.0
+
+    def test_explicit_size_overrides_theme(self):
+        """Explicit width/height must override theme.page_size."""
+        theme = Theme(name="Small", page_size=(640.0, 480.0))
+        slide = Slide("Big", theme=theme, width=1920.0, height=1080.0)
+        assert slide.width == 1920.0
+        assert slide.height == 1080.0
+
+    def test_title_from_slide_type(self):
+        """SlideType title_text appears as default title."""
+        st = SlideTypeConfig(name="cover", title_text="Cover Title")
+        theme = Theme(slide_types={"cover": st})
+        slide = Slide(theme=theme, slide_type="cover")
+        assert str(slide.title) == "Cover Title"
+
+    def test_explicit_title_overrides_slide_type(self):
+        """Explicit title kwarg must override slide type title_text."""
+        st = SlideTypeConfig(name="cover", title_text="Default")
+        theme = Theme(slide_types={"cover": st})
+        slide = Slide("Explicit", theme=theme, slide_type="cover")
+        assert str(slide.title) == "Explicit"
+
+    def test_subtitle_from_slide_type(self):
+        """SlideType subtitle_text appears as default subtitle."""
+        st = SlideTypeConfig(name="cover", subtitle_text="Default Sub")
+        theme = Theme(slide_types={"cover": st})
+        slide = Slide("Title", theme=theme, slide_type="cover")
+        assert slide.subtitle is not None
+        assert str(slide.subtitle) == "Default Sub"
+
+    def test_explicit_subtitle_overrides_slide_type(self):
+        """Explicit subtitle must override slide type subtitle_text."""
+        st = SlideTypeConfig(name="cover", subtitle_text="Default")
+        theme = Theme(slide_types={"cover": st})
+        slide = Slide("Title", subtitle="Explicit", theme=theme, slide_type="cover")
+        assert str(slide.subtitle) == "Explicit"
+
+    def test_base_slide_resolution(self):
+        """base_slide provides theme, panels, dimensions, and grid."""
+        base = Slide("Base")
+        base.grid_layout(rows=2, cols=3, gap=5)
+        child = Slide(base_slide=base)
+        assert child.width == base.width
+        assert child.height == base.height
+        assert child.theme is base.theme
+        assert child.title_panel.height == base.title_panel.height
+        assert child._grid is not None
+        assert child._grid.rows == 2
+        assert child._grid.cols == 3
+        assert child._grid.gap == 5
+
+    def test_base_slide_content_not_copied(self):
+        """base_slide copies grid structure but not cell content."""
+        base = Slide("Base")
+        base.grid_layout(rows=1, cols=1)
+        base[0, 0].text("Base content")
+        child = Slide("Child", base_slide=base)
+        assert child._grid.cells[0][0].element is None
+
+    def test_dark_theme_works(self):
+        """DarkTheme creates slides with correct page_size."""
+        slide = Slide("Dark", theme=DarkTheme())
+        assert slide.theme.name == "Dark"
+        assert slide.width == 960.0
+
+    def test_light_theme_works(self):
+        """LightTheme creates slides with correct page_size."""
+        slide = Slide("Light", theme=LightTheme())
+        assert slide.theme.name == "Light"
+
+    def test_custom_theme_with_layouts(self):
+        """Custom Theme with named layouts and slide types."""
+        theme = Theme(
+            name="Custom",
+            layouts={
+                "two_by_one": LayoutConfig(
+                    name="two_by_one", rows=2, cols=1, gap=4,
+                    row_sizes=[Px(100), Fill],
+                ),
+            },
+            slide_types={
+                "slim": SlideTypeConfig(
+                    name="slim", layout="two_by_one",
+                    title_text="Slim Slide",
+                ),
+            },
+        )
+        slide = Slide(theme=theme, slide_type="slim")
+        assert slide._grid is not None
+        assert slide._grid.rows == 2
+        assert slide._grid.cols == 1
+        assert slide._grid.gap == 4
+        assert str(slide.title) == "Slim Slide"
+
+    def test_layout_config_creation(self):
+        """LayoutConfig basic creation."""
+        lc = LayoutConfig(name="test", rows=3, cols=4, gap=8, padding=Edges.all(10))
+        assert lc.name == "test"
+        assert lc.rows == 3
+        assert lc.cols == 4
+        assert lc.gap == 8
+        assert lc.padding is not None
+        assert lc.padding.left == 10
+
+    def test_slide_type_config_creation(self):
+        """SlideTypeConfig basic creation with optional fields."""
+        st = SlideTypeConfig(
+            name="results",
+            title_text="Results",
+            subtitle_text="Data",
+            layout="default",
+            title_panel=TitlePanel(height=70),
+            footer_panel=FooterPanel(enabled=False),
+            cells={(0, 0): "Hello"},
+        )
+        assert st.name == "results"
+        assert st.title_text == "Results"
+        assert st.subtitle_text == "Data"
+        assert st.layout == "default"
+        assert st.title_panel is not None
+        assert st.title_panel.height == 70
+        assert st.footer_panel is not None
+        assert st.footer_panel.enabled is False
+        assert st.cells == {(0, 0): "Hello"}
+
+    def test_theme_register_and_load(self):
+        """Theme.register() and Theme.load_themes()."""
+        @Theme.register("test_theme")
+        class TestRegTheme(Theme):
+            def __init__(self) -> None:
+                super().__init__(name="TestRegistered")
+
+        assert "test_theme" in Theme._registry
+        assert Theme._registry["test_theme"] is TestRegTheme
+
+    def test_theme_get_layout_default(self):
+        """Theme.get_layout() returns LayoutConfig or default."""
+        theme = Theme()
+        lc = theme.get_layout("nonexistent")
+        assert lc.name == "nonexistent"
+        assert lc.rows == 1
+
+    def test_theme_get_slide_type_default(self):
+        """Theme.get_slide_type() returns SlideTypeConfig or default."""
+        theme = Theme()
+        st = theme.get_slide_type("nonexistent")
+        assert st.name == "nonexistent"
+        assert st.layout == "default"
+
+    def test_empty_slide_defaults_to_corporate(self):
+        """Slide() with no args uses CorporateTheme."""
+        slide = Slide()
+        assert slide.theme.name == "Corporate"
+        assert slide.width == 960.0
+        assert slide.height == 540.0

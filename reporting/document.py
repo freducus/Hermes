@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Optional
+from typing import Optional, Union
 
 from reporting.slide import Slide
 from reporting.styles.theme import Theme, CorporateTheme
@@ -68,11 +68,11 @@ class Document:
 
     def new_slide(
         self,
-        title: str,
+        title: Optional[str] = None,
         subtitle: Optional[str] = None,
         theme: Optional[Theme] = None,
-        width: float = 960.0,
-        height: float = 540.0,
+        width: Optional[float] = None,
+        height: Optional[float] = None,
         slide_type: str = "default",
         base_slide: Optional[Slide] = None,
     ) -> Slide:
@@ -82,14 +82,18 @@ class Document:
 
         Args:
             title: Slide title (shown in the title panel).
+                Falls back to the slide type default when ``None``
+                (default ``None``).
             subtitle: Optional subtitle shown below the title
                 (default ``None``).
             theme: Visual theme for this slide.  Falls back to the
                 document-level theme if ``None`` (default ``None``).
-            width: Slide width in pixels (default ``960.0`` —
-                standard 4:3).
-            height: Slide height in pixels (default ``540.0`` —
-                standard 4:3).
+            width: Slide width in pixels.  Falls back to
+                ``theme.page_size[0]`` when ``None``
+                (default ``None``).
+            height: Slide height in pixels.  Falls back to
+                ``theme.page_size[1]`` when ``None``
+                (default ``None``).
             slide_type: Name of a pre-defined slide type in the
                 theme (default ``"default"``).
             base_slide: Another ``Slide`` whose config and grid
