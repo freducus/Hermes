@@ -54,7 +54,7 @@ class OceanTheme(Theme):
             separator_margin=8,
         )
         title_tp = TitlePanel(height=80, show_separator=False)
-        blank_tp = TitlePanel(height=0, show_separator=False)
+        blank_tp = TitlePanel(enabled=False)
 
         footer = FooterPanel(
             enabled=True, separator_color=palette.border.css,

@@ -112,48 +112,53 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
         slide_bg_style = self._background_css(slide)
         slide_extra = f'style="{slide_bg_style}"' if slide_bg_style else ""
 
-        t = slide.title
-        s = slide.subtitle
         tp = slide.title_panel
-        th = slide.title_panel.height
 
-        h1_weight = "bold" if t.bold else "normal"
-        h1_style = (f"font-size:{t.font_size}px;color:{Color.parse(t.color).css};"
-                    f"font-weight:{h1_weight};font-family:{t.font_name};"
-                    f"text-align:{t.alignment.value}")
+        if tp.enabled:
+            t = slide.title
+            s = slide.subtitle
+            th = slide.title_panel.height
 
-        is_beside = (
-            s
-            and tp.subtitle_placement.value == "beside"
-        )
+            h1_weight = "bold" if t.bold else "normal"
+            h1_style = (f"font-size:{t.font_size}px;color:{Color.parse(t.color).css};"
+                        f"font-weight:{h1_weight};font-family:{t.font_name};"
+                        f"text-align:{t.alignment.value}")
 
-        panel_cls = "title-panel beside" if is_beside else "title-panel"
-        panel_style = f"height:{th}px;padding:{tp.padding.top}px {tp.padding.right}px {tp.padding.bottom}px {tp.padding.left}px;"
-
-        if is_beside:
-            sub_w = tp.subtitle_width_ratio
-            sub_weight = "bold" if s.bold else "normal"
-            sub_style = (f"font-size:{s.font_size}px;color:{Color.parse(s.color).css};"
-                         f"font-weight:{sub_weight};font-family:{s.font_name};"
-                         f"text-align:{s.alignment.value};width:{sub_w*100}%")
-            title_html = (
-                f"""<div class="{panel_cls}" style="{panel_style}">"""
-                f"""<h1 style="{h1_style}">{t}</h1>"""
-                f"""<p style="{sub_style}">{s}</p>"""
-                f"""</div>"""
+            is_beside = (
+                s
+                and tp.subtitle_placement.value == "beside"
             )
-        else:
-            title_html = f"""<div class="{panel_cls}" style="{panel_style}"><h1 style="{h1_style}">{t}</h1>"""
-            if s:
+
+            panel_cls = "title-panel beside" if is_beside else "title-panel"
+            panel_style = f"height:{th}px;padding:{tp.padding.top}px {tp.padding.right}px {tp.padding.bottom}px {tp.padding.left}px;"
+
+            if is_beside:
+                sub_w = tp.subtitle_width_ratio
                 sub_weight = "bold" if s.bold else "normal"
                 sub_style = (f"font-size:{s.font_size}px;color:{Color.parse(s.color).css};"
                              f"font-weight:{sub_weight};font-family:{s.font_name};"
-                             f"text-align:{s.alignment.value}")
-                title_html += f"<p style=\"{sub_style}\">{s}</p>"
-            if tp.show_separator:
-                title_html += (f"<hr style=\"border:none;border-top:{tp.separator_width}px solid "
-                               f"{Color.parse(tp.separator_color).css};margin-top:{tp.separator_margin}px;margin-bottom:0\">")
-            title_html += "</div>"
+                             f"text-align:{s.alignment.value};width:{sub_w*100}%")
+                title_html = (
+                    f"""<div class="{panel_cls}" style="{panel_style}">"""
+                    f"""<h1 style="{h1_style}">{t}</h1>"""
+                    f"""<p style="{sub_style}">{s}</p>"""
+                    f"""</div>"""
+                )
+            else:
+                title_html = f"""<div class="{panel_cls}" style="{panel_style}"><h1 style="{h1_style}">{t}</h1>"""
+                if s:
+                    sub_weight = "bold" if s.bold else "normal"
+                    sub_style = (f"font-size:{s.font_size}px;color:{Color.parse(s.color).css};"
+                                 f"font-weight:{sub_weight};font-family:{s.font_name};"
+                                 f"text-align:{s.alignment.value}")
+                    title_html += f"<p style=\"{sub_style}\">{s}</p>"
+                if tp.show_separator:
+                    title_html += (f"<hr style=\"border:none;border-top:{tp.separator_width}px solid "
+                                   f"{Color.parse(tp.separator_color).css};margin-top:{tp.separator_margin}px;margin-bottom:0\">")
+                title_html += "</div>"
+        else:
+            title_html = ""
+            th = 0
 
         content_parts: list[str] = []
 

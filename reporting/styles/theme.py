@@ -303,7 +303,7 @@ class CorporateTheme(Theme):
             height=80.0, show_separator=False,
         )
         blank_tp = TitlePanel(
-            height=0.0, show_separator=False,
+            enabled=False,
         )
 
         footer = FooterPanel(
@@ -402,7 +402,7 @@ class DarkTheme(Theme):
             height=80.0, show_separator=False,
         )
         blank_tp = TitlePanel(
-            height=0.0, show_separator=False,
+            enabled=False,
         )
 
         from reporting.background import SolidBackground
@@ -503,7 +503,7 @@ class LightTheme(Theme):
             height=80.0, show_separator=False,
         )
         blank_tp = TitlePanel(
-            height=0.0, show_separator=False,
+            enabled=False,
         )
 
         footer = FooterPanel(

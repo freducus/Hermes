@@ -342,3 +342,44 @@ class TestSlide:
         assert slide.theme.name == "Corporate"
         assert slide.width == 960.0
         assert slide.height == 540.0
+
+    def test_title_panel_enabled_by_default(self):
+        """TitlePanel.enabled defaults to True."""
+        tp = TitlePanel()
+        assert tp.enabled is True
+        slide = Slide("Test")
+        assert slide.title_panel.enabled is True
+
+    def test_title_panel_disabled_content_size_full(self):
+        """When title_panel is disabled, content_size covers full height."""
+        slide = Slide(
+            "Test",
+            title_panel=TitlePanel(enabled=False),
+            footer_panel=FooterPanel(enabled=False),
+        )
+        slide.grid_layout(rows=1, cols=1)
+        cs = slide.content_size
+        assert cs.width == 960.0
+        assert cs.height == 540.0
+
+    def test_title_panel_enabled_content_size_subtracts_height(self):
+        """When title_panel is enabled, content_size subtracts panel height."""
+        slide = Slide(
+            "Test",
+            title_panel=TitlePanel(enabled=True, height=80),
+            footer_panel=FooterPanel(enabled=False),
+        )
+        slide.grid_layout(rows=1, cols=1)
+        cs = slide.content_size
+        assert cs.width == 960.0
+        assert cs.height == 460.0  # 540 - 80
+
+    def test_title_panel_disabled_blank_slide_type(self):
+        """blank slide type sets enabled=False on TitlePanel."""
+        slide = Slide(
+            slide_type="blank",
+            footer_panel=FooterPanel(enabled=False),
+        )
+        assert slide.title_panel.enabled is False
+        cs = slide.content_size
+        assert cs.height == 540.0

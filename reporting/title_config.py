@@ -190,7 +190,12 @@ class TitlePanel:
     the title.
 
     Args:
+        enabled: Whether the title panel is shown.  When
+            ``False``, the title panel is not rendered and
+            the grid occupies the full slide height
+            (default ``True``).
         height: Title panel height in pixels (default ``60.0``).
+            Ignored when ``enabled=False``.
         subtitle_placement: Whether the subtitle appears
             ``BELOW`` the title or ``BESIDE`` it
             (default ``SubtitlePlacement.BELOW``).
@@ -225,8 +230,12 @@ class TitlePanel:
         )
         slide = Slide("Results", subtitle="Test data",
                       title_panel=panel)
+
+        # Disable the title panel entirely:
+        slide = Slide("Title", title_panel=TitlePanel(enabled=False))
     """
 
+    enabled: bool = True
     height: float = 60.0
     subtitle_placement: SubtitlePlacement = SubtitlePlacement.BELOW
     subtitle_width_ratio: float = 0.35

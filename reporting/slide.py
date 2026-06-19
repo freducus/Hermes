@@ -282,7 +282,8 @@ class Slide:
             footer_h = fp.height + extra
         else:
             footer_h = 0
-        return Size(self.width, self.height - self.title_panel.height - footer_h)
+        title_h = self.title_panel.height if self.title_panel.enabled else 0
+        return Size(self.width, self.height - title_h - footer_h)
 
     def get_cell_rects(self) -> list[list[Rect]]:
         """Compute the pixel rectangles of every grid cell.

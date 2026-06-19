@@ -200,11 +200,14 @@ class PDFRenderer(BaseRenderer):
 
         self._current_slide = slide
         self._render_background(slide)
-        self._render_title_panel(slide)
+        if slide.title_panel.enabled:
+            self._render_title_panel(slide)
+            offset_y = slide.title_panel.height
+        else:
+            offset_y = 0
 
         if slide._grid is not None:
             cell_rects = slide.get_cell_rects()
-            offset_y = slide.title_panel.height
             for r in range(slide._grid.rows):
                 for c2 in range(slide._grid.cols):
                     cell = slide._grid.cells[r][c2]
