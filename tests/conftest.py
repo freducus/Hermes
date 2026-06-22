@@ -8,6 +8,7 @@ import pytest
 @pytest.fixture
 def sample_slide():
     from reporting.slide import Slide
-    slide = Slide("Test Slide")
+    slide = Slide()
+    slide.title = "Test Slide"
     slide.grid_layout(rows=3, cols=4)
     return slide

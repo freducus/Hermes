@@ -126,8 +126,9 @@ class PDFRenderer(BaseRenderer):
         from reporting.document import Document
         from reporting.renderers.pdf.renderer import PDFRenderer
 
-        doc = Document()
-        slide = doc.new_slide("Results")
+        doc = Document("Report")
+        slide = doc.new_slide()
+        slide.title = "Results"
         slide.grid_layout(rows=1, cols=1)
         slide[0, 0].text("Hello, PDF!")
 
@@ -138,8 +139,6 @@ class PDFRenderer(BaseRenderer):
         self._canvas: Optional[canvas.Canvas] = None
         self._slide_pt_h: float = 0
         self._temp_files: list[str] = []
-        self._page_num: int = 1
-        self._total_pages: int = 1
 
     def render_document(self, document: "Document", output_path: str) -> None:
         """Render all slides of a document to a single PDF file.
@@ -165,10 +164,7 @@ class PDFRenderer(BaseRenderer):
         self._temp_files = []
 
         try:
-            total = len(document.slides)
-            for i, slide in enumerate(document.slides):
-                self._page_num = i + 1
-                self._total_pages = total
+            for slide in document.slides:
                 self._render_slide(slide)
                 c.showPage()
             c.save()
@@ -200,11 +196,6 @@ class PDFRenderer(BaseRenderer):
 
         self._current_slide = slide
         self._render_background(slide)
-        if slide.title_panel.enabled:
-            self._render_title_panel(slide)
-            offset_y = slide.title_panel.height
-        else:
-            offset_y = 0
 
         if slide._grid is not None:
             cell_rects = slide.get_cell_rects()
@@ -212,14 +203,14 @@ class PDFRenderer(BaseRenderer):
                 for c2 in range(slide._grid.cols):
                     cell = slide._grid.cells[r][c2]
                     rect = cell_rects[r][c2]
-                    adj = Rect(rect.x, rect.y + offset_y, rect.width, rect.height)
-                    self._render_panel_background(adj, cell.panel.background_color)
+                    self._render_panel_background(rect, cell.panel.background_color)
                     element = cell.element
                     if element is None:
                         continue
-                    self._render_element(element, adj, panel=cell.panel)
+                    self._render_element(element, rect, panel=cell.panel)
 
-        self._render_footer(slide)
+        if slide.title_panel.enabled:
+            self._render_slide_title(slide)
 
     def _render_background(self, slide: Any) -> None:
         bg = getattr(slide, "background", None)
@@ -282,18 +273,17 @@ class PDFRenderer(BaseRenderer):
             except Exception:
                 pass
 
-    def _render_title_panel(self, slide: Any) -> None:
+    def _render_slide_title(self, slide: Any) -> None:
+        """Draw the slide title and subtitle at the top of the slide."""
         c = self._canvas
         if c is None:
             return
 
         t = slide.title
         s = slide.subtitle
-        panel = slide.title_panel
-        th_pt = _px_to_pt(slide.title_panel.height)
-        y0 = self._slide_pt_h - th_pt
         margin = _px_to_pt(20)
         text_w = _px_to_pt(slide.width) - margin * 2
+        y_top = self._slide_pt_h - _px_to_pt(48)
 
         title_style = ParagraphStyle(
             "SlideTitle",
@@ -305,136 +295,29 @@ class PDFRenderer(BaseRenderer):
         )
         tp = Paragraph(t.text, title_style)
 
-        is_beside = (
-            s
-            and panel.subtitle_placement.value == "beside"
-        )
-
-        if is_beside:
-            sub_w = text_w * panel.subtitle_width_ratio
-            title_w = text_w - sub_w
-
-            title_frame = Frame(
-                margin, y0, title_w, th_pt,
-                leftPadding=0, rightPadding=0, topPadding=6, bottomPadding=0,
-                id="title",
-            )
-            title_frame.addFromList([tp], c)
-
+        flowables = [tp]
+        if s:
             sub_font = _resolve_font_name(s.font_name, s.bold, None)
-            sub_x = margin + title_w
-            sub_align = _align_to_reportlab(s.alignment)
-            sub_color = Color.parse(s.color).reportlab_color
-
-            c.saveState()
-            c.setFont(sub_font, s.font_size)
-            c.setFillColor(sub_color)
-            sub_leading = s.font_size * 1.3
-            sub_baseline = y0 + (th_pt - sub_leading) / 2 + s.font_size * 0.35
-            if sub_align == TA_RIGHT:
-                c.drawRightString(sub_x + sub_w, sub_baseline, s.text)
-            elif sub_align == TA_CENTER:
-                c.drawCentredString(sub_x + sub_w / 2, sub_baseline, s.text)
-            else:
-                c.drawString(sub_x, sub_baseline, s.text)
-            c.restoreState()
-        else:
-            flowables = [tp]
-            if s:
-                sub_font = _resolve_font_name(s.font_name, s.bold, None)
-                sub_style = ParagraphStyle(
-                    "SlideSubtitle",
-                    fontName=sub_font,
-                    fontSize=s.font_size,
-                    leading=s.font_size * 1.3,
-                    alignment=_align_to_reportlab(s.alignment),
-                    textColor=Color.parse(s.color).reportlab_color,
-                )
-                from reportlab.platypus import Spacer
-                flowables.append(Spacer(1, 4))
-                flowables.append(Paragraph(s.text, sub_style))
-
-            main_frame = Frame(
-                margin, y0, text_w, th_pt,
-                leftPadding=0, rightPadding=0, topPadding=6, bottomPadding=2,
-                id="title_panel",
+            sub_style = ParagraphStyle(
+                "SlideSubtitle",
+                fontName=sub_font,
+                fontSize=s.font_size,
+                leading=s.font_size * 1.3,
+                alignment=_align_to_reportlab(s.alignment),
+                textColor=Color.parse(s.color).reportlab_color,
             )
-            main_frame.addFromList(flowables, c)
+            from reportlab.platypus import Spacer
+            flowables.append(Spacer(1, 4))
+            flowables.append(Paragraph(s.text, sub_style))
 
-        if panel.show_separator:
-            sep_y = y0 + _px_to_pt(panel.separator_margin)
-            c.setStrokeColor(Color.parse(panel.separator_color).reportlab_color)
-            c.setLineWidth(panel.separator_width)
-            c.line(margin, sep_y, margin + text_w, sep_y)
+        main_frame = Frame(
+            margin, y_top - _px_to_pt(40), text_w, _px_to_pt(60),
+            leftPadding=0, rightPadding=0, topPadding=6, bottomPadding=2,
+            id="slide_title",
+        )
+        main_frame.addFromList(flowables, c)
 
-    def _render_footer(self, slide: Any) -> None:
-        c = self._canvas
-        if c is None:
-            return
 
-        # Skip entirely when no footer grid has been set up
-        if slide._footer_grid is None:
-            return
-
-        fp = slide.footer_panel
-        fh = slide.footer_panel.height
-        pad = fp.padding
-
-        # Footer background area (top of page in canvas coordinates)
-        footer_y_pt = 0  # bottom of slide
-        footer_h_pt = _px_to_pt(fh)
-
-        # Separator line (above the footer)
-        if fp.show_separator:
-            sep_y = footer_y_pt + footer_h_pt + _px_to_pt(fp.separator_margin)
-            slide_w_pt = _px_to_pt(slide.width)
-            sep_x = _px_to_pt(pad.left)
-            sep_w = slide_w_pt - _px_to_pt(pad.left + pad.right)
-            c.setStrokeColor(Color.parse(fp.separator_color).reportlab_color)
-            c.setLineWidth(fp.separator_width)
-            c.line(sep_x, sep_y, sep_x + sep_w, sep_y)
-
-        cell_rects = slide.get_footer_cell_rects()
-        # Offset from top of slide (pixels) → top-left corner of footer content area
-        offset_y_px = slide.height - fh + pad.top
-
-        for r in range(slide._footer_grid.rows):
-            for c2 in range(slide._footer_grid.cols):
-                cell = slide._footer_grid.cells[r][c2]
-                rect = cell_rects[r][c2]
-                # Position in slide-relative pixels
-                adj = Rect(
-                    rect.x + pad.left,
-                    rect.y + offset_y_px,
-                    rect.width,
-                    rect.height,
-                )
-                element = cell.element
-                if element is None:
-                    continue
-                self._render_footer_element(element, adj)
-
-    def _render_footer_element(self, element: Any, rect: Rect) -> None:
-        """Render a single footer element, replacing ``{page}`` / ``{total}`` placeholders."""
-        from reporting.elements.text import TextElement
-
-        if isinstance(element, TextElement):
-            auto_type = element.properties.get("_auto")
-            if auto_type == "page_number":
-                for block in element.blocks:
-                    for run in block.runs:
-                        run.text = str(self._page_num)
-            elif auto_type == "total_pages":
-                for block in element.blocks:
-                    for run in block.runs:
-                        run.text = str(self._total_pages)
-            else:
-                # Replace placeholders in plain text elements
-                for block in element.blocks:
-                    for run in block.runs:
-                        run.text = run.text.replace("{page}", str(self._page_num))
-                        run.text = run.text.replace("{total}", str(self._total_pages))
-        self._render_element(element, rect, frame_padding=0)
 
     def _render_panel_background(self, rect: Rect, bg_color: Optional[str] = None) -> None:
         """Fill the panel rectangle with the given background colour."""
@@ -491,12 +374,23 @@ class PDFRenderer(BaseRenderer):
             fallback_size = body.size if body is not None else 10.0
             font_name = _ps_font_name(run.font_name or fallback_family)
             font_size = run.size or fallback_size
-            try:
-                text_w = stringWidth(run.text, font_name, font_size)
-            except Exception:
-                text_w = font_size * len(run.text) * 0.4
-            text_h = font_size * 1.4
-            return Size(text_w + 8, text_h + 8)
+            lines = run.text.split('\n')
+            num_lines = len(lines)
+            cell_w_pt = rect.width * _PX_TO_PT - 8.0
+            max_line_w = 0.0
+            extra_wraps = 0
+            for line in lines:
+                try:
+                    lw = stringWidth(line, font_name, font_size)
+                except Exception:
+                    lw = font_size * len(line) * 0.4
+                max_line_w = max(max_line_w, lw)
+                if lw > cell_w_pt and cell_w_pt > 0:
+                    import math
+                    extra_wraps += math.ceil(lw / cell_w_pt) - 1
+            num_lines += extra_wraps
+            text_h = font_size * 1.4 * num_lines
+            return Size(max_line_w + 8, text_h + 8)
 
         if element.element_type == ElementType.TABLESPEC:
             spec = element.tablespec
@@ -675,17 +569,31 @@ class PDFRenderer(BaseRenderer):
                     close = "</font>" + close
                     if block_size is None:
                         block_size = run.size
-                parts.append(f"{tag}{run.text}{close}")
+                parts.append(f"{tag}{run.text.replace(chr(13), '').replace(chr(10), '<br/>')}{close}")
             html = "".join(parts)
 
             fallback_family = body.family if body is not None else "Helvetica"
             fallback_size = body.size if body is not None else 12.0
-            fs = block_size or max(h * 0.12, 6)
+            fs = block_size or fallback_size
+
+            run_color_str: Optional[str] = None
+            for r in block.runs:
+                if r.color:
+                    run_color_str = r.color
+                    break
+            if run_color_str:
+                text_color = Color.parse(run_color_str).reportlab_color
+            elif body and body.color:
+                text_color = Color.parse(body.color).reportlab_color
+            else:
+                text_color = colors.black
+
             style = ParagraphStyle(
                 "CellText",
                 fontName=_ps_font_name(block_font or fallback_family),
                 fontSize=fs,
                 leading=max(fs * 1.2, 8),
+                textColor=text_color,
                 alignment=_align_to_reportlab(block.alignment),
                 spaceBefore=1,
                 spaceAfter=1,

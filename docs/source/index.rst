@@ -14,7 +14,7 @@ PowerPoint" with fully decoupled render backends (PDF, HTML).
    01_basic_example
    02_elements
    03_layouts
-   04_header_footer
+    04_header_footer
    05_tables
    06_fonts
    07_themes

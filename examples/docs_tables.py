@@ -6,7 +6,6 @@ import pandas as pd
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.elements.text import TextAlignment
 from reporting.tablespec import TableSpec, TableStyle
@@ -20,11 +19,9 @@ def main() -> None:
     doc = Document("Tables Demo", author="Docs")
 
     # ---- Slide 1: Simple table from DataFrame ----
-    slide1 = Slide(
-        "Table from DataFrame",
-        subtitle="zebra=True, include_index=False",
-        footer_panel=FooterPanel(center_text="Tables | Docs"),
-    )
+    slide1 = Slide()
+    slide1.title = "Table from DataFrame"
+    slide1.subtitle = "zebra=True, include_index=False"
     slide1.grid_layout(rows=1, cols=1, gap=0, padding=Edges.all(20))
 
     df = pd.DataFrame({
@@ -37,11 +34,9 @@ def main() -> None:
     doc.add_slide(slide1)
 
     # ---- Slide 2: TableSpec with for-loop + formats + highlights ----
-    slide2 = Slide(
-        "TableSpec: for-loop, formats, highlights",
-        subtitle="add_column, add_row, highlight_max/min, zebra",
-        footer_panel=FooterPanel(center_text="Tables | Docs"),
-    )
+    slide2 = Slide()
+    slide2.title = "TableSpec: for-loop, formats, highlights"
+    slide2.subtitle = "add_column, add_row, highlight_max/min, zebra"
     slide2.grid_layout(rows=1, cols=1, gap=0, padding=Edges.all(20))
 
     ts = TableSpec()
@@ -65,11 +60,9 @@ def main() -> None:
     doc.add_slide(slide2)
 
     # ---- Slide 3: Merged cells and range styling ----
-    slide3 = Slide(
-        "Merged Cells & Range Styling",
-        subtitle="cell() with colspan, range().style(), range().merge()",
-        footer_panel=FooterPanel(center_text="Tables | Docs"),
-    )
+    slide3 = Slide()
+    slide3.title = "Merged Cells & Range Styling"
+    slide3.subtitle = "cell() with colspan, range().style(), range().merge()"
     slide3.grid_layout(rows=1, cols=1, gap=0, padding=Edges.all(20))
 
     ts3 = TableSpec(style=TableStyle(header_rows=0))
@@ -92,11 +85,9 @@ def main() -> None:
     # ---- Slide 4: Heatmap + from_dataframe ----
     import numpy as np
 
-    slide4 = Slide(
-        "Heatmap & from_dataframe",
-        subtitle="from_dataframe, heatmap, set_format",
-        footer_panel=FooterPanel(center_text="Tables | Docs"),
-    )
+    slide4 = Slide()
+    slide4.title = "Heatmap & from_dataframe"
+    slide4.subtitle = "from_dataframe, heatmap, set_format"
     slide4.grid_layout(rows=1, cols=1, gap=0, padding=Edges.all(20))
 
     rng = np.random.default_rng(42)
@@ -118,11 +109,9 @@ def main() -> None:
     doc.add_slide(slide4)
 
     # ---- Slide 5: Text alignment in cells ----
-    slide5 = Slide(
-        "Text Alignment",
-        subtitle="LEFT, CENTER, RIGHT via cell() and column defaults",
-        footer_panel=FooterPanel(center_text="Tables | Docs"),
-    )
+    slide5 = Slide()
+    slide5.title = "Text Alignment"
+    slide5.subtitle = "LEFT, CENTER, RIGHT via cell() and column defaults"
     slide5.grid_layout(rows=1, cols=1, gap=0, padding=Edges.all(20))
 
     ts5 = TableSpec()

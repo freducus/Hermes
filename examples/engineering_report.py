@@ -9,7 +9,6 @@ import numpy as np
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
 
@@ -30,7 +29,8 @@ def create_pressure_plot() -> plt.Figure:
 def main() -> None:
     doc = Document(title="CFD Analysis Report", author="Aero Team")
 
-    slide = Slide("CFD Results - Pressure Distribution", footer_panel=FooterPanel(center_text="CFD Analysis | Aero Team"))
+    slide = Slide()
+    slide.title = "CFD Results - Pressure Distribution"
     slide.grid_layout(rows=1, cols=2, gap=20, padding=Edges.all(20))
     fig = create_pressure_plot()
     slide[0, 0].plot(fig, format="pdf")

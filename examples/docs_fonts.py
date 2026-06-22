@@ -4,7 +4,6 @@ from pathlib import Path
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
@@ -16,11 +15,9 @@ def main() -> None:
     doc = Document("Fonts Demo", author="Docs")
 
     # ---- Slide 1: Style keyword ----
-    slide1 = Slide(
-        "The ``style`` Keyword",
-        subtitle="Inherit font properties from the theme typography",
-        footer_panel=FooterPanel(center_text="Fonts | Docs"),
-    )
+    slide1 = Slide()
+    slide1.title = "The ``style`` Keyword"
+    slide1.subtitle = "Inherit font properties from the theme typography"
     slide1.grid_layout(rows=3, cols=1, gap=8, padding=Edges.all(20))
 
     slide1[0, 0].text("This is style=\"h1\"", style="h1")
@@ -32,11 +29,9 @@ def main() -> None:
     doc.add_slide(slide1)
 
     # ---- Slide 2: Named fonts ----
-    slide2 = Slide(
-        "Standard Font Families",
-        subtitle="font_name accepts any PostScript font name",
-        footer_panel=FooterPanel(center_text="Fonts | Docs"),
-    )
+    slide2 = Slide()
+    slide2.title = "Standard Font Families"
+    slide2.subtitle = "font_name accepts any PostScript font name"
     slide2.grid_layout(rows=3, cols=2, gap=10, padding=Edges.all(20))
 
     slide2[0, 0].text("Helvetica 14pt", font_name="Helvetica", size=14)
@@ -48,11 +43,9 @@ def main() -> None:
     doc.add_slide(slide2)
 
     # ---- Slide 3: bold/italic/color kwargs ----
-    slide3 = Slide(
-        "Inline Formatting",
-        subtitle="Bold, italic, color, alignment in .text()",
-        footer_panel=FooterPanel(center_text="Fonts | Docs"),
-    )
+    slide3 = Slide()
+    slide3.title = "Inline Formatting"
+    slide3.subtitle = "Bold, italic, color, alignment in .text()"
     slide3.grid_layout(rows=4, cols=2, gap=8, padding=Edges.all(20))
 
     slide3[0, 0].text("Bold text", bold=True, size=14)
@@ -71,11 +64,9 @@ def main() -> None:
     doc.add_slide(slide3)
 
     # ---- Slide 4: FontSpec and Typography ----
-    slide4 = Slide(
-        "FontSpec & Typography",
-        subtitle="Define custom font configs for the theme",
-        footer_panel=FooterPanel(center_text="Fonts | Docs"),
-    )
+    slide4 = Slide()
+    slide4.title = "FontSpec & Typography"
+    slide4.subtitle = "Define custom font configs for the theme"
     slide4.grid_layout(rows=1, cols=1, padding=Edges.all(20))
     slide4[0, 0].text(
         "from reporting.styles.typography import FontSpec, Typography\n"

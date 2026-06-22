@@ -7,7 +7,6 @@ import numpy as np
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.layout.panel import HAlign, VAlign
 from reporting.layout.sizing import Fill, Px, Percent
@@ -29,11 +28,9 @@ def main() -> None:
     doc = Document("Layout Demo", author="Docs")
 
     # ---- Slide 1: Row/Col sizing ----
-    slide = Slide(
-        "Row & Column Sizing",
-        subtitle="Fill, Px, and Percent",
-        footer_panel=FooterPanel(center_text="Layout Demo | Docs"),
-    )
+    slide = Slide()
+    slide.title = "Row & Column Sizing"
+    slide.subtitle = "Fill, Px, and Percent"
     slide.grid_layout(
         rows=3, cols=3,
         row_sizes=[Px(60), Fill, Percent(30)],
@@ -59,11 +56,9 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 2: Panel padding, margin, alignment ----
-    slide2 = Slide(
-        "Panel: Padding & Alignment",
-        subtitle="Edges, HAlign, VAlign",
-        footer_panel=FooterPanel(center_text="Layout Demo | Docs"),
-    )
+    slide2 = Slide()
+    slide2.title = "Panel: Padding & Alignment"
+    slide2.subtitle = "Edges, HAlign, VAlign"
     slide2.grid_layout(rows=2, cols=2, gap=10, padding=Edges.all(20))
 
     cell = slide2[0, 0]
@@ -92,11 +87,9 @@ def main() -> None:
     doc.add_slide(slide2)
 
     # ---- Slide 3: Figures in layout ----
-    slide3 = Slide(
-        "Figures in Layout",
-        subtitle="Figures respect panel padding & alignment",
-        footer_panel=FooterPanel(center_text="Layout Demo | Docs"),
-    )
+    slide3 = Slide()
+    slide3.title = "Figures in Layout"
+    slide3.subtitle = "Figures respect panel padding & alignment"
     slide3.grid_layout(rows=2, cols=2, gap=10, padding=Edges.all(20))
 
     cell = slide3[0, 0]

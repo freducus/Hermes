@@ -4,7 +4,6 @@ from pathlib import Path
 
 from reporting.document import Document
 from reporting.slide import Slide
-from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
@@ -13,11 +12,9 @@ from reporting.renderers.html.renderer import HTMLRenderer
 def main() -> None:
     doc = Document("My Report", author="Engineer")
 
-    slide = Slide(
-        "Introduction",
-        subtitle="Getting started",
-        footer_panel=FooterPanel(center_text="My Report | Engineering"),
-    )
+    slide = Slide()
+    slide.title = "Introduction"
+    slide.subtitle = "Getting started"
     slide.grid_layout(rows=2, cols=2, gap=10, padding=Edges.all(20))
 
     slide[0, 0].text("Hello, world!", bold=True, size=14, color="#1F4E79")

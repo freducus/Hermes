@@ -27,7 +27,8 @@ def create_plot(title: str) -> plt.Figure:
 def main() -> None:
     doc = Document(title="Performance Dashboard", author="Engineering")
 
-    slide = Slide("KPIs Overview")
+    slide = Slide()
+    slide.title = "KPIs Overview"
     slide.grid_layout(rows=2, cols=5, gap=8, padding=Edges.all(15))
 
     slide[0, 0].plot(create_plot("Efficiency"), format="pdf")

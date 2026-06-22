@@ -20,9 +20,6 @@ class Document:
     Args:
         title: Report title (displayed in metadata, not on slides).
         author: Author name for metadata (default ``""``).
-        theme: Visual theme applied to all slides by default.
-            Built-in choices: ``CorporateTheme()``, ``DarkTheme()``,
-            ``LightTheme()`` (default ``CorporateTheme()``).
         slides: Initial list of slides.  Prefer ``add_slide()`` or
             ``new_slide()`` instead of setting this directly.
 
@@ -33,7 +30,8 @@ class Document:
         from reporting.renderers.pdf.renderer import PDFRenderer
 
         doc = Document("My Report", author="Engineer")
-        slide = Slide("Introduction")
+        slide = Slide()
+        slide.title = "Introduction"
         slide.grid_layout(rows=1, cols=1)
         slide[0, 0].text("Hello, world!")
         doc.add_slide(slide)
@@ -42,7 +40,6 @@ class Document:
 
     title: str
     author: str = ""
-    theme: Theme = dataclasses.field(default_factory=CorporateTheme)
     slides: list[Slide] = dataclasses.field(default_factory=list)
 
     def add_slide(self, slide: Slide) -> Slide:
@@ -58,7 +55,8 @@ class Document:
         Example::
 
             doc = Document("Report")
-            s = Slide("Page 1")
+            s = Slide()
+            s.title = "Page 1"
             s.grid_layout(rows=1, cols=1)
             s[0, 0].text("Content")
             doc.add_slide(s)
@@ -68,12 +66,6 @@ class Document:
 
     def new_slide(
         self,
-        title: Optional[str] = None,
-        subtitle: Optional[str] = None,
-        theme: Optional[Theme] = None,
-        width: Optional[float] = None,
-        height: Optional[float] = None,
-        slide_type: str = "default",
         base_slide: Optional[Slide] = None,
     ) -> Slide:
         """Create a ``Slide``, add it to the document, and return it.
@@ -81,22 +73,7 @@ class Document:
         Shorthand for ``Slide(...)`` + ``add_slide(...)``.
 
         Args:
-            title: Slide title (shown in the title panel).
-                Falls back to the slide type default when ``None``
-                (default ``None``).
-            subtitle: Optional subtitle shown below the title
-                (default ``None``).
-            theme: Visual theme for this slide.  Falls back to the
-                document-level theme if ``None`` (default ``None``).
-            width: Slide width in pixels.  Falls back to
-                ``theme.page_size[0]`` when ``None``
-                (default ``None``).
-            height: Slide height in pixels.  Falls back to
-                ``theme.page_size[1]`` when ``None``
-                (default ``None``).
-            slide_type: Name of a pre-defined slide type in the
-                theme (default ``"default"``).
-            base_slide: Another ``Slide`` whose config and grid
+            base_slide: Another ``Slide`` whose theme and grid
                 layout are used as a starting point
                 (default ``None``).
 
@@ -107,19 +84,13 @@ class Document:
         Example::
 
             doc = Document("Report")
-            slide = doc.new_slide("Results", subtitle="Test data")
+            slide = doc.new_slide()
+            slide.title = "Results"
+            slide.subtitle = "Test data"
             slide.grid_layout(rows=2, cols=2)
             slide[0, 0].text("Cell A")
         """
-        slide = Slide(
-            title=title,
-            subtitle=subtitle,
-            theme=theme or self.theme,
-            width=width,
-            height=height,
-            slide_type=slide_type,
-            base_slide=base_slide,
-        )
+        slide = Slide(base=base_slide)
         self.slides.append(slide)
         return slide
 
