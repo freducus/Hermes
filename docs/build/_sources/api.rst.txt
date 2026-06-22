@@ -1,10 +1,6 @@
 API Reference
 =============
 
-.. automodule:: reporting
-   :members:
-   :show-inheritance:
-
 Document & Slide
 ----------------
 
@@ -18,10 +14,6 @@ Document & Slide
 
 Layout
 ------
-
-.. automodule:: reporting.layout
-   :members:
-   :show-inheritance:
 
 .. automodule:: reporting.layout.geometry
    :members:
@@ -45,10 +37,6 @@ Layout
 
 Elements
 --------
-
-.. automodule:: reporting.elements
-   :members:
-   :show-inheritance:
 
 .. automodule:: reporting.elements.base
    :members:
@@ -81,10 +69,6 @@ Elements
 Styles
 ------
 
-.. automodule:: reporting.styles
-   :members:
-   :show-inheritance:
-
 .. automodule:: reporting.styles.colors
    :members:
    :show-inheritance:
@@ -93,7 +77,7 @@ Styles
    :members:
    :show-inheritance:
 
-.. automodule:: reporting.styles.table_style
+.. automodule:: reporting.tablespec.style
    :members:
    :show-inheritance:
 
@@ -101,12 +85,31 @@ Styles
    :members:
    :show-inheritance:
 
-Renderers
+TableSpec
 ---------
 
-.. automodule:: reporting.renderers
+.. automodule:: reporting.tablespec.spec
    :members:
    :show-inheritance:
+
+.. automodule:: reporting.tablespec.column
+   :members:
+   :show-inheritance:
+
+.. automodule:: reporting.tablespec.row
+   :members:
+   :show-inheritance:
+
+.. automodule:: reporting.tablespec.cell
+   :members:
+   :show-inheritance:
+
+.. automodule:: reporting.tablespec.sizing
+   :members:
+   :show-inheritance:
+
+Renderers
+---------
 
 .. automodule:: reporting.renderers.base
    :members:
@@ -116,9 +119,6 @@ Renderers
    :members:
    :show-inheritance:
 
-.. automodule:: reporting.renderers.pptx.renderer
-   :members:
-   :show-inheritance:
 
 .. automodule:: reporting.renderers.html.renderer
    :members:
@@ -126,10 +126,6 @@ Renderers
 
 Utils
 -----
-
-.. automodule:: reporting.utils
-   :members:
-   :show-inheritance:
 
 .. automodule:: reporting.utils.figure_helpers
    :members:

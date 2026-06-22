@@ -5,26 +5,22 @@ Welcome to pyreportengine
 
 ``pyreportengine`` is a Python reporting framework for generating technical
 engineering reports (CFD, FEM, modal analysis, etc.). It is a "programmable
-PowerPoint" with fully decoupled render backends (PDF, PPTX, HTML).
+PowerPoint" with fully decoupled render backends (PDF, HTML).
 
 .. toctree::
    :maxdepth: 2
-   :caption: Getting Started
+   :caption: Guides
 
-   quickstart
+   01_basic_example
+   02_elements
+   03_layouts
+   04_header_footer
+   05_tables
+   06_fonts
+   07_themes
 
 .. toctree::
    :maxdepth: 2
    :caption: Reference
 
-   elements
-   layout
-   styles
-   renderers
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Examples
-
-   examples/padding_margin
-   examples/comprehensive
+   api

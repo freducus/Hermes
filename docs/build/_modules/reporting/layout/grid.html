@@ -42,6 +42,7 @@
               <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../01_basic_example.html">Documento, Slide, Grid y Renderizado</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -54,6 +55,8 @@
 <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples/padding_margin.html">Padding &amp; Margin example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/image_demo.html">Image embedding demo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/figure_alignment.html">Figure alignment example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples/comprehensive.html">Comprehensive example</a></li>
 </ul>
 
@@ -95,27 +98,80 @@
 
 
 <div class="viewcode-block" id="GridPosition">
-<a class="viewcode-back" href="../../../api.html#reporting.layout.GridPosition">[docs]</a>
+<a class="viewcode-back" href="../../../api.html#reporting.layout.grid.GridPosition">[docs]</a>
 <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">GridPosition</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Row / column coordinate within a ``Grid``.</span>
+
+<span class="sd">    Not typically instantiated directly; used internally for</span>
+<span class="sd">    cell look-up.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        row: Row index.</span>
+<span class="sd">        col: Column index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">row</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">col</span><span class="p">:</span> <span class="nb">int</span></div>
 
 
 
 <div class="viewcode-block" id="GridCell">
-<a class="viewcode-back" href="../../../api.html#reporting.layout.GridCell">[docs]</a>
+<a class="viewcode-back" href="../../../api.html#reporting.layout.grid.GridCell">[docs]</a>
 <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">GridCell</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A single cell in a ``Grid``, combining a ``Panel`` and an optional element.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        panel: The cell&#39;s ``Panel`` (layout metadata).</span>
+<span class="sd">        element: Content element (``TextElement``,</span>
+<span class="sd">            ``ImageElement``, etc.), set when a cell is</span>
+<span class="sd">            populated (default ``None``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">panel</span><span class="p">:</span> <span class="n">Panel</span>
     <span class="n">element</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
 <div class="viewcode-block" id="Grid">
-<a class="viewcode-back" href="../../../api.html#reporting.layout.Grid">[docs]</a>
+<a class="viewcode-back" href="../../../api.html#reporting.layout.grid.Grid">[docs]</a>
 <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Grid</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rectangular grid that resolves row / column sizes and computes cell rectangles.</span>
+
+<span class="sd">    Created automatically by ``Slide.grid_layout()``.</span>
+<span class="sd">    Supports NumPy-style cell access via ``__getitem__``,</span>
+<span class="sd">    automatic span merging, and flexible sizing (fixed,</span>
+<span class="sd">    percentage, fill).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        rows: Number of rows.</span>
+<span class="sd">        cols: Number of columns.</span>
+<span class="sd">        row_sizes: Per-row sizing.  Each element can be</span>
+<span class="sd">            ``Px(v)``, ``Percent(v)``, ``Fill``, or a plain</span>
+<span class="sd">            float (treated as ``Px(v)``).  When ``None``, all</span>
+<span class="sd">            rows get ``Fill`` (equal height).</span>
+<span class="sd">        col_sizes: Per-column sizing (same rules as</span>
+<span class="sd">            ``row_sizes``).  When ``None``, all columns</span>
+<span class="sd">            get ``Fill`` (equal width).</span>
+<span class="sd">        gap: Spacing between rows and columns in pixels</span>
+<span class="sd">            (default ``0.0``).</span>
+<span class="sd">        padding: Outer padding around the grid</span>
+<span class="sd">            (default ``Edges()`` = zero).</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        from reporting.layout.grid import Grid</span>
+<span class="sd">        from reporting.layout.geometry import Size</span>
+<span class="sd">        from reporting.layout.sizing import Px, Percent, Fill</span>
+
+<span class="sd">        grid = Grid(rows=3, cols=2,</span>
+<span class="sd">                    row_sizes=[Px(50), Fill, Percent(30)],</span>
+<span class="sd">                    col_sizes=[Percent(60), Fill],</span>
+<span class="sd">                    gap=8)</span>
+<span class="sd">        total, rects = grid.layout(Size(800, 400))</span>
+<span class="sd">        # rects[r][c] → Rect with resolved pixel positions</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">rows</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">cols</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">row_sizes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Sizing</span><span class="p">]</span>
@@ -146,7 +202,41 @@
             <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
         <span class="p">]</span>
 
+<div class="viewcode-block" id="Grid.copy_structure">
+<a class="viewcode-back" href="../../../api.html#reporting.layout.grid.Grid.copy_structure">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy_structure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Grid</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new ``Grid`` with the same dimensions, sizing,</span>
+<span class="sd">        gap, and padding, but with fresh empty cells.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``Grid`` sharing the structural properties</span>
+<span class="sd">            of this one.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Grid</span><span class="p">(</span>
+            <span class="n">rows</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rows</span><span class="p">,</span>
+            <span class="n">cols</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">,</span>
+            <span class="n">row_sizes</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">row_sizes</span><span class="p">),</span>
+            <span class="n">col_sizes</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_sizes</span><span class="p">),</span>
+            <span class="n">gap</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gap</span><span class="p">,</span>
+            <span class="n">padding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">padding</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="nb">slice</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">slice</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">GridCell</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Access a cell by row and column (NumPy-style indexing).</span>
+
+<span class="sd">        Slices set ``rowspan`` / ``colspan`` on the</span>
+<span class="sd">        cell&#39;s ``Panel``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pos: ``(row, col)`` where each coordinate is</span>
+<span class="sd">                an ``int`` or a ``slice``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The ``GridCell`` at ``(row, col)``, with</span>
+<span class="sd">            ``rowspan`` and ``colspan`` updated if slices</span>
+<span class="sd">            were used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">row_key</span><span class="p">,</span> <span class="n">col_key</span> <span class="o">=</span> <span class="n">pos</span>
         <span class="n">rows_range</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_range</span><span class="p">(</span><span class="n">row_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rows</span><span class="p">)</span>
         <span class="n">cols_range</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_range</span><span class="p">(</span><span class="n">col_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
@@ -170,9 +260,34 @@
             <span class="n">stop</span> <span class="o">+=</span> <span class="n">limit</span>
         <span class="k">return</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">)</span>
 
+<div class="viewcode-block" id="Grid.layout">
+<a class="viewcode-back" href="../../../api.html#reporting.layout.grid.Grid.layout">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">layout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">:</span> <span class="n">Size</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Size</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Rect</span><span class="p">]]]:</span>
-        <span class="n">row_heights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_sizes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">row_sizes</span><span class="p">,</span> <span class="n">available</span><span class="o">.</span><span class="n">height</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding</span><span class="o">.</span><span class="n">vertical</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rows</span><span class="p">)</span>
-        <span class="n">col_widths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_sizes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_sizes</span><span class="p">,</span> <span class="n">available</span><span class="o">.</span><span class="n">width</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding</span><span class="o">.</span><span class="n">horizontal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute final cell positions for a given available area.</span>
+
+<span class="sd">        The algorithm:</span>
+
+<span class="sd">        #. Subtracts padding and gaps from the available space.</span>
+<span class="sd">        #. Resolves row heights and column widths from sizing</span>
+<span class="sd">           specs (fixed → exact, percent → % of available,</span>
+<span class="sd">           fill → proportional flex).</span>
+<span class="sd">        #. Computes pixel rectangles for each cell.</span>
+<span class="sd">        #. Merges rectangles for cells with ``rowspan &gt; 1`` or</span>
+<span class="sd">           ``colspan &gt; 1`` (zeroes out covered cells).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            available: The total ``Size`` available for the grid.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A tuple ``(total_size, cell_rects)`` where</span>
+<span class="sd">            ``cell_rects`` is a 2-D ``list[list[Rect]]``</span>
+<span class="sd">            (same shape as the grid).  Merged cells have</span>
+<span class="sd">            zero ``Rect(0, 0, 0, 0)`` at covered positions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">avail_w</span> <span class="o">=</span> <span class="n">available</span><span class="o">.</span><span class="n">width</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding</span><span class="o">.</span><span class="n">horizontal</span> <span class="o">-</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">gap</span><span class="p">)</span>
+        <span class="n">avail_h</span> <span class="o">=</span> <span class="n">available</span><span class="o">.</span><span class="n">height</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding</span><span class="o">.</span><span class="n">vertical</span> <span class="o">-</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rows</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">gap</span><span class="p">)</span>
+        <span class="n">col_widths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_sizes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_sizes</span><span class="p">,</span> <span class="n">avail_w</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">)</span>
+        <span class="n">row_heights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_sizes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">row_sizes</span><span class="p">,</span> <span class="n">avail_h</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rows</span><span class="p">)</span>
 
         <span class="n">total_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding</span><span class="o">.</span><span class="n">horizontal</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">gap</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">col_widths</span><span class="p">)</span>
         <span class="n">total_h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding</span><span class="o">.</span><span class="n">vertical</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rows</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">gap</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">row_heights</span><span class="p">)</span>
@@ -192,7 +307,8 @@
             <span class="n">y</span> <span class="o">+=</span> <span class="n">row_heights</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">gap</span>
 
         <span class="n">merged</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_spans</span><span class="p">(</span><span class="n">cell_rects</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Size</span><span class="p">(</span><span class="n">total_w</span><span class="p">,</span> <span class="n">total_h</span><span class="p">),</span> <span class="n">merged</span>
+        <span class="k">return</span> <span class="n">Size</span><span class="p">(</span><span class="n">total_w</span><span class="p">,</span> <span class="n">total_h</span><span class="p">),</span> <span class="n">merged</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_merge_spans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cell_rects</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Rect</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Rect</span><span class="p">]]:</span>
         <span class="n">merged</span> <span class="o">=</span> <span class="p">[[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cell_rects</span><span class="p">]</span>
@@ -227,15 +343,16 @@
             <span class="k">elif</span> <span class="n">lv</span><span class="o">.</span><span class="n">sizing_type</span> <span class="ow">is</span> <span class="n">SizingType</span><span class="o">.</span><span class="n">PERCENT</span><span class="p">:</span>
                 <span class="n">resolved</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">available</span> <span class="o">*</span> <span class="n">lv</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="mf">100.0</span>
                 <span class="n">used_space</span> <span class="o">+=</span> <span class="n">resolved</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="k">elif</span> <span class="n">lv</span><span class="o">.</span><span class="n">sizing_type</span> <span class="ow">is</span> <span class="n">SizingType</span><span class="o">.</span><span class="n">FILL</span><span class="p">:</span>
-                <span class="n">fill_total</span> <span class="o">+=</span> <span class="n">lv</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">elif</span> <span class="n">lv</span><span class="o">.</span><span class="n">sizing_type</span> <span class="ow">in</span> <span class="p">(</span><span class="n">SizingType</span><span class="o">.</span><span class="n">FILL</span><span class="p">,</span> <span class="n">SizingType</span><span class="o">.</span><span class="n">AUTO</span><span class="p">):</span>
+                <span class="n">fill_total</span> <span class="o">+=</span> <span class="n">lv</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="n">lv</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span>
 
         <span class="n">remaining</span> <span class="o">=</span> <span class="n">available</span> <span class="o">-</span> <span class="n">used_space</span>
         <span class="k">if</span> <span class="n">fill_total</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">raw</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sizes</span><span class="p">):</span>
                 <span class="n">lv</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">lv</span><span class="o">.</span><span class="n">sizing_type</span> <span class="ow">is</span> <span class="n">SizingType</span><span class="o">.</span><span class="n">FILL</span><span class="p">:</span>
-                    <span class="n">resolved</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">remaining</span> <span class="o">*</span> <span class="n">lv</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="n">fill_total</span>
+                <span class="k">if</span> <span class="n">lv</span><span class="o">.</span><span class="n">sizing_type</span> <span class="ow">in</span> <span class="p">(</span><span class="n">SizingType</span><span class="o">.</span><span class="n">FILL</span><span class="p">,</span> <span class="n">SizingType</span><span class="o">.</span><span class="n">AUTO</span><span class="p">):</span>
+                    <span class="n">wgt</span> <span class="o">=</span> <span class="n">lv</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="n">lv</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span>
+                    <span class="n">resolved</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">remaining</span> <span class="o">*</span> <span class="n">wgt</span> <span class="o">/</span> <span class="n">fill_total</span>
 
         <span class="k">return</span> <span class="n">resolved</span></div>
 

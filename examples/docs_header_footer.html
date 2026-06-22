@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Header & Footer Demo</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #FFFFFF; font-family: Arial, sans-serif; }
+.slide { width: 960px; height: 540px; margin: 20px auto; background: #FFFFFF;
+         box-shadow: 0 4px 12px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
+.title-panel { position: absolute; top: 0; left: 0; width: 100%;
+                border-bottom: 1px solid #D9D9D9; overflow: hidden; }
+.title-panel.beside { display: flex; justify-content: space-between; align-items: center; }
+.title-panel h1 { font-size: 20px; color: #1F4E79; margin: 0; }
+.title-panel p { font-size: 11px; color: #666666; margin: 2px 0 0 0; }
+.title-panel.beside p { margin: 0; text-align: right; }
+.slide-content { position: absolute; left: 0; width: 100%; bottom: 0; }
+.cell { position: absolute; overflow: hidden; padding: 4px; }
+</style>
+</head>
+<body>
+<div class="slide" >
+  <div class="title-panel" style="height:60.0px;padding:8px 20px 8px 20px;"><h1 style="font-size:28.0px;color:#1F4E79;font-weight:bold;font-family:Arial;text-align:left">Default Header & Footer</h1><p style="font-size:11.0px;color:#333333;font-weight:normal;font-family:Arial;text-align:left">Built-in title panel and auto-footer</p><hr style="border:none;border-top:1.0px solid #D9D9D9;margin-top:8.0px;margin-bottom:0"></div>
+  <div class="slide-content" style="top:60.0px;bottom:28.0px">
+    <div class="cell" style="left:30.0px; top:30.0px; width:900.0px; height:392.0px;"><div class="text-block text-left" style="text-align:left"><span style="font-size:11px;">This slide uses the default title panel (60px, separator)
+and the auto-generated footer with page numbering.
+
+FooterPanel(center_text="Page {page} of {total}")</span></div></div>
+  </div>
+  <hr style="border:none;border-top:1.0px solid #CCCCCC;position:absolute;left:20px;top:512.0px;width:calc(100% - 40px);margin:0"><div class="cell" style="left:20.0px; top:516.0px; width:306.7px; height:20.0px;"></div><div class="cell" style="left:326.7px; top:516.0px; width:306.7px; height:20.0px;"><div class="text-block text-center" style="text-align:center"><span style="color:#999999;font-size:8.0px;font-family:Helvetica;">Page 1 of 5</span></div></div><div class="cell" style="left:633.3px; top:516.0px; width:306.7px; height:20.0px;"><div class="text-block text-right" style="text-align:right"><span style="color:#999999;font-size:8.0px;font-family:Helvetica;">1 / 5</span></div></div>
+</div>
+<div class="slide" >
+  <div class="title-panel" style="height:60.0px;padding:8px 20px 8px 20px;"><h1 style="font-size:28.0px;color:#1F4E79;font-weight:bold;font-family:Arial;text-align:left">No Footer</h1><p style="font-size:11.0px;color:#333333;font-weight:normal;font-family:Arial;text-align:left">FooterPanel(enabled=False)</p><hr style="border:none;border-top:1.0px solid #D9D9D9;margin-top:8.0px;margin-bottom:0"></div>
+  <div class="slide-content" style="top:60.0px;bottom:28.0px">
+    <div class="cell" style="left:30.0px; top:30.0px; width:900.0px; height:420.0px;"><div class="text-block text-left" style="text-align:left"><span style="font-size:11px;">Footer is disabled via FooterPanel(enabled=False).
+The content area extends to the bottom of the slide.</span></div></div>
+  </div>
+  
+</div>
+<div class="slide" >
+  <div class="title-panel" style="height:60.0px;padding:8px 20px 8px 20px;"><h1 style="font-size:28.0px;color:#1F4E79;font-weight:bold;font-family:Arial;text-align:left">Custom Footer</h1><p style="font-size:11.0px;color:#333333;font-weight:normal;font-family:Arial;text-align:left">Styled footer with separator and logo</p><hr style="border:none;border-top:1.0px solid #D9D9D9;margin-top:8.0px;margin-bottom:0"></div>
+  <div class="slide-content" style="top:60.0px;bottom:36px">
+    <div class="cell" style="left:30.0px; top:30.0px; width:900.0px; height:384.0px;"><div class="text-block text-left" style="text-align:left"><span style="font-size:11px;">Footer with blue separator, larger height (36px),
+custom font, center text, and a logo in the left cell.</span></div></div>
+  </div>
+  <hr style="border:none;border-top:2px solid #1565C0;position:absolute;left:24px;top:504.0px;width:calc(100% - 48px);margin:0"><div class="cell" style="left:24.0px; top:510.0px; width:304.0px; height:24.0px;"><img src="C:\Users\fredu\PycharmProjects\Hermes\examples\_docs_elements_logo.png" style="width:100%;height:100%;object-fit:contain" alt=""></div><div class="cell" style="left:328.0px; top:510.0px; width:304.0px; height:24.0px;"><div class="text-block text-center" style="text-align:center"><span style="color:#1565C0;font-size:9px;font-family:Helvetica;">Confidential</span></div></div><div class="cell" style="left:632.0px; top:510.0px; width:304.0px; height:24.0px;"><div class="text-block text-right" style="text-align:right"><span style="color:#1565C0;font-size:9px;font-family:Helvetica;">3 / 5</span></div></div>
+</div>
+<div class="slide" >
+  <div class="title-panel beside" style="height:70px;padding:8px 20px 8px 20px;"><h1 style="font-size:28px;color:#1565C0;font-weight:normal;font-family:Times-Bold;text-align:left">Custom Title Panel</h1><p style="font-size:12px;color:#666666;font-weight:normal;font-family:Helvetica-Oblique;text-align:right;width:35.0%">TitleText + SubtitleText + SubtitlePlacement.BESIDE</p></div>
+  <div class="slide-content" style="top:70px;bottom:28.0px">
+    <div class="cell" style="left:30.0px; top:30.0px; width:900.0px; height:382.0px;"><div class="text-block text-left" style="text-align:left"><span style="font-size:11px;">Title uses Times-Bold 28pt (not actually bold),
+subtitle appears beside on the right (35% width),
+separator hidden, panel height 70px.</span></div></div>
+  </div>
+  <hr style="border:none;border-top:1.0px solid #CCCCCC;position:absolute;left:20px;top:512.0px;width:calc(100% - 40px);margin:0"><div class="cell" style="left:20.0px; top:516.0px; width:306.7px; height:20.0px;"></div><div class="cell" style="left:326.7px; top:516.0px; width:306.7px; height:20.0px;"><div class="text-block text-center" style="text-align:center"><span style="color:#999999;font-size:8.0px;font-family:Helvetica;">Styled title | Docs</span></div></div><div class="cell" style="left:633.3px; top:516.0px; width:306.7px; height:20.0px;"><div class="text-block text-right" style="text-align:right"><span style="color:#999999;font-size:8.0px;font-family:Helvetica;">4 / 5</span></div></div>
+</div>
+<div class="slide" >
+  <div class="title-panel" style="height:80px;padding:8px 20px 8px 20px;"><h1 style="font-size:24px;color:#2E7D32;font-weight:bold;font-family:Helvetica;text-align:center">Title with Separator</h1><p style="font-size:13px;color:#558B2F;font-weight:normal;font-family:Helvetica;text-align:center">Subtitle placed below with a visible separator</p><hr style="border:none;border-top:2px solid #A5D6A7;margin-top:8.0px;margin-bottom:0"></div>
+  <div class="slide-content" style="top:80px;bottom:28.0px">
+    <div class="cell" style="left:30.0px; top:30.0px; width:900.0px; height:400.0px;"><div class="text-block text-left" style="text-align:left"><span style="font-size:11px;">Centered title, centered subtitle below,
+green separator line, no footer.</span></div></div>
+  </div>
+  
+</div>
+</body>
+</html>

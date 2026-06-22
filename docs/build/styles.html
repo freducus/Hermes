@@ -45,6 +45,7 @@
               <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="01_basic_example.html">Documento, Slide, Grid y Renderizado</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -58,10 +59,13 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="renderers.html">Renderers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/padding_margin.html">Padding &amp; Margin example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/image_demo.html">Image embedding demo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/figure_alignment.html">Figure alignment example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples/comprehensive.html">Comprehensive example</a></li>
 </ul>
 
@@ -134,16 +138,15 @@ themes.</p>
 </section>
 <section id="tablestyle">
 <h2>TableStyle<a class="headerlink" href="#tablestyle" title="Link to this heading"></a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.table_style</span><span class="w"> </span><span class="kn">import</span> <span class="n">TableStyle</span><span class="p">,</span> <span class="n">ZebraStyle</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">reporting.tablespec.style</span><span class="w"> </span><span class="kn">import</span> <span class="n">TableStyle</span>
 
 <span class="n">table_style</span> <span class="o">=</span> <span class="n">TableStyle</span><span class="p">(</span>
-    <span class="n">zebra</span><span class="o">=</span><span class="n">ZebraStyle</span><span class="p">(</span>
-        <span class="n">even_row_color</span><span class="o">=</span><span class="s2">&quot;#F3F3F3&quot;</span><span class="p">,</span>
-        <span class="n">odd_row_color</span><span class="o">=</span><span class="s2">&quot;#FFFFFF&quot;</span><span class="p">,</span>
-        <span class="n">header_color</span><span class="o">=</span><span class="s2">&quot;#4472C4&quot;</span><span class="p">,</span>
-        <span class="n">header_text_color</span><span class="o">=</span><span class="s2">&quot;#FFFFFF&quot;</span><span class="p">,</span>
-        <span class="n">border_color</span><span class="o">=</span><span class="s2">&quot;#D9D9D9&quot;</span><span class="p">,</span>
-    <span class="p">),</span>
+    <span class="n">zebra</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">even_row_color</span><span class="o">=</span><span class="s2">&quot;#F3F3F3&quot;</span><span class="p">,</span>
+    <span class="n">odd_row_color</span><span class="o">=</span><span class="s2">&quot;#FFFFFF&quot;</span><span class="p">,</span>
+    <span class="n">header_background</span><span class="o">=</span><span class="s2">&quot;#4472C4&quot;</span><span class="p">,</span>
+    <span class="n">header_text_color</span><span class="o">=</span><span class="s2">&quot;#FFFFFF&quot;</span><span class="p">,</span>
+    <span class="n">border_color</span><span class="o">=</span><span class="s2">&quot;#D9D9D9&quot;</span><span class="p">,</span>
     <span class="n">font_size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
     <span class="n">header_font_size</span><span class="o">=</span><span class="mf">11.0</span><span class="p">,</span>
     <span class="n">font_family</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span>

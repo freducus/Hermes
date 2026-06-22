@@ -27,7 +27,8 @@ def _figure(figsize=(4, 2.5), title: str = "") -> plt.Figure:
 doc = Document("Figure Alignment Demo")
 
 # ─── Slide 1: natural size × all alignments ───────────────────────────────
-s = Slide("Natural figure size — all alignments")
+s = Slide()
+s.title = "Natural figure size — all alignments"
 s.grid_layout(rows=3, cols=3, gap=6)
 fig = _figure((3.2, 1.8), "3.2×1.8 in")
 alignments: list[tuple[HAlign, VAlign]] = [
@@ -41,7 +42,8 @@ for idx, (ha, va) in enumerate(alignments):
 doc.add_slide(s)
 
 # ─── Slide 2: preserve-aspect vs stretch ─────────────────────────────────
-s2 = Slide("preserve_aspect=True  (left)  vs  False (right)")
+s2 = Slide()
+s2.title = "preserve_aspect=True  (left)  vs  False (right)"
 s2.grid_layout(rows=2, cols=2, gap=20, padding=Edges(left=20, right=20, top=20, bottom=20))
 fig_wide = _figure((10.0, 1.8), "10.0×1.8 in")   # wide
 fig_tall = _figure((1.8, 10.0), "1.8×10.0 in")   # tall
@@ -55,7 +57,8 @@ s2[1, 1].align(HAlign.STRETCH, VAlign.STRETCH).plot(fig_tall, preserve_aspect=Fa
 doc.add_slide(s2)
 
 # ─── Slide 3: container_width_pct / container_height_pct ─────────────────
-s3 = Slide("Width: 30%/60%/100%  / Height: 40%/70%/100% ")
+s3 = Slide()
+s3.title = "Width: 30%/60%/100%  / Height: 40%/70%/100% "
 s3.grid_layout(rows=2, cols=3, gap=8, padding=Edges(left=20, right=20, top=20, bottom=20))
 fig_pct = _figure((3.2, 2.0), "natural 3.2×2.0")
 
@@ -71,7 +74,8 @@ s3[1, 2].align(HAlign.RIGHT, VAlign.BOTTOM).plot(_figure((3.2, 2.0)), container_
 doc.add_slide(s3)
 
 # ─── Slide 4: mixed — different sizes + both % and preserve_aspect ───────
-s4 = Slide("Mixed: size variants, % sizing, aspect control")
+s4 = Slide()
+s4.title = "Mixed: size variants, % sizing, aspect control"
 s4.grid_layout(rows=2, cols=3, gap=8)
 s4[0, 0].align(HAlign.LEFT, VAlign.TOP).plot(
     _figure((1.5, 1.5), "1.5×1.5"), preserve_aspect=True,

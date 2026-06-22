@@ -33,27 +33,7 @@ The PDF renderer:
 Font names for PDF must be PostScript names: ``Helvetica``, ``Times-Roman``,
 ``Times-Bold``, ``Courier``, ``Courier-Bold``, ``Helvetica-Oblique``, etc.
 
-PPTXRenderer
-------------
-
-Generates a PowerPoint file using ``python-pptx``.
-
-.. code-block:: python
-
-   from reporting.renderers.pptx.renderer import PPTXRenderer
-
-   PPTXRenderer().render_document(doc, "output.pptx")
-
-The PPTX renderer:
-
-- Uses the blank slide layout (index 6)
-- Places a text box for the title panel
-- Adds text boxes, images, and tables in each grid cell
-- Sets font properties (bold, italic, size, color, font name) on each run
-- Converts pixels to EMUs for PowerPoint positioning
-
-Font names for PPTX must be system font names like ``"Times New Roman"``,
-``"Arial"``, ``"Consolas"``, etc.
+(PPTX renderer has been removed.)
 
 HTMLRenderer
 ------------

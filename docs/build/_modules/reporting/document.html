@@ -42,6 +42,7 @@
               <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../01_basic_example.html">Documento, Slide, Grid y Renderizado</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -54,6 +55,8 @@
 <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../examples/padding_margin.html">Padding &amp; Margin example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/image_demo.html">Image embedding demo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/figure_alignment.html">Figure alignment example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples/comprehensive.html">Comprehensive example</a></li>
 </ul>
 
@@ -95,18 +98,68 @@
 
 
 <div class="viewcode-block" id="Document">
-<a class="viewcode-back" href="../../api.html#reporting.Document">[docs]</a>
+<a class="viewcode-back" href="../../api.html#reporting.document.Document">[docs]</a>
 <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Document</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A report document that holds slides and coordinates rendering.</span>
+
+<span class="sd">    ``Document`` is the top-level container.  Add slides to it and then</span>
+<span class="sd">    call ``render()`` with a renderer backend.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        title: Report title (displayed in metadata, not on slides).</span>
+<span class="sd">        author: Author name for metadata (default ``&quot;&quot;``).</span>
+<span class="sd">        theme: Visual theme applied to all slides by default.</span>
+<span class="sd">            Built-in choices: ``CorporateTheme()``, ``DarkTheme()``,</span>
+<span class="sd">            ``LightTheme()`` (default ``CorporateTheme()``).</span>
+<span class="sd">        slides: Initial list of slides.  Prefer ``add_slide()`` or</span>
+<span class="sd">            ``new_slide()`` instead of setting this directly.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        from reporting.document import Document</span>
+<span class="sd">        from reporting.slide import Slide</span>
+<span class="sd">        from reporting.renderers.pdf.renderer import PDFRenderer</span>
+
+<span class="sd">        doc = Document(&quot;My Report&quot;, author=&quot;Engineer&quot;)</span>
+<span class="sd">        slide = Slide(&quot;Introduction&quot;)</span>
+<span class="sd">        slide.grid_layout(rows=1, cols=1)</span>
+<span class="sd">        slide[0, 0].text(&quot;Hello, world!&quot;)</span>
+<span class="sd">        doc.add_slide(slide)</span>
+<span class="sd">        doc.render(PDFRenderer(), &quot;output.pdf&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">author</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
     <span class="n">theme</span><span class="p">:</span> <span class="n">Theme</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">CorporateTheme</span><span class="p">)</span>
     <span class="n">slides</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Slide</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
 
+<div class="viewcode-block" id="Document.add_slide">
+<a class="viewcode-back" href="../../api.html#reporting.document.Document.add_slide">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">add_slide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slide</span><span class="p">:</span> <span class="n">Slide</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Slide</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">slides</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">slide</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">slide</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Append an already-built ``Slide`` to the document.</span>
 
+<span class="sd">        Args:</span>
+<span class="sd">            slide: A fully configured ``Slide`` instance (grid layout</span>
+<span class="sd">                and content already set).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The same ``slide`` instance (useful for chaining).</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            doc = Document(&quot;Report&quot;)</span>
+<span class="sd">            s = Slide(&quot;Page 1&quot;)</span>
+<span class="sd">            s.grid_layout(rows=1, cols=1)</span>
+<span class="sd">            s[0, 0].text(&quot;Content&quot;)</span>
+<span class="sd">            doc.add_slide(s)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slides</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">slide</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">slide</span></div>
+
+
+<div class="viewcode-block" id="Document.new_slide">
+<a class="viewcode-back" href="../../api.html#reporting.document.Document.new_slide">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">new_slide</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -114,19 +167,72 @@
         <span class="n">theme</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Theme</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">960.0</span><span class="p">,</span>
         <span class="n">height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">540.0</span><span class="p">,</span>
+        <span class="n">slide_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
+        <span class="n">base_slide</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Slide</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Slide</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a ``Slide``, add it to the document, and return it.</span>
+
+<span class="sd">        Shorthand for ``Slide(...)`` + ``add_slide(...)``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            title: Slide title (shown in the title panel).</span>
+<span class="sd">            subtitle: Optional subtitle shown below the title</span>
+<span class="sd">                (default ``None``).</span>
+<span class="sd">            theme: Visual theme for this slide.  Falls back to the</span>
+<span class="sd">                document-level theme if ``None`` (default ``None``).</span>
+<span class="sd">            width: Slide width in pixels (default ``960.0`` —</span>
+<span class="sd">                standard 4:3).</span>
+<span class="sd">            height: Slide height in pixels (default ``540.0`` —</span>
+<span class="sd">                standard 4:3).</span>
+<span class="sd">            slide_type: Name of a pre-defined slide type in the</span>
+<span class="sd">                theme (default ``&quot;default&quot;``).</span>
+<span class="sd">            base_slide: Another ``Slide`` whose config and grid</span>
+<span class="sd">                layout are used as a starting point</span>
+<span class="sd">                (default ``None``).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The newly created ``Slide``, already appended to the</span>
+<span class="sd">            document.</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            doc = Document(&quot;Report&quot;)</span>
+<span class="sd">            slide = doc.new_slide(&quot;Results&quot;, subtitle=&quot;Test data&quot;)</span>
+<span class="sd">            slide.grid_layout(rows=2, cols=2)</span>
+<span class="sd">            slide[0, 0].text(&quot;Cell A&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">slide</span> <span class="o">=</span> <span class="n">Slide</span><span class="p">(</span>
             <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
             <span class="n">subtitle</span><span class="o">=</span><span class="n">subtitle</span><span class="p">,</span>
             <span class="n">theme</span><span class="o">=</span><span class="n">theme</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">theme</span><span class="p">,</span>
             <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
             <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
+            <span class="n">slide_type</span><span class="o">=</span><span class="n">slide_type</span><span class="p">,</span>
+            <span class="n">base_slide</span><span class="o">=</span><span class="n">base_slide</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slides</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">slide</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">slide</span>
+        <span class="k">return</span> <span class="n">slide</span></div>
 
+
+<div class="viewcode-block" id="Document.render">
+<a class="viewcode-back" href="../../api.html#reporting.document.Document.render">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">renderer</span><span class="p">:</span> <span class="n">BaseRenderer</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Render the document to a file using the given backend.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            renderer: A renderer instance such as ``PDFRenderer()``</span>
+<span class="sd">                or ``HTMLRenderer()``.</span>
+<span class="sd">            output_path: Destination file path (e.g. ``&quot;report.pdf&quot;``</span>
+<span class="sd">                or ``&quot;report.html&quot;``).  The renderer creates or</span>
+<span class="sd">                overwrites this file.</span>
+
+<span class="sd">        Example::</span>
+
+<span class="sd">            from reportlab.renderers.pdf.renderer import PDFRenderer</span>
+<span class="sd">            doc.render(PDFRenderer(), &quot;final_report.pdf&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">renderer</span><span class="o">.</span><span class="n">render_document</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">)</span></div>
+</div>
 
 </pre></div>
 

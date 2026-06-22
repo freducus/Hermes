@@ -368,8 +368,12 @@ def normalize_color(value: ColorValue) -> str:
     return Color.parse(value).css
 
 
-@dataclasses.dataclass(frozen=True)
 class ColorPalette:
+    def __init__(self, **kwargs):
+        # Almacena cualquier color que te pasen sin restricciones
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
     """A set of named colours defining a visual theme.
 
     Args:
