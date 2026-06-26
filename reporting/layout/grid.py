@@ -52,9 +52,8 @@ class GridCellProxy:
     When you need the underlying ``GridCell``, use ``.cell``.
     """
 
-    def __init__(self, cell: GridCell, typography: object = None) -> None:
+    def __init__(self, cell: GridCell) -> None:
         self._cell = cell
-        self._typography = typography
 
     @property
     def cell(self) -> GridCell:
@@ -118,19 +117,10 @@ class GridCellProxy:
     def text(self, content: str = "", **kwargs: object) -> object:
         """Add a text element to this cell.
 
-        When ``style`` is given (e.g. ``"heading_1"``, ``"body"``,
-        ``"caption"``), font properties are resolved from the
-        grid's typography (if available).  Explicit kwargs override
-        the resolved values.
-
         Args:
             content: The text to display.
 
         Keyword Args:
-            style: A typography style name — ``"heading_1"``
-                (or ``"h1"``), ``"heading_2"`` (or ``"h2"``),
-                ``"heading_3"`` (or ``"h3"``), ``"body"``,
-                ``"caption"``, ``"code"``, ``"mono"``.
             bold: Whether the text is bold.
             italic: Whether the text is italic.
             size: Font size in points.
@@ -141,21 +131,6 @@ class GridCellProxy:
         Returns:
             The created ``TextElement``.
         """
-        style_name = kwargs.pop("style", None)
-        if style_name is not None:
-            if self._typography is not None:
-                from reporting.styles.typography import STYLE_ALIASES, FontSpec
-                name = STYLE_ALIASES.get(style_name, style_name)
-                spec = getattr(self._typography, name, None)
-                if isinstance(spec, FontSpec):
-                    kwargs.setdefault("font_name", spec.family)
-                    kwargs.setdefault("size", spec.size)
-                    kwargs.setdefault("bold", spec.bold)
-                    kwargs.setdefault("italic", spec.italic)
-                    if spec.color is not None and "color" not in kwargs:
-                        kwargs["color"] = spec.color
-            else:
-                kwargs["style"] = style_name
         from reporting.elements.text import TextElement
         el: object = TextElement(content, **kwargs)
         self._cell.element = el
@@ -316,13 +291,11 @@ class Grid:
         col_sizes: Optional[list[Sizing]] = None,
         gap: float = 0.0,
         padding: Optional[Edges] = None,
-        typography: object = None,
     ):
         self.rows = rows
         self.cols = cols
         self.gap = gap
         self.padding = padding or Edges()
-        self._typography = typography
 
         self.row_sizes = row_sizes or [LengthValue(1.0, SizingType.FILL)] * rows
         self.col_sizes = col_sizes or [LengthValue(1.0, SizingType.FILL)] * cols
@@ -331,51 +304,6 @@ class Grid:
             [GridCell(panel=Panel(row=r, col=c)) for c in range(cols)]
             for r in range(rows)
         ]
-
-    @property
-    def typography(self) -> object:
-        """Typography used for ``style`` resolution in ``text()``."""
-        return self._typography
-
-    @typography.setter
-    def typography(self, value: object) -> None:
-        self._typography = value
-        self._resolve_pending_styles()
-
-    def _resolve_pending_styles(self) -> None:
-        """Resolve ``style`` on any ``TextElement`` created before typography was set."""
-        if self._typography is None:
-            return
-        from reporting.styles.typography import STYLE_ALIASES, FontSpec
-        from reporting.elements.base import ElementType
-        from reporting.elements.container import ContainerElement
-
-        for row in self.cells:
-            for cell in row:
-                if cell.element is None:
-                    continue
-                el = cell.element
-                if hasattr(el, 'element_type') and el.element_type == ElementType.TEXT:
-                    props = getattr(el, 'properties', {}) or {}
-                    style_name = props.get('style')
-                    if style_name is not None:
-                        name = STYLE_ALIASES.get(style_name, style_name)
-                        spec = getattr(self._typography, name, None)
-                        if isinstance(spec, FontSpec):
-                            for block in el.blocks:
-                                for run in block.runs:
-                                    if not run.bold and spec.bold:
-                                        run.bold = True
-                                    if not run.italic and spec.italic:
-                                        run.italic = True
-                                    if run.size is None:
-                                        run.size = spec.size
-                                    if run.font_name is None:
-                                        run.font_name = spec.family
-                                    if run.color is None and spec.color is not None:
-                                        run.color = spec.color
-                elif isinstance(el, ContainerElement) and el.grid is not None:
-                    el.grid.typography = self._typography
 
     def copy_structure(self) -> Grid:
         """Create a new ``Grid`` with the same dimensions, sizing,
@@ -392,7 +320,6 @@ class Grid:
             col_sizes=list(self.col_sizes),
             gap=self.gap,
             padding=self.padding,
-            typography=self._typography,
         )
 
     def __getitem__(self, pos: tuple[int | slice, int | slice]) -> GridCellProxy:
@@ -417,7 +344,7 @@ class Grid:
         cell = self.cells[r][c]
         cell.panel.rowspan = rows_range.stop - rows_range.start
         cell.panel.colspan = cols_range.stop - cols_range.start
-        return GridCellProxy(cell, typography=self._typography)
+        return GridCellProxy(cell)
 
     @staticmethod
     def _resolve_range(key: int | slice, limit: int) -> range:

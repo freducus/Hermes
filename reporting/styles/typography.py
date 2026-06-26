@@ -43,6 +43,7 @@ class FontSpec:
             object.__setattr__(self, 'color', normalize_color(self.color))
 
 
+@dataclasses.dataclass(frozen=True)
 class Typography:
     """A complete typography set for a report theme.
 
@@ -96,28 +97,3 @@ class Typography:
     mono: FontSpec = dataclasses.field(
         default_factory=lambda: FontSpec(family="Courier", size=11.0)
     )
-
-    def __init__(self, **kwargs):
-        for key, value in self._get_defaults().items():
-            setattr(self, key, value)
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-    @staticmethod
-    def _get_defaults() -> dict[str, FontSpec]:
-        return {
-            "heading_1": FontSpec(family="Helvetica", size=28.0, bold=True),
-            "heading_2": FontSpec(family="Helvetica", size=22.0, bold=True),
-            "heading_3": FontSpec(family="Helvetica", size=18.0, bold=True),
-            "body": FontSpec(family="Helvetica", size=12.0),
-            "caption": FontSpec(family="Helvetica", size=10.0),
-            "code": FontSpec(family="Courier", size=10.0),
-            "mono": FontSpec(family="Courier", size=11.0),
-        }
-
-
-STYLE_ALIASES: dict[str, str] = {
-    "h1": "heading_1",
-    "h2": "heading_2",
-    "h3": "heading_3",
-}

@@ -14,8 +14,7 @@ from reporting.renderers.pdf.renderer import PDFRenderer
 def main() -> None:
     doc = Document(title="Nested Layouts")
 
-    slide = Slide()
-    slide.title = "Dashboard Overview"
+    slide = Slide("Dashboard Overview")
     slide.grid_layout(rows=1, cols=2, gap=10)
 
     inner = Grid(rows=2, cols=1, row_sizes=[Fill, Fill], gap=5)

@@ -73,8 +73,7 @@ def main() -> None:
     doc = Document("Image Embedding Demo", author="pyreportengine")
 
     # ─── Slide 1 — Basic image embedding ───────────────────────────────
-    s1 = Slide()
-    s1.title = "Basic Image Embedding"
+    s1 = Slide("Basic Image Embedding")
     s1.grid_layout(rows=2, cols=3, gap=8, padding=Edges.all(6))
 
     s1[0, 0].text("Original size", bold=True, size=11)
@@ -98,8 +97,7 @@ def main() -> None:
     doc.add_slide(s1)
 
     # ─── Slide 2 — Alignment and explicit sizing ───────────────────────
-    s2 = Slide()
-    s2.title = "Alignment & Explicit Sizing"
+    s2 = Slide("Alignment & Explicit Sizing")
     s2.grid_layout(rows=2, cols=3, gap=8, padding=Edges.all(6))
 
     s2[0, 0].text("Left / Top", bold=True, size=11)
@@ -123,8 +121,7 @@ def main() -> None:
     doc.add_slide(s2)
 
     # ─── Slide 3 — Opacity and composition ─────────────────────────────
-    s3 = Slide()
-    s3.title = "Opacity & Composition"
+    s3 = Slide("Opacity & Composition")
     s3.grid_layout(rows=2, cols=3, gap=8, padding=Edges.all(6))
 
     s3[0, 0].text("Opacity 0.3", bold=True, size=11)

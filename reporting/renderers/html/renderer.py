@@ -21,6 +21,7 @@ from reporting.layout.panel import HAlign, VAlign
 from reporting.renderers.base import BaseRenderer
 from reporting.styles.colors import Color
 from reporting.tablespec.sizing import TableFitMode
+from reporting.footer_config import FooterPanel
 from reporting.background import Background, BackgroundType
 
 if TYPE_CHECKING:
@@ -57,24 +58,24 @@ class HTMLRenderer(BaseRenderer):
     def __init__(self, standalone: bool = True) -> None:
         self.standalone = standalone
         self._body_parts: list[str] = []
+        self._page_num: int = 1
+        self._total_pages: int = 1
 
     def render_document(self, document: "Document", output_path: str) -> None:
         slides_html: list[str] = []
-        for slide in document.slides:
+        total = len(document.slides)
+        for i, slide in enumerate(document.slides):
+            self._page_num = i + 1
+            self._total_pages = total
             slides_html.append(self._render_slide_html(slide))
 
         slides_content = "\n".join(slides_html)
 
         # Derive theme from first slide or document default
-        slide0 = document.slides[0] if document.slides else None
-        theme = slide0.theme if slide0 else None
-        if theme is None:
-            from reporting.styles.theme import CorporateTheme
-            theme = CorporateTheme()
+        theme = document.slides[0].theme if document.slides else document.theme
         pal = theme.palette
 
         if self.standalone:
-            bg_css = getattr(pal, 'background', Color.from_hex('#f0f0f0')).css
             html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -83,10 +84,16 @@ class HTMLRenderer(BaseRenderer):
 <title>{document.title}</title>
 <style>
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-body {{ background: {bg_css}; font-family: {theme.typography.body.family}, sans-serif; }}
-.slide {{ width: 960px; height: 540px; margin: 20px auto;
+body {{ background: {pal.background.css}; font-family: {theme.typography.body.family}, sans-serif; }}
+.slide {{ width: 960px; height: 540px; margin: 20px auto; background: {pal.background.css};
          box-shadow: 0 4px 12px rgba(0,0,0,0.3); position: relative; overflow: hidden; }}
-.slide-content {{ position: relative; left: 0; width: 100%; }}
+.title-panel {{ position: absolute; top: 0; left: 0; width: 100%;
+                border-bottom: 1px solid {pal.border.css}; overflow: hidden; }}
+.title-panel.beside {{ display: flex; justify-content: space-between; align-items: center; }}
+.title-panel h1 {{ font-size: 20px; color: {pal.primary.css}; margin: 0; }}
+.title-panel p {{ font-size: 11px; color: {pal.text_secondary.css}; margin: 2px 0 0 0; }}
+.title-panel.beside p {{ margin: 0; text-align: right; }}
+.slide-content {{ position: absolute; left: 0; width: 100%; bottom: 0; }}
 .cell {{ position: absolute; overflow: hidden; padding: 4px; }}
 </style>
 </head>
@@ -105,26 +112,56 @@ body {{ background: {bg_css}; font-family: {theme.typography.body.family}, sans-
         slide_bg_style = self._background_css(slide)
         slide_extra = f'style="{slide_bg_style}"' if slide_bg_style else ""
 
-        # Title + subtitle inline
-        title_html = ""
-        if slide.title_panel.enabled:
+        tp = slide.title_panel
+
+        if tp.enabled:
             t = slide.title
             s = slide.subtitle
-            weight = "bold" if t.bold else "normal"
-            h1_style = (f"font-size:{t.font_size}px;color:{Color.parse(t.color).css};"
-                        f"font-weight:{weight};font-family:{t.font_name};"
-                        f"text-align:{t.alignment.value};margin:0 0 4px 0")
-            title_html = f"""<div style="padding:20px 20px 0 20px"><h1 style="{h1_style}">{t}</h1>"""
-            if s:
-                sw = "bold" if s.bold else "normal"
-                sub_style = (f"font-size:{s.font_size}px;color:{Color.parse(s.color).css};"
-                             f"font-weight:{sw};font-family:{s.font_name};"
-                             f"text-align:{s.alignment.value};margin:0")
-                title_html += f"<p style=\"{sub_style}\">{s}</p>"
-            title_html += "</div>"
+            th = slide.title_panel.height
 
-        # Grid cells
+            h1_weight = "bold" if t.bold else "normal"
+            h1_style = (f"font-size:{t.font_size}px;color:{Color.parse(t.color).css};"
+                        f"font-weight:{h1_weight};font-family:{t.font_name};"
+                        f"text-align:{t.alignment.value}")
+
+            is_beside = (
+                s
+                and tp.subtitle_placement.value == "beside"
+            )
+
+            panel_cls = "title-panel beside" if is_beside else "title-panel"
+            panel_style = f"height:{th}px;padding:{tp.padding.top}px {tp.padding.right}px {tp.padding.bottom}px {tp.padding.left}px;"
+
+            if is_beside:
+                sub_w = tp.subtitle_width_ratio
+                sub_weight = "bold" if s.bold else "normal"
+                sub_style = (f"font-size:{s.font_size}px;color:{Color.parse(s.color).css};"
+                             f"font-weight:{sub_weight};font-family:{s.font_name};"
+                             f"text-align:{s.alignment.value};width:{sub_w*100}%")
+                title_html = (
+                    f"""<div class="{panel_cls}" style="{panel_style}">"""
+                    f"""<h1 style="{h1_style}">{t}</h1>"""
+                    f"""<p style="{sub_style}">{s}</p>"""
+                    f"""</div>"""
+                )
+            else:
+                title_html = f"""<div class="{panel_cls}" style="{panel_style}"><h1 style="{h1_style}">{t}</h1>"""
+                if s:
+                    sub_weight = "bold" if s.bold else "normal"
+                    sub_style = (f"font-size:{s.font_size}px;color:{Color.parse(s.color).css};"
+                                 f"font-weight:{sub_weight};font-family:{s.font_name};"
+                                 f"text-align:{s.alignment.value}")
+                    title_html += f"<p style=\"{sub_style}\">{s}</p>"
+                if tp.show_separator:
+                    title_html += (f"<hr style=\"border:none;border-top:{tp.separator_width}px solid "
+                                   f"{Color.parse(tp.separator_color).css};margin-top:{tp.separator_margin}px;margin-bottom:0\">")
+                title_html += "</div>"
+        else:
+            title_html = ""
+            th = 0
+
         content_parts: list[str] = []
+
         if slide._grid:
             cell_rects = slide.get_cell_rects()
             for r in range(slide._grid.rows):
@@ -142,11 +179,64 @@ body {{ background: {bg_css}; font-family: {theme.typography.body.family}, sans-
 
         cells_content = "\n".join(content_parts)
 
+        # Footer rendering
+        footer_html = ""
+        fh = slide.footer_panel.height
+        if fh > 0 and slide._footer_grid is not None:
+            fp = slide.footer_panel
+            pad = fp.padding
+            offset_y_px = slide.height - fh + pad.top
+            footer_parts: list[str] = []
+            cell_rects = slide.get_footer_cell_rects()
+            for r in range(slide._footer_grid.rows):
+                for c2 in range(slide._footer_grid.cols):
+                    cell = slide._footer_grid.cells[r][c2]
+                    rect = cell_rects[r][c2]
+                    element = cell.element
+                    if element is None:
+                        continue
+                    # Replace auto placeholders
+                    from reporting.elements.text import TextElement
+
+                    if isinstance(element, TextElement):
+                        auto_type = element.properties.get("_auto")
+                        if auto_type == "page_number":
+                            for block in element.blocks:
+                                for run in block.runs:
+                                    run.text = str(self._page_num)
+                        elif auto_type == "total_pages":
+                            for block in element.blocks:
+                                for run in block.runs:
+                                    run.text = str(self._total_pages)
+                        else:
+                            for block in element.blocks:
+                                for run in block.runs:
+                                    run.text = run.text.replace("{page}", str(self._page_num))
+                                    run.text = run.text.replace("{total}", str(self._total_pages))
+                    adj = Rect(
+                        rect.x + pad.left,
+                        rect.y + offset_y_px,
+                        rect.width,
+                        rect.height,
+                    )
+                    el_html = self._render_element_html(element, adj)
+                    footer_parts.append(el_html)
+            if footer_parts:
+                sep_html = ""
+                if fp.show_separator:
+                    sep_color = Color.parse(fp.separator_color).css
+                    sep_x = pad.left
+                    sep_w = f"calc(100% - {pad.left + pad.right}px)"
+                    sep_y = offset_y_px - pad.top  # just above footer content
+                    sep_html = f'<hr style="border:none;border-top:{fp.separator_width}px solid {sep_color};position:absolute;left:{sep_x}px;top:{sep_y}px;width:{sep_w};margin:0">'
+                footer_html = sep_html + "".join(footer_parts)
+
         return f"""<div class="slide" {slide_extra}>
   {title_html}
-  <div class="slide-content" style="position:relative">
+  <div class="slide-content" style="top:{th}px;bottom:{fh}px">
     {cells_content}
   </div>
+  {footer_html if fh > 0 else ""}
 </div>"""
 
     def _background_css(self, slide: Slide) -> str:
@@ -244,7 +334,7 @@ body {{ background: {bg_css}; font-family: {theme.typography.body.family}, sans-
                     span_style += f"font-size:{run.size}px;"
                 if run.font_name:
                     span_style += f"font-family:{run.font_name};"
-                text_parts.append(f'<span style="{span_style}">{run.text.replace(chr(13), "").replace(chr(10), "<br>")}</span>')
+                text_parts.append(f'<span style="{span_style}">{run.text}</span>')
             text_html = "".join(text_parts)
             align_class = f"text-{block.alignment.value}"
             parts.append(f'<div class="text-block {align_class}" style="text-align:{block.alignment.value}">{text_html}</div>')
@@ -290,13 +380,13 @@ body {{ background: {bg_css}; font-family: {theme.typography.body.family}, sans-
         if element.data is None:
             return f"""<div class="cell" style="{style}"></div>"""
 
-        from reporting.tablespec.style import TableStyle
-        ts = TableStyle()
+        theme = getattr(self, '_current_slide', None)
+        ts = theme.theme.table_style if theme is not None else None
 
-        header_bg = Color.parse(ts.header_background).css
-        header_fg = Color.parse(ts.header_text_color).css
-        border_c = Color.parse(ts.border_color).css
-        body_fs = f"{ts.font_size}pt"
+        header_bg = Color.parse(ts.header_background).css if ts else "#4472C4"
+        header_fg = Color.parse(ts.header_text_color).css if ts else "#ffffff"
+        border_c = Color.parse(ts.border_color).css if ts else "#d9d9d9"
+        body_fs = f"{ts.font_size}pt" if ts else "10px"
 
         df = element.data
         if element.include_index:

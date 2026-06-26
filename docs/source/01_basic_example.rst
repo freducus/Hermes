@@ -3,7 +3,7 @@ Documento, Slide, Grid y Renderizado
 
 Este ejemplo recorre el flujo completo de creación de un informe:
 crear un :class:`~reporting.document.Document`, añadir un
-:class:`~reporting.slide.Slide` con título, definir
+:class:`~reporting.slide.Slide` con título y pie de página, definir
 una cuadrícula con :meth:`~reporting.slide.Slide.grid_layout`,
 colocar texto en las celdas y renderizar a PDF y HTML.
 
@@ -24,13 +24,22 @@ Explicación línea a línea
    from reporting.document import Document
 
 ``Document`` es el contenedor principal del informe. Almacena la lista
-de diapositivas y los metadatos (título, autor).
+de diapositivas y los metadatos (título, autor, fecha).
 
 .. code-block:: python
 
    from reporting.slide import Slide
 
-``Slide`` representa una página individual.
+``Slide`` representa una página individual. Cada diapositiva tiene un
+panel de título integrado (altura por defecto 60 px), un área de
+contenido con cuadrícula y un pie de página opcional.
+
+.. code-block:: python
+
+   from reporting.footer_config import FooterConfig
+
+Configuración del pie de página: altura, tipo de letra, color, texto
+centrado, línea separadora, etc.
 
 .. code-block:: python
 
@@ -61,7 +70,7 @@ dependencias externas en el navegador).
 
 .. code-block:: python
 
-   doc = Document("My Report", author="Engineer")
+   doc = Document("My Report", author="Engineer)
 
 .. list-table:: Parámetros de ``Document``
    :header-rows: 1
@@ -77,6 +86,13 @@ dependencias externas en el navegador).
    * - ``author``
      - ``str``
      - Nombre del autor (metadato).
+   * - ``theme``
+     - ``Theme``
+     - Tema visual por defecto para las diapositivas que no especifiquen
+       uno propio.
+   * - ``width``, ``height``
+     - ``float``
+     - Dimensiones de página en puntos (por defecto 595.28 × 841.89 = A4).
 
 ---
 
@@ -84,16 +100,104 @@ dependencias externas en el navegador).
 
 .. code-block:: python
 
-   slide = Slide()
-   slide.title = "Introduction"
-   slide.subtitle = "Getting started"
+   slide = Slide(
+       "Introduction",
+       subtitle="Getting started",
+       footer_config=FooterConfig(center_text="My Report | Engineering"),
+   )
 
-Para crear desde el documento:
+.. list-table:: Parámetros de ``Slide``
+   :header-rows: 1
+   :widths: 22 14 64
+
+   * - Atributo
+     - Tipo
+     - Descripción
+   * - ``title``
+     - ``str``
+     - Texto del título en el panel superior.
+   * - ``subtitle``
+     - ``str``
+     - Texto secundario opcional debajo del título.
+   * - ``footer_config``
+     - ``FooterConfig``
+     - Configuración del pie de página. Si es ``None`` se usa
+       ``FooterConfig()`` con valores por defecto.
+   * - ``theme``
+     - ``Theme``
+     - Tema visual de esta diapositiva. Si no se especifica, hereda el
+       del documento.
+   * - ``slide_type``
+     - ``str``
+     - Clave en ``theme.slide_types`` para obtener valores por defecto
+       de título, pie y grid.
+   * - ``base_slide``
+     - ``Slide``
+     - Copia la configuración y estructura de grid de otra diapositiva
+       (sin contenido).
+   * - ``title_panel_height``
+     - ``float``
+     - Altura del panel de título en píxeles. Por defecto 60.0.
+   * - ``footer_logo``
+     - ``str``
+     - Ruta a una imagen para mostrar en la esquina inferior izquierda
+       del pie.
+
+Para entender el ``Slide`` en detalle, consulta
+:doc:`04_header_footer` (sección 4). El panel de título es automático:
+se renderiza en la parte superior de la página y el grid se sitúa
+debajo de él.
+
+**FooterConfig**
 
 .. code-block:: python
 
-   slide = doc.new_slide()
-   slide.title = "Introduction"
+   FooterConfig(center_text="My Report | Engineering")
+
+.. list-table:: Parámetros de ``FooterConfig``
+   :header-rows: 1
+   :widths: 20 12 68
+
+   * - Atributo
+     - Tipo
+     - Descripción
+   * - ``enabled``
+     - ``bool``
+     - Si es ``False``, el pie no se genera (por defecto ``True``).
+   * - ``center_text``
+     - ``str``
+     - Texto centrado en el pie. Acepta los placeholders ``{page}`` y
+       ``{total}`` que se reemplazan al renderizar.
+   * - ``height``
+     - ``float``
+     - Altura del pie en píxeles (28.0).
+   * - ``show_separator``
+     - ``bool``
+     - Dibuja una línea horizontal sobre el pie (``True``).
+   * - ``separator_color``
+     - ``str``
+     - Color de la línea separadora (``"#CCCCCC"``).
+   * - ``separator_width``
+     - ``float``
+     - Grosor de la separadora en puntos (1.0).
+   * - ``separator_margin``
+     - ``float``
+     - Espacio entre separadora y texto (4.0 pt).
+   * - ``font_name``
+     - ``str``
+     - Familia tipográfica (``"Helvetica"``).
+   * - ``font_size``
+     - ``float``
+     - Tamaño de letra en puntos (8.0).
+   * - ``color``
+     - ``str``
+     - Color del texto (``"#999999"``).
+   * - ``padding``
+     - ``Edges``
+     - Padding interno del pie ``Edges(left=20, right=20, top=4,
+       bottom=4)``.
+
+Ver :doc:`04_header_footer` para más detalles sobre el pie de página.
 
 ---
 
@@ -103,7 +207,8 @@ Para crear desde el documento:
 
    slide.grid_layout(rows=2, cols=2, gap=10, padding=Edges.all(20))
 
-Define una cuadrícula de 2×2 en el área de contenido.
+Define una cuadrícula de 2×2 en el área de contenido (debajo del
+panel de título y encima del pie de página).
 
 .. list-table:: Parámetros de ``grid_layout``
    :header-rows: 1
@@ -181,7 +286,9 @@ Los slices calculan automáticamente ``colspan`` y ``rowspan``.
 
 **Método .text()**
 
-Crea un :class:`~reporting.elements.text.TextElement`.
+Crea un :class:`~reporting.elements.text.TextElement` (o añade un
+:class:`~reporting.elements.text.TextRun` si la celda ya contiene
+texto).
 
 .. list-table:: Argumentos de ``.text()``
    :header-rows: 1
@@ -239,7 +346,9 @@ contenedores) ver :doc:`02_elements`.
    doc.add_slide(slide)
 
 ``add_slide(slide: Slide) -> None`` — añade la diapositiva al final
-del documento.
+del documento. También existe ``Document.insert_slide(index, slide)``
+para insertar en una posición concreta y
+``Document.remove_slide(index)``.
 
 ---
 

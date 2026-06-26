@@ -8,6 +8,7 @@ import pandas as pd
 
 from reporting.document import Document
 from reporting.slide import Slide
+from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.layout.grid import Grid
 from reporting.elements.text import TextElement
@@ -53,9 +54,11 @@ def _create_plot() -> plt.Figure:
 def main() -> None:
     doc = Document("Element Types Demo", author="Docs")
 
-    slide = Slide()
-    slide.title = "Element Types"
-    slide.subtitle = "Text, Figure, Image, Table, Container"
+    slide = Slide(
+        "Element Types",
+        subtitle="Text, Figure, Image, Table, Container",
+        footer_panel=FooterPanel(center_text="Element Types | Docs"),
+    )
     slide.grid_layout(rows=3, cols=2, gap=12, padding=Edges.all(20))
 
     # 1. TextElement — simple and mixed-format

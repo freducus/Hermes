@@ -15,17 +15,14 @@ class TestDocument:
 
     def test_add_slide(self):
         doc = Document(title="Test")
-        slide = Slide()
-        slide.title = "Page 1"
+        slide = Slide("Page 1")
         returned = doc.add_slide(slide)
         assert returned is slide
         assert len(doc.slides) == 1
 
     def test_new_slide(self):
         doc = Document(title="Test")
-        slide = doc.new_slide()
-        slide.title = "Page 1"
-        slide.subtitle = "Sub"
+        slide = doc.new_slide("Page 1", subtitle="Sub")
         assert isinstance(slide, Slide)
         assert slide.title == "Page 1"
         assert slide.subtitle == "Sub"
@@ -33,7 +30,7 @@ class TestDocument:
 
     def test_render_calls_renderer(self):
         doc = Document(title="Test")
-        doc.new_slide()
+        doc.new_slide("Page 1")
 
         class FakeRenderer:
             def render_document(self, doc, path):

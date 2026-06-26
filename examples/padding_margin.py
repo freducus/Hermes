@@ -7,14 +7,16 @@ from pathlib import Path
 
 from reporting.document import Document
 from reporting.slide import Slide
+from reporting.footer_config import FooterPanel
 from reporting.layout.geometry import Edges
 from reporting.renderers.pdf.renderer import PDFRenderer
 
 
+NO_FOOTER = FooterPanel(enabled=False)
+
+
 def make_slide(title: str, subtitle: str = "") -> Slide:
-    s = Slide()
-    s.title = title
-    s.subtitle = subtitle
+    s = Slide(title, subtitle=subtitle, footer_panel=NO_FOOTER)
     return s
 
 
@@ -25,7 +27,7 @@ def slide_grid_padding() -> Slide:
     s[0, 0].text("padding=5", size=10)
     s[0, 0].background_color = "#E3F2FD"
 
-    s2 = Slide()
+    s2 = Slide("", footer_panel=NO_FOOTER, width=s.width, height=s.height, title_panel=s.title_panel)
     s2.grid_layout(rows=1, cols=2, gap=0, padding=Edges.all(30))
     s2[0, 0].text("padding=30", size=10)
     s2[0, 0].background_color = "#FFF3E0"
@@ -48,8 +50,7 @@ def main() -> None:
     doc = Document(title="Padding & Margin Demo", author="pyreportengine")
 
     # ---- Slide 1: grid.padding comparison ----
-    slide = Slide()
-    slide.title = "Grid padding"
+    slide = Slide("Grid padding", footer_panel=NO_FOOTER)
     slide.grid_layout(rows=1, cols=2, gap=8, padding=Edges.all(15))
     slide[0, 0].text("padding=Edges.all(5)")
     slide[0, 0].background_color = "lightblue"
@@ -62,9 +63,7 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 2: grid.gap comparison ----
-    slide = Slide()
-    slide.title = "Grid gap"
-    slide.subtitle = "gap=2  |  gap=20"
+    slide = Slide("Grid gap", footer_panel=NO_FOOTER, subtitle="gap=2  |  gap=20")
     slide.grid_layout(rows=2, cols=2, gap=2, padding=Edges.all(15))
     slide[0, 0].text("A", size=12, alignment="center")
     slide[0, 0].background_color = (200, 230, 201)
@@ -76,9 +75,7 @@ def main() -> None:
     slide[1, 1].background_color = (200, 230, 201)
     doc.add_slide(slide)
 
-    slide = Slide()
-    slide.title = "Grid gap (wide)"
-    slide.subtitle = "gap=20  |  padding=Edges.all(5)"
+    slide = Slide("Grid gap (wide)", footer_panel=NO_FOOTER, subtitle="gap=20  |  padding=Edges.all(5)")
     slide.grid_layout(rows=2, cols=2, gap=20, padding=Edges.all(5))
     slide[0, 0].text("A", size=12, alignment="center")
     slide[0, 0].background_color = "bisque"
@@ -91,9 +88,7 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 3: panel.padding ----
-    slide = Slide()
-    slide.title = "Panel padding"
-    slide.subtitle = "padding=0 (left)  |  padding=20 (right)"
+    slide = Slide("Panel padding", footer_panel=NO_FOOTER, subtitle="padding=0 (left)  |  padding=20 (right)")
     slide.grid_layout(rows=1, cols=2, gap=10, padding=Edges.all(15))
     slide[0, 0].text("No padding\nContent touches\ncell edge")
     slide[0, 0].background_color = "rgb(243, 229, 245)"
@@ -105,9 +100,7 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 4: panel.margin ----
-    slide = Slide()
-    slide.title = "Panel margin"
-    slide.subtitle = "Each labelled cell has margin=15 around it"
+    slide = Slide("Panel margin", footer_panel=NO_FOOTER, subtitle="Each labelled cell has margin=15 around it")
     slide.grid_layout(rows=2, cols=3, gap=0, padding=Edges.all(10))
     labels = ["A", "B", "C", "D", "E", "F"]
     colors = ["lightblue", "moccasin", "honeydew", "rgb(243, 229, 245)", "mistyrose", "lightcyan"]
@@ -120,8 +113,7 @@ def main() -> None:
     doc.add_slide(slide)
 
     # ---- Slide 5: Combined overview ----
-    slide = Slide()
-    slide.title = "Combined: padding + margin + gap"
+    slide = Slide("Combined: padding + margin + gap", footer_panel=NO_FOOTER)
     slide.grid_layout(rows=2, cols=2, gap=12, padding=Edges.all(20))
 
     slide[0, 0].text("padding=10\nmargin=5")

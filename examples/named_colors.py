@@ -24,9 +24,10 @@ def main() -> None:
     cols = 13
     rows = math.ceil(n / cols)
 
-    slide = Slide()
-    slide.title = f"All {n} Named Colors"
-    slide.subtitle = f"CSS named colors in a {cols}×{rows} grid — each cell shows the color name parsed via Color.parse()"
+    slide = Slide(
+        f"All {n} Named Colors",
+        subtitle=f"CSS named colors in a {cols}×{rows} grid — each cell shows the color name parsed via Color.parse()",
+    )
     slide.grid_layout(rows=rows, cols=cols, gap=1, padding=Edges.all(10))
 
     for i, (name, hex_str) in enumerate(colors):
