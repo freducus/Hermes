@@ -127,11 +127,7 @@ dependencias externas en el navegador).
      - ``Theme``
      - Tema visual de esta diapositiva. Si no se especifica, hereda el
        del documento.
-   * - ``slide_type``
-     - ``str``
-     - Clave en ``theme.slide_types`` para obtener valores por defecto
-       de título, pie y grid.
-   * - ``base_slide``
+    * - ``base_slide``
      - ``Slide``
      - Copia la configuración y estructura de grid de otra diapositiva
        (sin contenido).

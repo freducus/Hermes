@@ -1,4 +1,4 @@
-"""Slide — a single page in a report with grid layout and NumPy-style cell access."""
+"""Slide — a single page in a report."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from reporting.elements.table import TableElement
 from reporting.elements.tablespec_element import TableSpecElement
 from reporting.elements.container import ContainerElement
 from reporting.styles.theme import Theme, CorporateTheme
-from reporting.background import Background, BackgroundType, SolidBackground, GradientBackground, ImageBackground
+from reporting.background import Background, SolidBackground, GradientBackground, ImageBackground
 from reporting.title_config import TitleText, SubtitleText, TitlePanel, SubtitlePlacement
 from reporting.footer_config import FooterPanel
 
@@ -37,39 +37,26 @@ class Slide:
     Args:
         title: Slide title displayed in the title panel.  Can be a
             plain ``str`` or a ``TitleText`` with embedded styling.
-            Falls back to the slide type default when ``None``
-            (default ``None``).
-        subtitle: Optional subtitle (default ``None``).  Can be a
-            plain ``str`` or a ``SubtitleText`` with embedded styling.
+        subtitle: Optional subtitle displayed below the title.
         theme: Visual theme.  Falls back to ``CorporateTheme()``
             when ``None`` (default ``None``).
         width: Slide width in pixels.  Falls back to
-            ``theme.page_size[0]`` when ``None`` (default ``None``).
+            ``theme.page_size[0]`` when ``None``.
         height: Slide height in pixels.  Falls back to
-            ``theme.page_size[1]`` when ``None`` (default ``None``).
+            ``theme.page_size[1]`` when ``None``.
         title_panel: Title panel configuration (height, padding,
-            separator, subtitle placement).  Falls back to the
-            slide type default when ``None`` (default ``None``).
+            separator, subtitle placement).  Falls back to
+            ``TitlePanel.from_theme(self.theme)`` when ``None``.
         background: Slide background.  Accepts a hex string
             ``"#RRGGBB"``, a named CSS color, or a
             ``SolidBackground`` / ``GradientBackground`` /
-            ``ImageBackground`` instance (default ``None``).
+            ``ImageBackground`` instance.
         footer_panel: Footer panel configuration (height, styling,
-            logo).  Falls back to the slide type default when
-            ``None`` (default ``None``).
-        slide_type: Name of a pre-defined slide type in the
-            theme (default ``"default"``).
+            logo).  Falls back to ``self.theme.footer_panel``
+            when ``None``.
         base_slide: Another ``Slide`` whose config and grid
             layout are used as a starting point.  Content cells
-            are **not** copied (default ``None``).
-
-    When a slide type specifies a ``layout``, the grid is
-    created automatically.  Slide type default cells are
-    populated as ``TextElement`` objects.
-
-    Resolution order (later wins)::
-
-        base_slide → theme → slide_type → explicit kwargs
+            are **not** copied.
 
     Example::
 
@@ -85,10 +72,6 @@ class Slide:
         slide[0, 0].text("Heading", style="h1")
         slide[0, 1].text("Body text", style="body",
                           color=palette.primary.css)
-
-    Use a pre-defined slide type from the theme::
-
-        slide = Slide("Cover", slide_type="title")
 
     Or base a slide on another slide to reuse its layout::
 
@@ -110,7 +93,6 @@ class Slide:
         title_panel: Optional[TitlePanel] = None,
         background: Optional[Union[str, SolidBackground, GradientBackground, ImageBackground]] = None,
         footer_panel: Optional[FooterPanel] = None,
-        slide_type: str = "default",
         base_slide: Optional[Slide] = None,
     ):
         self._grid = None
@@ -118,15 +100,7 @@ class Slide:
         self._footer_grid = None
         self._footer_elements = {}
 
-        # --- Resolution chain: base_slide → theme → slide_type → explicit kwargs ---
         resolved_theme: Theme
-        resolved_title_panel: Optional[TitlePanel] = None
-        resolved_footer_panel: Optional[FooterPanel] = None
-        resolved_background: Optional[Background] = None
-        resolved_width: float
-        resolved_height: float
-        resolved_title: Optional[Union[str, TitleText]] = None
-        resolved_subtitle: Optional[Union[str, SubtitleText]] = None
 
         # ── Helper: resolve theme (instance, string name, or default) ──
         def _resolve_theme(t: Optional[Union[str, Theme]]) -> Theme:
@@ -136,40 +110,31 @@ class Slide:
                 return Theme.get_registered(t)()
             return t
 
-        # ── Step 1: base_slide ──────────────────────────────────────
+        # ── Resolve from base_slide or theme ─────────────────────────
         if base_slide is not None:
             resolved_theme = base_slide.theme
-            resolved_title_panel = base_slide.title_panel
-            resolved_footer_panel = base_slide.footer_panel
-            resolved_width = base_slide.width
-            resolved_height = base_slide.height
-            resolved_title = base_slide.title
-            resolved_subtitle = base_slide.subtitle
+            resolved_title_panel: Optional[TitlePanel] = base_slide.title_panel
+            resolved_footer_panel: Optional[FooterPanel] = base_slide.footer_panel
+            resolved_width: float = base_slide.width
+            resolved_height: float = base_slide.height
+            resolved_title: Optional[Union[str, TitleText]] = base_slide.title
+            resolved_subtitle: Optional[Union[str, SubtitleText]] = base_slide.subtitle
+            resolved_background: Optional[Background] = None
             if base_slide.background is not None:
                 resolved_background = base_slide.background
             if base_slide._grid is not None:
                 self._grid = base_slide._grid.copy_structure()
         else:
             resolved_theme = _resolve_theme(theme)
+            resolved_title_panel = None
+            resolved_footer_panel = None
             resolved_width = width or resolved_theme.page_size[0]
             resolved_height = height or resolved_theme.page_size[1]
+            resolved_title = None
+            resolved_subtitle = None
+            resolved_background = None
 
-        # ── Step 2: explicit theme override ─────────────────────────
-        if theme is not None:
-            resolved_theme = _resolve_theme(theme)
-
-        # ── Step 3: slide type from theme ────────────────────────────
-        st = resolved_theme.get_slide_type(slide_type)
-        if resolved_title is None and st.title_text is not None:
-            resolved_title = st.title_text
-        if resolved_subtitle is None and st.subtitle_text is not None:
-            resolved_subtitle = st.subtitle_text
-        resolved_title_panel = resolved_title_panel or st.title_panel
-        resolved_footer_panel = resolved_footer_panel or st.footer_panel
-        if resolved_background is None and st.background is not None:
-            resolved_background = st.background
-
-        # ── Step 4: explicit kwargs override ─────────────────────────
+        # ── Apply resolved values ────────────────────────────────────
         self.theme = resolved_theme
         self.width = width or resolved_width
         self.height = height or resolved_height
@@ -180,9 +145,9 @@ class Slide:
             self.background = background if background is not None else resolved_background
         self.footer_panel = footer_panel or resolved_footer_panel or self.theme.footer_panel
 
-        # ── Step 5: build title/subtitle text objects ────────────────
-        raw_title: Union[str, TitleText] = resolved_title if title is None else title
-        raw_subtitle: Optional[Union[str, SubtitleText]] = resolved_subtitle if subtitle is None else subtitle
+        # ── Build title/subtitle text objects ────────────────────────
+        raw_title: Union[str, TitleText] = title if title is not None else (resolved_title or "")
+        raw_subtitle: Optional[Union[str, SubtitleText]] = subtitle if subtitle is not None else resolved_subtitle
 
         if isinstance(raw_title, TitleText):
             self.title = TitleText(
@@ -195,7 +160,7 @@ class Slide:
                 alignment=raw_title.alignment,
             )
         else:
-            self.title = TitleText.from_theme(self.theme, text=raw_title or "")
+            self.title = TitleText.from_theme(self.theme, text=raw_title)
 
         if raw_subtitle is not None:
             if isinstance(raw_subtitle, SubtitleText):
@@ -213,26 +178,7 @@ class Slide:
         else:
             self.subtitle = None
 
-        # ── Step 6: auto-apply layout from slide type ────────────────
-        if self._grid is None and st.layout is not None and base_slide is None:
-            lc = resolved_theme.get_layout(st.layout)
-            self.grid_layout(
-                rows=lc.rows,
-                cols=lc.cols,
-                row_sizes=lc.row_sizes,
-                col_sizes=lc.col_sizes,
-                gap=lc.gap,
-                padding=lc.padding,
-            )
-
-        # ── Step 7: populate default cells from slide type ───────────
-        if self._grid is not None and base_slide is None:
-            for (r, c), text_content in st.cells.items():
-                if 0 <= r < self._grid.rows and 0 <= c < self._grid.cols:
-                    if self._grid.cells[r][c].element is None:
-                        self[r, c].text(text_content)
-
-        # ── Step 8: footer ──────────────────────────────────────────
+        # ── Footer ──────────────────────────────────────────────────
         if self.footer_panel.enabled:
             self.footer_layout(rows=1, cols=3)
             if self.footer_panel.logo:

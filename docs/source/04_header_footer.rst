@@ -211,7 +211,7 @@ Se reemplazan en tiempo de renderizado.
 **title_panel_height**
 
 Controla el alto del panel de título en píxeles. Por defecto es
-60 píxeles (o el valor definido en el ``slide_type`` del tema).
+60 píxeles.
 
 El área de contenido disponible se obtiene con
 ``slide.content_size``, que descuenta el alto del panel de título

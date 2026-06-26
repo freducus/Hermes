@@ -1,7 +1,7 @@
 """Theme system — defines visual themes for reports.
 
 Themes define the complete visual identity: colours, typography,
-page size, named layouts, and slide types.
+page size, and footer configuration.
 
 Predefined themes
 -----------------
@@ -17,8 +17,6 @@ Subclass ``Theme`` directly::
     from reporting.styles.colors import ColorPalette, Color
     from reporting.styles.typography import Typography, FontSpec
     from reporting.tablespec.style import TableStyle
-    from reporting.layout_config import LayoutConfig
-    from reporting.slide_type import SlideTypeConfig
 
     class MyTheme(Theme):
         def __init__(self) -> None:
@@ -28,12 +26,6 @@ Subclass ``Theme`` directly::
                 palette=ColorPalette(...),
                 typography=Typography(...),
                 table_style=TableStyle(),
-                layouts={
-                    "default": LayoutConfig(name="default", rows=1, cols=1),
-                },
-                slide_types={
-                    "default": SlideTypeConfig(name="default", layout="default"),
-                },
             )
 
 Register for auto-discovery with ``load_themes()``::
@@ -51,8 +43,6 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional, TypeVar
 
-from reporting.layout_config import LayoutConfig
-from reporting.slide_type import SlideTypeConfig
 from reporting.styles.colors import Color, ColorPalette
 from reporting.styles.typography import Typography, FontSpec
 from reporting.footer_config import FooterPanel
@@ -119,8 +109,6 @@ class Theme:
     )
     typography: Typography = dataclasses.field(default_factory=Typography)
     table_style: Any = None
-    layouts: dict[str, LayoutConfig] = dataclasses.field(default_factory=dict)
-    slide_types: dict[str, SlideTypeConfig] = dataclasses.field(default_factory=dict)
     footer_panel: FooterPanel = dataclasses.field(default_factory=FooterPanel)
 
     _registry: ClassVar[dict[str, type[Theme]]] = {}
@@ -129,43 +117,6 @@ class Theme:
         if self.table_style is None:
             from reporting.tablespec.style import TableStyle
             object.__setattr__(self, "table_style", TableStyle())
-        if not self.layouts:
-            object.__setattr__(
-                self,
-                "layouts",
-                {"default": LayoutConfig(name="default", rows=1, cols=1)},
-            )
-        if not self.slide_types:
-            object.__setattr__(
-                self,
-                "slide_types",
-                {"default": SlideTypeConfig(name="default", layout="default")},
-            )
-
-    def get_slide_type(self, name: str = "default") -> SlideTypeConfig:
-        """Look up a slide type by name, falling back to a default if missing.
-
-        Args:
-            name: The slide type name.
-
-        Returns:
-            The matching ``SlideTypeConfig`` or a fresh default.
-        """
-        return self.slide_types.get(
-            name,
-            SlideTypeConfig(name=name, layout="default"),
-        )
-
-    def get_layout(self, name: str = "default") -> LayoutConfig:
-        """Look up a layout by name, falling back to a default.
-
-        Args:
-            name: The layout name.
-
-        Returns:
-            The matching ``LayoutConfig`` or ``LayoutConfig(name=name)``.
-        """
-        return self.layouts.get(name, LayoutConfig(name=name))
 
     def get_heading_style(self, level: int) -> FontSpec:
         """Get the font specification for a heading level.
@@ -268,8 +219,6 @@ class CorporateTheme(Theme):
     """
     def __init__(self) -> None:
         from reporting.tablespec.style import TableStyle
-        from reporting.title_config import TitlePanel
-        from reporting.background import SolidBackground
 
         palette = ColorPalette(
             primary=Color.from_hex("#1F4E79"),
@@ -294,18 +243,6 @@ class CorporateTheme(Theme):
         )
         table_style = TableStyle()
 
-        default_tp = TitlePanel(
-            height=60.0, show_separator=True,
-            separator_color=palette.border.css, separator_width=1.0,
-            separator_margin=8.0,
-        )
-        title_tp = TitlePanel(
-            height=80.0, show_separator=False,
-        )
-        blank_tp = TitlePanel(
-            enabled=False,
-        )
-
         footer = FooterPanel(
             enabled=True, separator_color=palette.border.css,
             font_name=typography.caption.family,
@@ -313,42 +250,11 @@ class CorporateTheme(Theme):
             color=palette.text_secondary.css,
             center_text="Corporate Report",
         )
-        no_footer = FooterPanel(enabled=False)
-
-        layouts = {
-            "default": LayoutConfig(name="default", rows=1, cols=1),
-        }
-        bg = SolidBackground(palette.background.css)
-
-        slide_types = {
-            "default": SlideTypeConfig(
-                name="default",
-                title_panel=default_tp,
-                footer_panel=footer,
-                layout="default",
-                background=bg,
-            ),
-            "title": SlideTypeConfig(
-                name="title",
-                title_panel=title_tp,
-                footer_panel=no_footer,
-                layout="default",
-                background=bg,
-            ),
-            "blank": SlideTypeConfig(
-                name="blank",
-                title_panel=blank_tp,
-                footer_panel=no_footer,
-                background=bg,
-            ),
-        }
         super().__init__(
             name="Corporate",
             palette=palette,
             typography=typography,
             table_style=table_style,
-            layouts=layouts,
-            slide_types=slide_types,
             footer_panel=footer,
         )
 
@@ -368,7 +274,6 @@ class DarkTheme(Theme):
     """
     def __init__(self) -> None:
         from reporting.tablespec.style import TableStyle
-        from reporting.title_config import TitlePanel
 
         palette = ColorPalette(
             primary=Color.from_hex("#4FC3F7"),
@@ -393,20 +298,6 @@ class DarkTheme(Theme):
         )
         table_style = TableStyle()
 
-        default_tp = TitlePanel(
-            height=60.0, show_separator=True,
-            separator_color=palette.border.css, separator_width=1.0,
-            separator_margin=8.0,
-        )
-        title_tp = TitlePanel(
-            height=80.0, show_separator=False,
-        )
-        blank_tp = TitlePanel(
-            enabled=False,
-        )
-
-        from reporting.background import SolidBackground
-
         footer = FooterPanel(
             enabled=True, separator_color=palette.border.css,
             font_name=typography.caption.family,
@@ -414,41 +305,11 @@ class DarkTheme(Theme):
             color=palette.text_secondary.css,
             center_text="Dark Report",
         )
-        no_footer = FooterPanel(enabled=False)
-
-        layouts = {
-            "default": LayoutConfig(name="default", rows=1, cols=1),
-        }
-        bg = SolidBackground(palette.background.css)
-        slide_types = {
-            "default": SlideTypeConfig(
-                name="default",
-                title_panel=default_tp,
-                footer_panel=footer,
-                layout="default",
-                background=bg,
-            ),
-            "title": SlideTypeConfig(
-                name="title",
-                title_panel=title_tp,
-                footer_panel=no_footer,
-                layout="default",
-                background=bg,
-            ),
-            "blank": SlideTypeConfig(
-                name="blank",
-                title_panel=blank_tp,
-                footer_panel=no_footer,
-                background=bg,
-            ),
-        }
         super().__init__(
             name="Dark",
             palette=palette,
             typography=typography,
             table_style=table_style,
-            layouts=layouts,
-            slide_types=slide_types,
             footer_panel=footer,
         )
 
@@ -468,8 +329,6 @@ class LightTheme(Theme):
     """
     def __init__(self) -> None:
         from reporting.tablespec.style import TableStyle
-        from reporting.title_config import TitlePanel
-        from reporting.background import SolidBackground
 
         palette = ColorPalette(
             primary=Color.from_hex("#1565C0"),
@@ -494,18 +353,6 @@ class LightTheme(Theme):
         )
         table_style = TableStyle()
 
-        default_tp = TitlePanel(
-            height=60.0, show_separator=True,
-            separator_color=palette.border.css, separator_width=1.0,
-            separator_margin=8.0,
-        )
-        title_tp = TitlePanel(
-            height=80.0, show_separator=False,
-        )
-        blank_tp = TitlePanel(
-            enabled=False,
-        )
-
         footer = FooterPanel(
             enabled=True, separator_color=palette.border.css,
             font_name=typography.caption.family,
@@ -513,40 +360,10 @@ class LightTheme(Theme):
             color=palette.text_secondary.css,
             center_text="Light Report",
         )
-        no_footer = FooterPanel(enabled=False)
-
-        layouts = {
-            "default": LayoutConfig(name="default", rows=1, cols=1),
-        }
-        bg = SolidBackground(palette.background.css)
-        slide_types = {
-            "default": SlideTypeConfig(
-                name="default",
-                title_panel=default_tp,
-                footer_panel=footer,
-                layout="default",
-                background=bg,
-            ),
-            "title": SlideTypeConfig(
-                name="title",
-                title_panel=title_tp,
-                footer_panel=no_footer,
-                layout="default",
-                background=bg,
-            ),
-            "blank": SlideTypeConfig(
-                name="blank",
-                title_panel=blank_tp,
-                footer_panel=no_footer,
-                background=bg,
-            ),
-        }
         super().__init__(
             name="Light",
             palette=palette,
             typography=typography,
             table_style=table_style,
-            layouts=layouts,
-            slide_types=slide_types,
             footer_panel=footer,
         )
