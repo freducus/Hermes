@@ -368,7 +368,7 @@ def normalize_color(value: ColorValue) -> str:
     return Color.parse(value).css
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass
 class ColorPalette:
     """A set of named colours defining a visual theme.
 
@@ -383,6 +383,8 @@ class ColorPalette:
         error: Error / danger colour.
         warning: Warning / caution colour.
         success: Success / positive colour.
+        extras: Additional named colours defined by the user.
+            Accessed as attributes via ``palette.my_colour``.
 
     Example::
 
@@ -399,7 +401,11 @@ class ColorPalette:
             error=Color.from_hex("#C00000"),
             warning=Color.from_hex("#FFC000"),
             success=Color.from_hex("#70AD47"),
+            extras={
+                "chart_area": Color.from_hex("#E3F2FD"),
+            },
         )
+        palette.chart_area  # via __getattr__
     """
     primary: Color
     secondary: Color
@@ -411,3 +417,10 @@ class ColorPalette:
     error: Color
     warning: Color
     success: Color
+    extras: dict[str, Color] = dataclasses.field(default_factory=dict)
+
+    def __getattr__(self, name: str) -> Color:
+        try:
+            return self.extras[name]
+        except KeyError:
+            raise AttributeError(f"ColorPalette has no colour {name!r}")

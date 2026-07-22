@@ -1,3 +1,7 @@
-__pycache__/
-*.pyc
-/docs/build/
+docs/build/
+.idea/
+*.pdf
+*.html
+*.png
+*.jpg
+*.jpeg

@@ -19,7 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="API Reference" href="api.html" />
+    <link rel="next" title="Padding &amp; Margin example" href="examples/padding_margin.html" />
     <link rel="prev" title="Styles &amp; Theming" href="styles.html" /> 
 </head>
 
@@ -45,7 +45,6 @@
               <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
-<li class="toctree-l1"><a class="reference internal" href="01_basic_example.html">Documento, Slide, Grid y Renderizado</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -54,16 +53,14 @@
 <li class="toctree-l1"><a class="reference internal" href="styles.html">Styles &amp; Theming</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Renderers</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#pdfrenderer">PDFRenderer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pptxrenderer">PPTXRenderer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#htmlrenderer">HTMLRenderer</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/padding_margin.html">Padding &amp; Margin example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/image_demo.html">Image embedding demo</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/figure_alignment.html">Figure alignment example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples/comprehensive.html">Comprehensive example</a></li>
 </ul>
 
@@ -118,7 +115,25 @@ in text via ReportLab’s Paragraph</p></li>
 </a>
 <p>Font names for PDF must be PostScript names: <code class="docutils literal notranslate"><span class="pre">Helvetica</span></code>, <code class="docutils literal notranslate"><span class="pre">Times-Roman</span></code>,
 <code class="docutils literal notranslate"><span class="pre">Times-Bold</span></code>, <code class="docutils literal notranslate"><span class="pre">Courier</span></code>, <code class="docutils literal notranslate"><span class="pre">Courier-Bold</span></code>, <code class="docutils literal notranslate"><span class="pre">Helvetica-Oblique</span></code>, etc.</p>
-<p>(PPTX renderer has been removed.)</p>
+</section>
+<section id="pptxrenderer">
+<h2>PPTXRenderer<a class="headerlink" href="#pptxrenderer" title="Link to this heading"></a></h2>
+<p>Generates a PowerPoint file using <code class="docutils literal notranslate"><span class="pre">python-pptx</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">reporting.renderers.pptx.renderer</span><span class="w"> </span><span class="kn">import</span> <span class="n">PPTXRenderer</span>
+
+<span class="n">PPTXRenderer</span><span class="p">()</span><span class="o">.</span><span class="n">render_document</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="s2">&quot;output.pptx&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The PPTX renderer:</p>
+<ul class="simple">
+<li><p>Uses the blank slide layout (index 6)</p></li>
+<li><p>Places a text box for the title panel</p></li>
+<li><p>Adds text boxes, images, and tables in each grid cell</p></li>
+<li><p>Sets font properties (bold, italic, size, color, font name) on each run</p></li>
+<li><p>Converts pixels to EMUs for PowerPoint positioning</p></li>
+</ul>
+<p>Font names for PPTX must be system font names like <code class="docutils literal notranslate"><span class="pre">&quot;Times</span> <span class="pre">New</span> <span class="pre">Roman&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;Arial&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Consolas&quot;</span></code>, etc.</p>
 </section>
 <section id="htmlrenderer">
 <h2>HTMLRenderer<a class="headerlink" href="#htmlrenderer" title="Link to this heading"></a></h2>
@@ -145,7 +160,7 @@ in text via ReportLab’s Paragraph</p></li>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="styles.html" class="btn btn-neutral float-left" title="Styles &amp; Theming" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="examples/padding_margin.html" class="btn btn-neutral float-right" title="Padding &amp; Margin example" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

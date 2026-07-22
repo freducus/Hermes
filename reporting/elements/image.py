@@ -50,6 +50,10 @@ class ImageElement(BaseElement):
     3. ``scale`` multiplier applied to the native size
     4. ``ORIGINAL`` — native size, scaled down only if
        larger than the container
+    5. When ``preserve_aspect`` is ``True``, the image is
+       scaled uniformly to fit within the content rect,
+       anchored per cell alignment (default ``False`` =
+       stretch to fill).
 
     Args:
         source: Path to the image file.  Extension is used
@@ -70,6 +74,8 @@ class ImageElement(BaseElement):
               (default ``None``)
             - ``fit_mode``: ``ImageFitMode`` or ``str``
               (default ``"original"``)
+            - ``preserve_aspect``: ``bool`` maintain aspect
+              ratio when scaling (default ``False``)
 
     Example::
 
@@ -79,6 +85,7 @@ class ImageElement(BaseElement):
         el2 = ImageElement("photo.jpg",
                           fit_mode=ImageFitMode.FIT_VERTICAL)
         el3 = ImageElement("logo.png", width=120, height=60)
+        el4 = ImageElement("logo.png", preserve_aspect=True)
     """
     source: str = ""
     image_format: ImageFormat = ImageFormat.PNG
@@ -89,6 +96,7 @@ class ImageElement(BaseElement):
     width: Optional[float] = None
     height: Optional[float] = None
     fit_mode: ImageFitMode = ImageFitMode.ORIGINAL
+    preserve_aspect: bool = False
 
     def __init__(self, source: str = "", **kwargs: object) -> None:
         super().__init__(element_type=ElementType.IMAGE, properties=kwargs)
@@ -101,6 +109,7 @@ class ImageElement(BaseElement):
         self.width = kwargs.get("width", None)
         self.height = kwargs.get("height", None)
         self.fit_mode = ImageFitMode(kwargs.get("fit_mode", "original"))
+        self.preserve_aspect = bool(kwargs.get("preserve_aspect", False))
 
         if source.lower().endswith(".jpg") or source.lower().endswith(".jpeg"):
             self.image_format = ImageFormat.JPG

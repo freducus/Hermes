@@ -71,6 +71,12 @@ class TableSizing:
             ``fit_mode == PERCENT`` (default ``1.0``).
         column_distrib: How columns are distributed within the
             table width (default ``ColumnDistrib.CONTENT``).
+        auto_fit_header: If True, shrink header font size so
+            every header label fits within its column width
+            (default ``False``).
+        header_wrap: If True, wrap header text at word
+            boundaries when it exceeds the column width
+            (default ``False``).
 
     Example::
 
@@ -82,9 +88,12 @@ class TableSizing:
             fit_mode=TableFitMode.SHRINK_FONT,
             min_font_size=5.0,
             column_distrib=ColumnDistrib.FIXED,
+            auto_fit_header=True,
         )
     """
     fit_mode: TableFitMode = TableFitMode.STRETCH
     min_font_size: Optional[float] = None
     percent_width: float = 1.0
     column_distrib: ColumnDistrib = ColumnDistrib.CONTENT
+    auto_fit_header: bool = False
+    header_wrap: bool = False

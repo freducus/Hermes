@@ -149,6 +149,8 @@ class GridCellProxy:
             height: Explicit height in points.
             rotation: Rotation angle in degrees.
             opacity: Opacity from ``0.0`` to ``1.0``.
+            preserve_aspect: Maintain aspect ratio (default
+                ``False`` = stretch to fill).
 
         Returns:
             The created ``ImageElement``.

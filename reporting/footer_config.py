@@ -73,7 +73,7 @@ class FooterPanel:
     padding: Edges = dataclasses.field(
         default_factory=lambda: Edges(left=20, right=20, top=4, bottom=4),
     )
-    enabled: bool = True
+    enabled: bool = False
     center_text: str = ""
     logo: Optional[str] = None
 

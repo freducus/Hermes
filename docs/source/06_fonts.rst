@@ -28,7 +28,8 @@ desde la tipografía del tema:
 
 Valores disponibles: ``"h1"``, ``"h2"``, ``"h3"``, ``"heading_1"``,
 ``"heading_2"``, ``"heading_3"``, ``"body"``, ``"caption"``,
-``"code"``, ``"mono"``.
+``"code"``, ``"mono"``, además de cualquier estilo personalizado
+definido en ``Typography.extras`` (ver sección 5).
 
 Los kwargs explícitos (``color``, ``size``, ``bold``, etc.)
 sobrescriben los valores resueltos del tema:
@@ -146,6 +147,23 @@ agrupa varias ``FontSpec`` para los distintos niveles textuales:
    )
 
 Se usa al crear un tema personalizado (``Theme(typography=typo)``).
+
+**Estilos personalizados con ``extras``:**
+Agrega estilos adicionales vía el campo ``extras``. Estos se resuelven
+automáticamente con ``style="..."`` en ``.text()``:
+
+.. code-block:: python
+
+   typo = Typography(
+       heading_1=FontSpec(family="Arial", size=28, bold=True),
+       body=FontSpec(family="Arial", size=11),
+       extras={
+           "callout": FontSpec(family="Arial", size=10,
+                               italic=True, color="#666666"),
+       },
+   )
+
+   slide[0, 0].text("Nota", style="callout")  # resuelve de extras
 
 Salida del ejemplo
 ------------------

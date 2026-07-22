@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Union
 
+from reporting.layout import Percent
 from reporting.layout.geometry import Edges, Rect, Size
 from reporting.layout.grid import Grid, GridCell, GridCellProxy
 from reporting.layout.panel import HAlign, VAlign
@@ -52,8 +53,7 @@ class Slide:
             ``SolidBackground`` / ``GradientBackground`` /
             ``ImageBackground`` instance.
         footer_panel: Footer panel configuration (height, styling,
-            logo).  Falls back to ``self.theme.footer_panel``
-            when ``None``.
+            logo).  Falls back to ``FooterPanel()`` when ``None``.
         base_slide: Another ``Slide`` whose config and grid
             layout are used as a starting point.  Content cells
             are **not** copied.
@@ -87,7 +87,7 @@ class Slide:
         self,
         title: Optional[Union[str, TitleText]] = None,
         subtitle: Optional[Union[str, SubtitleText]] = None,
-        theme: Optional[Union[str, Theme]] = None,
+        theme: Optional[Theme] = None,
         width: Optional[float] = None,
         height: Optional[float] = None,
         title_panel: Optional[TitlePanel] = None,
@@ -102,12 +102,10 @@ class Slide:
 
         resolved_theme: Theme
 
-        # ── Helper: resolve theme (instance, string name, or default) ──
-        def _resolve_theme(t: Optional[Union[str, Theme]]) -> Theme:
+        # ── Helper: resolve theme (instance or default) ──────────────
+        def _resolve_theme(t: Optional[Theme]) -> Theme:
             if t is None:
                 return CorporateTheme()
-            if isinstance(t, str):
-                return Theme.get_registered(t)()
             return t
 
         # ── Resolve from base_slide or theme ─────────────────────────
@@ -138,12 +136,12 @@ class Slide:
         self.theme = resolved_theme
         self.width = width or resolved_width
         self.height = height or resolved_height
-        self.title_panel = title_panel or resolved_title_panel or TitlePanel.from_theme(self.theme)
+        self.title_panel = title_panel or resolved_title_panel or TitlePanel()
         if isinstance(background, str):
             self.background = SolidBackground(background)
         else:
             self.background = background if background is not None else resolved_background
-        self.footer_panel = footer_panel or resolved_footer_panel or self.theme.footer_panel
+        self.footer_panel = footer_panel or resolved_footer_panel or FooterPanel()
 
         # ── Build title/subtitle text objects ────────────────────────
         raw_title: Union[str, TitleText] = title if title is not None else (resolved_title or "")
@@ -179,27 +177,7 @@ class Slide:
             self.subtitle = None
 
         # ── Footer ──────────────────────────────────────────────────
-        if self.footer_panel.enabled:
-            self.footer_layout(rows=1, cols=3)
-            if self.footer_panel.logo:
-                self.footer[0, 0].image(self.footer_panel.logo)
-            else:
-                self.footer[0, 0].text("")
-            if self.footer_panel.center_text:
-                self.footer[0, 1].text(
-                    self.footer_panel.center_text,
-                    size=self.footer_panel.font_size,
-                    color=self.footer_panel.color,
-                    font_name=self.footer_panel.font_name,
-                    alignment="center",
-                )
-            self.footer[0, 2].text(
-                "{page} / {total}",
-                size=self.footer_panel.font_size,
-                color=self.footer_panel.color,
-                font_name=self.footer_panel.font_name,
-                alignment="right",
-            )
+        self.footer_layout(rows=1, cols=3, col_sizes=[Percent(10),Percent(80), Percent(10)])
 
     @property
     def size(self) -> Size:
@@ -389,6 +367,39 @@ class Slide:
             self.width - pad.left - pad.right,
             self.footer_panel.height - pad.top - pad.bottom,
         )
+
+    def _populate_footer_grid(self) -> None:
+        """Fill footer grid cells from the current footer_panel settings.
+
+        Called lazily by renderers just before drawing, so any
+        changes made in ``setup()`` (logo, center_text, font, etc.)
+        are picked up automatically.
+        """
+        if self._footer_grid is None:
+            return
+        if self.footer_panel.logo:
+            self.footer[0, 0].image(self.footer_panel.logo, preserve_aspect=True)
+        else:
+            self.footer[0, 0].text("")
+        if self.footer_panel.center_text:
+            self.footer[0, 1].text(
+                self.footer_panel.center_text,
+                size=self.footer_panel.font_size,
+                color=self.footer_panel.color,
+                font_name=self.footer_panel.font_name,
+                alignment="center",
+            )
+        self.footer[0, 2].text(
+            "{page} / {total}",
+            size=self.footer_panel.font_size,
+            color=self.footer_panel.color,
+            font_name=self.footer_panel.font_name,
+            alignment="right",
+        )
+        if self._footer_grid:
+            self._footer_grid.cells[0][2].panel.v_align = VAlign.MIDDLE
+            self._footer_grid.cells[0][1].panel.v_align = VAlign.MIDDLE
+            self._footer_grid.cells[0][1].panel.h_align = HAlign.RIGHT
 
     @property
     def footer(self) -> _FooterProxy:
@@ -589,12 +600,14 @@ class _CellProxy:
             height: Explicit height in points.  Overrides
                 ``scale`` and ``fit_mode`` for the height axis
                 (default ``None``).
-            rotation: Rotation angle in degrees clockwise
+            rotate: Rotation angle in degrees clockwise
                 (default ``0.0``).
             opacity: Opacity from ``0.0`` (transparent) to
                 ``1.0`` (opaque) (default ``1.0``).
             alt_text: Alternative text for accessibility
                 (default ``""``).
+            preserve_aspect: If ``True``, maintain native aspect
+                ratio (default ``False`` = stretch to fill).
 
         Returns:
             The created ``ImageElement``.
@@ -617,10 +630,11 @@ class _CellProxy:
             figure: A ``matplotlib.figure.Figure`` instance.
 
         Keyword Args:
-            format: Output format — ``"png"`` (raster, default),
-                ``"pdf"`` (vector, requires ``pdfrw``), or
-                ``"svg"`` (requires ``svgwrite``).
-            dpi: Resolution for raster output (default ``150``).
+            format: Output format — ``"pdf"`` (vector, default,
+                requires ``pdfrw``; falls back to PNG if not
+                available), ``"png"`` (raster), or ``"svg"``
+                (vector, requires ``svgwrite``).
+            dpi: Resolution for raster output (default ``300``).
             preserve_aspect: Whether to preserve the figure's
                 aspect ratio (default ``False``).
             container_width_pct: Width as a percentage of the
@@ -710,8 +724,7 @@ class _CellProxy:
         from reporting.tablespec.style import TableStyle as _TableStyle
         if isinstance(spec, _TableSpec) and spec.style == _TableStyle():
             import dataclasses
-            theme_ts = self._slide.theme.table_style
-            spec.style = _TableStyle(**{f.name: getattr(theme_ts, f.name) for f in dataclasses.fields(_TableStyle)})
+            spec.style = _TableStyle(**{f.name: getattr(_TableStyle(), f.name) for f in dataclasses.fields(_TableStyle)})
         el = self._proxy.table_spec(spec, **kwargs)
         self._slide._set_cell_element(self._cell, el)
         return el  # type: ignore[return-value]

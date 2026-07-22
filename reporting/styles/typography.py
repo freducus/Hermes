@@ -43,7 +43,7 @@ class FontSpec:
             object.__setattr__(self, 'color', normalize_color(self.color))
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass
 class Typography:
     """A complete typography set for a report theme.
 
@@ -65,6 +65,10 @@ class Typography:
             (default: ``Courier 10pt``).
         mono: Code block / monospace font
             (default: ``Courier 11pt``).
+        extras: Additional named font specs defined by the user.
+            Accessed as attributes via ``typo.my_style``, and
+            automatically resolved when passed as ``style="my_style"``
+            to ``slide[r, c].text()``.
 
     Example::
 
@@ -74,6 +78,10 @@ class Typography:
             heading_1=FontSpec(family="Arial", size=28, bold=True,
                                color="#1F4E79"),
             body=FontSpec(family="Arial", size=11, color="#333333"),
+            extras={
+                "callout": FontSpec(family="Arial", size=10,
+                                    italic=True, color="#666666"),
+            },
         )
     """
     heading_1: FontSpec = dataclasses.field(
@@ -97,3 +105,39 @@ class Typography:
     mono: FontSpec = dataclasses.field(
         default_factory=lambda: FontSpec(family="Courier", size=11.0)
     )
+    extras: dict[str, FontSpec] = dataclasses.field(default_factory=dict)
+
+    def __getattr__(self, name: str) -> FontSpec:
+        try:
+            return self.extras[name]
+        except KeyError:
+            raise AttributeError(f"Typography has no style {name!r}")
+
+
+_STYLE_ALIASES: dict[str, str] = {
+    "h1": "heading_1",
+    "h2": "heading_2",
+    "h3": "heading_3",
+}
+
+
+def resolve_style_name(
+    style_name: str,
+    typography: Typography,
+) -> Optional[FontSpec]:
+    """Resolve a style name against a ``Typography``.
+
+    Supports aliases (``"h1"`` → ``"heading_1"``, etc.) and
+    falls back to ``getattr``, which includes any user-defined
+    extras.
+
+    Args:
+        style_name: The style name (e.g. ``"heading_1"``, ``"h1"``,
+            ``"callout"``).
+        typography: A ``Typography`` instance to resolve against.
+
+    Returns:
+        The resolved ``FontSpec``, or ``None`` if not found.
+    """
+    name = _STYLE_ALIASES.get(style_name, style_name)
+    return getattr(typography, name, None)

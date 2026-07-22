@@ -110,6 +110,26 @@ def _rect_to_canvas(slide_pt_h: float, rx: float, ry: float, rw: float, rh: floa
     return x, y, w, h
 
 
+def _wrap_text(text: str, font_name: str, font_size: float, max_width: float) -> str:
+    """Insert line breaks so each line fits within *max_width*."""
+    words = text.split(" ")
+    if not words:
+        return text
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        test = f"{current} {word}" if current else word
+        if stringWidth(test, font_name, font_size) <= max_width:
+            current = test
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return "\n".join(lines)
+
+
 class PDFRenderer(BaseRenderer):
     """Render a report to PDF using ReportLab with absolute positioning.
 
@@ -372,10 +392,11 @@ class PDFRenderer(BaseRenderer):
         if c is None:
             return
 
-        # Skip entirely when no footer grid has been set up
-        if slide._footer_grid is None:
+        # Skip entirely when footer is disabled
+        if not slide.footer_panel.enabled:
             return
 
+        slide._populate_footer_grid()
         fp = slide.footer_panel
         fh = slide.footer_panel.height
         pad = fp.padding
@@ -412,9 +433,9 @@ class PDFRenderer(BaseRenderer):
                 element = cell.element
                 if element is None:
                     continue
-                self._render_footer_element(element, adj)
+                self._render_footer_element(element, adj, panel=cell.panel)
 
-    def _render_footer_element(self, element: Any, rect: Rect) -> None:
+    def _render_footer_element(self, element: Any, rect: Rect, panel: Optional[Any] = None) -> None:
         """Render a single footer element, replacing ``{page}`` / ``{total}`` placeholders."""
         from reporting.elements.text import TextElement
 
@@ -434,7 +455,7 @@ class PDFRenderer(BaseRenderer):
                     for run in block.runs:
                         run.text = run.text.replace("{page}", str(self._page_num))
                         run.text = run.text.replace("{total}", str(self._total_pages))
-        self._render_element(element, rect, frame_padding=0)
+        self._render_element(element, rect, panel=panel, frame_padding=0)
 
     def _render_panel_background(self, rect: Rect, bg_color: Optional[str] = None) -> None:
         """Fill the panel rectangle with the given background colour."""
@@ -458,7 +479,7 @@ class PDFRenderer(BaseRenderer):
         if panel:
             rect = self._compute_content_rect(rect, element, panel)
         if element.element_type == ElementType.TEXT:
-            self._render_text(element, rect, frame_padding=frame_padding)
+            self._render_text(element, rect, frame_padding=frame_padding, panel=panel)
         elif element.element_type == ElementType.IMAGE:
             self._render_image(element, rect)
         elif element.element_type == ElementType.FIGURE:
@@ -485,17 +506,32 @@ class PDFRenderer(BaseRenderer):
             if not blocks or not blocks[0].runs:
                 return Size(rect.width, rect.height)
             run = blocks[0].runs[0]
+            from reporting.styles.typography import resolve_style_name
             theme = getattr(self, '_current_slide', None)
             body = theme.theme.typography.body if theme is not None else None
-            fallback_family = body.family if body is not None else "Helvetica"
-            fallback_size = body.size if body is not None else 10.0
+            resolved = None
+            if "style" in element.properties and theme is not None:
+                resolved = resolve_style_name(element.properties["style"], theme.theme.typography)
+            fallback = resolved or body
+            fallback_family = fallback.family if fallback is not None else "Helvetica"
+            fallback_size = fallback.size if fallback is not None else 10.0
             font_name = _ps_font_name(run.font_name or fallback_family)
             font_size = run.size or fallback_size
+            avail_w_pt = _px_to_pt(rect.width) - 8
+            lines_from_nl = run.text.count("\n")
+            text_parts = run.text.split("\n")
             try:
-                text_w = stringWidth(run.text, font_name, font_size)
+                part_widths = [stringWidth(p, font_name, font_size) for p in text_parts]
             except Exception:
-                text_w = font_size * len(run.text) * 0.4
-            text_h = font_size * 1.4
+                part_widths = [font_size * len(p) * 0.4 for p in text_parts]
+            full_w = max(part_widths) if part_widths else 0
+            if avail_w_pt > 0 and full_w > avail_w_pt:
+                lines = math.ceil(full_w / avail_w_pt)
+            else:
+                lines = 1
+            lines += lines_from_nl
+            text_h = lines * font_size * 1.4
+            text_w = min(full_w, avail_w_pt)
             return Size(text_w + 8, text_h + 8)
 
         if element.element_type == ElementType.TABLESPEC:
@@ -596,19 +632,7 @@ class PDFRenderer(BaseRenderer):
         element: Any,
         panel: Any,
     ) -> Rect:
-        """Compute the rendering rect from element sizing + panel alignment + margin.
-
-        Flow:
-          1. Subtract ``panel.margin`` from the cell rect.
-          2. Compute the element's natural size (via ``_estimate_content_size``).
-          3. Per-axis sizing: if alignment is STRETCH, use the full container
-             dimension; otherwise clamp natural size to the container.
-          4. Position according to ``panel.h_align`` / ``panel.v_align``.
-
-        ``_estimate_content_size`` returns **points**;  the rect
-        dimensions are in pixels, so convert before comparing.
-        """
-        # 1 — margin
+        """Compute the rendering rect from element sizing + panel alignment + margin."""
         if panel.margin and any(getattr(panel.margin, a) for a in ("top", "bottom", "left", "right")):
             m = panel.margin
             rect = Rect(
@@ -621,15 +645,26 @@ class PDFRenderer(BaseRenderer):
         if rect.width <= 0 or rect.height <= 0:
             return Rect(rect.x, rect.y, max(rect.width, 1), max(rect.height, 1))
 
-        nat = self._estimate_content_size(element, rect)
-        cw = rect.width if panel.h_align == HAlign.STRETCH else min(_pt_to_px(nat.width), rect.width)
-        ch = rect.height if panel.v_align == VAlign.STRETCH else min(_pt_to_px(nat.height), rect.height)
+        preserve = getattr(element, "preserve_aspect", False)
+        if preserve:
+            if getattr(element, "figure", None) is not None:
+                return self._compute_aspect_content_rect(rect, element.figure, panel=panel)
+            if element.element_type == ElementType.IMAGE:
+                nat = self._estimate_content_size(element, rect)
+                return self._compute_aspect_content_rect(rect, nat.width, nat.height, panel=panel)
 
-        x = rect.x
-        if panel.h_align == HAlign.CENTER:
-            x = rect.x + (rect.width - cw) / 2
-        elif panel.h_align == HAlign.RIGHT:
-            x = rect.x + rect.width - cw
+        nat = self._estimate_content_size(element, rect)
+        if element.element_type == ElementType.TEXT:
+            cw = rect.width
+            x = rect.x
+        else:
+            cw = rect.width if panel.h_align == HAlign.STRETCH else min(_pt_to_px(nat.width), rect.width)
+            x = rect.x
+            if panel.h_align == HAlign.CENTER:
+                x = rect.x + (rect.width - cw) / 2
+            elif panel.h_align == HAlign.RIGHT:
+                x = rect.x + rect.width - cw
+        ch = rect.height if panel.v_align == VAlign.STRETCH else min(_pt_to_px(nat.height), rect.height)
 
         y = rect.y
         if panel.v_align == VAlign.MIDDLE:
@@ -639,15 +674,82 @@ class PDFRenderer(BaseRenderer):
 
         return Rect(x, y, cw, ch)
 
-    def _render_text(self, element: TextElement, rect: Any, frame_padding: float = 4.0) -> None:
+    def _compute_aspect_content_rect(
+        self,
+        rect: Rect,
+        fig_or_size: Any,
+        size_h: Optional[float] = None,
+        panel: Any = None,
+    ) -> Rect:
+        """Compute the largest rect inside *rect* that preserves the content's aspect ratio,
+        then position it according to panel alignment.
+
+        If ``size_h`` is ``None``, ``fig_or_size`` is treated as a matplotlib Figure
+        (with ``get_figwidth()``/``get_figheight()``).  Otherwise ``fig_or_size`` is
+        taken as the content width in points and ``size_h`` as the height in points.
+        """
+        if size_h is None:
+            cw_pt = fig_or_size.get_figwidth()
+            ch_pt = fig_or_size.get_figheight()
+        else:
+            cw_pt = fig_or_size
+            ch_pt = size_h
+        aspect = cw_pt / max(ch_pt, 1e-6)
+
+        cell_w_pt = _px_to_pt(rect.width)
+        cell_h_pt = _px_to_pt(rect.height)
+        cell_aspect = cell_w_pt / max(cell_h_pt, 1e-6)
+
+        if aspect > cell_aspect:
+            cw_pt = cell_w_pt
+            ch_pt = cell_w_pt / aspect
+        else:
+            ch_pt = cell_h_pt
+            cw_pt = cell_h_pt * aspect
+
+        cw = _pt_to_px(cw_pt)
+        ch = _pt_to_px(ch_pt)
+        cw = min(cw, rect.width)
+        ch = min(ch, rect.height)
+
+        x = rect.x
+        if panel and panel.h_align == HAlign.CENTER:
+            x = rect.x + (rect.width - cw) / 2
+        elif panel and panel.h_align == HAlign.RIGHT:
+            x = rect.x + rect.width - cw
+
+        y = rect.y
+        if panel and panel.v_align == VAlign.MIDDLE:
+            y = rect.y + (rect.height - ch) / 2
+        elif panel and panel.v_align == VAlign.BOTTOM:
+            y = rect.y + rect.height - ch
+
+        return Rect(x, y, cw, ch)
+
+    def _render_text(self, element: TextElement, rect: Any, frame_padding: float = 4.0,
+                     panel: Optional[Any] = None) -> None:
         c = self._canvas
         if c is None:
             return
 
+        from reporting.styles.typography import resolve_style_name
+
         theme = getattr(self, '_current_slide', None)
         body = theme.theme.typography.body if theme is not None else None
+        resolved = None
+        if "style" in element.properties and theme is not None:
+            resolved = resolve_style_name(element.properties["style"], theme.theme.typography)
 
         x, y, w, h = _rect_to_canvas(self._slide_pt_h, rect.x, rect.y, rect.width, rect.height)
+
+        from reportlab.platypus import Spacer
+        from reporting.layout.panel import VAlign
+
+        fp = frame_padding
+        avail_w = w - 2 * fp
+        paragraphs: list = []
+        total_needed = 0.0
+        first = True
 
         for block in element.blocks:
             parts: list[str] = []
@@ -675,28 +777,52 @@ class PDFRenderer(BaseRenderer):
                     close = "</font>" + close
                     if block_size is None:
                         block_size = run.size
-                parts.append(f"{tag}{run.text}{close}")
+                text = run.text.replace("\n", "<br/>")
+                parts.append(f"{tag}{text}{close}")
             html = "".join(parts)
 
-            fallback_family = body.family if body is not None else "Helvetica"
-            fallback_size = body.size if body is not None else 12.0
-            fs = block_size or max(h * 0.12, 6)
+            fallback = resolved or body
+            fallback_family = fallback.family if fallback is not None else "Helvetica"
+            fallback_size = fallback.size if fallback is not None else 12.0
+            fs = block_size or fallback_size or max(h * 0.12, 6)
+
+            from reporting.layout.panel import HAlign as HAlignE
+            if panel and panel.h_align != HAlignE.STRETCH:
+                panel_rl_map = {
+                    HAlignE.LEFT: TA_LEFT,
+                    HAlignE.CENTER: TA_CENTER,
+                    HAlignE.RIGHT: TA_RIGHT,
+                }
+                rl_align = panel_rl_map.get(panel.h_align, TA_LEFT)
+            else:
+                rl_align = _align_to_reportlab(block.alignment)
+
             style = ParagraphStyle(
                 "CellText",
                 fontName=_ps_font_name(block_font or fallback_family),
                 fontSize=fs,
                 leading=max(fs * 1.2, 8),
-                alignment=_align_to_reportlab(block.alignment),
-                spaceBefore=1,
-                spaceAfter=1,
+                alignment=rl_align,
             )
             p = Paragraph(html, style)
-            c.saveState()
-            c.translate(x, y)
-            fp = frame_padding
-            frame = Frame(0, 0, w, h, leftPadding=fp, rightPadding=fp, topPadding=fp, bottomPadding=fp, id="cell")
-            frame.addFromList([p], c)
-            c.restoreState()
+            pw, ph = p.wrap(avail_w, h - 2 * fp)
+
+            if not first and block.spacing_before > 0:
+                paragraphs.append(Spacer(1, block.spacing_before))
+                total_needed += block.spacing_before
+            paragraphs.append(p)
+            total_needed += ph
+            if block.spacing_after > 0:
+                paragraphs.append(Spacer(1, block.spacing_after))
+                total_needed += block.spacing_after
+            first = False
+
+        total_needed += 2 * fp
+        frame_h = total_needed if (panel and panel.v_align == VAlign.BOTTOM and total_needed < h) else max(h, total_needed)
+        frame = Frame(x, y, w, frame_h, leftPadding=fp, rightPadding=fp, topPadding=fp, bottomPadding=fp, id="cell")
+        c.saveState()
+        frame.addFromList(paragraphs, c)
+        c.restoreState()
 
     def _render_image(self, element: ImageElement, rect: Any) -> None:
         c = self._canvas
@@ -704,9 +830,18 @@ class PDFRenderer(BaseRenderer):
             return
         x, y, w, h = _rect_to_canvas(self._slide_pt_h, rect.x, rect.y, rect.width, rect.height)
         try:
-            c.drawImage(element.source, x, y, width=w, height=h, preserveAspectRatio=True, anchor='sw')
+            c.saveState()
+            c.drawImage(element.source, x, y, width=w, height=h,
+                        preserveAspectRatio=element.preserve_aspect, anchor='sw', mask='auto')
+            if element.opacity < 1.0:
+                c.setFillColorCMYK(0, 0, 0, 0, alpha=1.0 - element.opacity)
+                c.rect(x, y, w, h, fill=1, stroke=0)
+            c.restoreState()
         except Exception:
-            pass
+            try:
+                c.restoreState()
+            except Exception:
+                pass
 
     def _render_figure(self, element: FigureElement, rect: Any) -> None:
         c = self._canvas
@@ -753,20 +888,19 @@ class PDFRenderer(BaseRenderer):
             if preserve_aspect:
                 fw_pt, fh_pt = self._fitted_size(fig, w, h)
                 fig.set_size_inches(fw_pt / 72, fh_pt / 72)
-                fig.savefig(buf, format="pdf", bbox_inches="tight")
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fig.tight_layout(pad=0.3)
+                except Exception:
+                    pass
+                fig.savefig(buf, format="pdf")
                 buf.seek(0)
                 reader = PdfReader(buf)
                 xobj = pagexobj(reader.pages[0])
                 name = makerl(c, xobj)
-                bbox = xobj.BBox
-                bw_pt = bbox[2] - bbox[0]
-                bh_pt = bbox[3] - bbox[1]
-                if bw_pt > w or bh_pt > h:
-                    scale = min(w / max(bw_pt, 1), h / max(bh_pt, 1))
-                    bw_pt *= scale
-                    bh_pt *= scale
-                dx = x + (w - bw_pt) / 2
-                dy = y + (h - bh_pt) / 2
+                dx = x + (w - fw_pt) / 2
+                dy = y + (h - fh_pt) / 2
                 c.saveState()
                 c.translate(dx, dy)
                 c.doForm(name)
@@ -795,7 +929,7 @@ class PDFRenderer(BaseRenderer):
 
     def _render_figure_raster(self, fig: Any, element: Any, c: Any, x: float, y: float,
                                w: float, h: float, preserve_aspect: bool = False) -> None:
-        dpi = element.dpi if element else 150
+        dpi = element.dpi if element else 300
         old_size = fig.get_size_inches()
         fd, tmp_path = tempfile.mkstemp(suffix=".png")
         os.close(fd)
@@ -803,22 +937,16 @@ class PDFRenderer(BaseRenderer):
             if preserve_aspect:
                 fw_pt, fh_pt = self._fitted_size(fig, w, h)
                 fig.set_size_inches(fw_pt / 72, fh_pt / 72)
-                fig.savefig(tmp_path, dpi=dpi, bbox_inches="tight", format="png")
                 try:
-                    from PIL import Image as PILImage
-                    with PILImage.open(tmp_path) as img:
-                        tw_px, th_px = img.size
-                    tw_pt = tw_px * 72.0 / dpi
-                    th_pt = th_px * 72.0 / dpi
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fig.tight_layout(pad=0.3)
                 except Exception:
-                    tw_pt, th_pt = fw_pt, fh_pt
-                if tw_pt > w or th_pt > h:
-                    scale = min(w / max(tw_pt, 1), h / max(th_pt, 1))
-                    tw_pt *= scale
-                    th_pt *= scale
-                dx = x + (w - tw_pt) / 2
-                dy = y + (h - th_pt) / 2
-                c.drawImage(tmp_path, dx, dy, width=tw_pt, height=th_pt, anchor='sw')
+                    pass
+                fig.savefig(tmp_path, dpi=dpi, bbox_inches="tight", format="png")
+                dx = x + (w - fw_pt) / 2
+                dy = y + (h - fh_pt) / 2
+                c.drawImage(tmp_path, dx, dy, width=fw_pt, height=fh_pt, anchor='sw')
             else:
                 fig.set_size_inches(w / 72, h / 72)
                 try:
@@ -827,7 +955,7 @@ class PDFRenderer(BaseRenderer):
                         fig.tight_layout(pad=0.3)
                 except Exception:
                     pass
-                fig.savefig(tmp_path, dpi=dpi, format="png")
+                fig.savefig(tmp_path, dpi=dpi, bbox_inches="tight", format="png")
                 c.drawImage(tmp_path, x, y, width=w, height=h, anchor='sw')
         finally:
             fig.set_size_inches(old_size)
@@ -838,7 +966,7 @@ class PDFRenderer(BaseRenderer):
         if c is None or element.data is None:
             return
 
-        ts = self._current_slide.theme.table_style if hasattr(self, '_current_slide') else None
+        ts = None
 
         try:
             df = element.data
@@ -867,29 +995,34 @@ class PDFRenderer(BaseRenderer):
             header_size = max(min(row_h_pt * 0.35, 9), 4)
 
             border_c = colors.Color(0.85, 0.85, 0.85)
-            header_bg = colors.Color(0.27, 0.45, 0.77)
-            header_text = colors.white
             border_w = 0.5
             if ts is not None:
                 border_c = Color.parse(ts.border_color).reportlab_color
-                header_bg = Color.parse(ts.header_background).reportlab_color
-                header_text = Color.parse(ts.header_text_color).reportlab_color
                 border_w = ts.border_width
 
             cmds: list[tuple] = [
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("FONTSIZE", (0, 0), (-1, 0), header_size),
                 ("FONTSIZE", (0, 1), (-1, -1), body_size),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("GRID", (0, 0), (-1, -1), border_w, border_c),
-                ("BACKGROUND", (0, 0), (-1, 0), header_bg),
-                ("TEXTCOLOR", (0, 0), (-1, 0), header_text),
                 ("TOPPADDING", (0, 0), (-1, -1), 1),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
                 ("LEFTPADDING", (0, 0), (-1, -1), 2),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 2),
             ]
+
+            if element.header_style:
+                header_bg = colors.Color(0.27, 0.45, 0.77)
+                header_text = colors.white
+                if ts is not None:
+                    header_bg = Color.parse(ts.header_background).reportlab_color
+                    header_text = Color.parse(ts.header_text_color).reportlab_color
+                cmds += [
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("BACKGROUND", (0, 0), (-1, 0), header_bg),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), header_text),
+                ]
 
             if element.zebra:
                 even_color = colors.Color(0.95, 0.95, 0.95)
@@ -961,7 +1094,12 @@ class PDFRenderer(BaseRenderer):
 
             if add_header:
                 for ci in range(num_cols):
-                    data_rows[0][ci] = spec.columns[ci].label or spec.columns[ci].name
+                    label = spec.columns[ci].label or spec.columns[ci].name
+                    if sizing.header_wrap:
+                        pad_left, _, pad_right, _ = _cell_padding(ts.padding)
+                        avail_label_w = max(col_widths[ci] - pad_left - pad_right, 1)
+                        label = _wrap_text(label, ts.font_name or "Helvetica", header_fs, avail_label_w)
+                    data_rows[0][ci] = label
 
             self._build_tablespec_cells(
                 spec, data_rows, cmds, num_cols, num_rows, hr,
@@ -1080,6 +1218,9 @@ class PDFRenderer(BaseRenderer):
             else:
                 col_widths = [max(avail_w / max(len(spec.columns), 1), 8)] * len(spec.columns)
 
+        if sizing.auto_fit_header:
+            header_fs = self._fit_header_font(spec, col_widths, header_fs, min_fs)
+
         return col_widths, body_fs, header_fs
 
     def _shrink_font(
@@ -1158,6 +1299,23 @@ class PDFRenderer(BaseRenderer):
 
         return col_widths
 
+    def _fit_header_font(
+        self,
+        spec: Any,
+        col_widths: list[float],
+        header_fs: float,
+        min_fs: float,
+    ) -> float:
+        """Reduce header font size until every header label fits its column."""
+        font_name = spec.style.font_name
+        for col_idx, col in enumerate(spec.columns):
+            label = col.label or col.name
+            w = stringWidth(label, font_name, header_fs)
+            while w > col_widths[col_idx] and header_fs > min_fs:
+                header_fs = max(header_fs - 0.5, min_fs)
+                w = stringWidth(label, font_name, header_fs)
+        return header_fs
+
     def _build_tablespec_cells(
         self,
         spec: Any,
@@ -1183,6 +1341,18 @@ class PDFRenderer(BaseRenderer):
             row = spec.rows[r]
             is_header = False if has_auto_header else (r < header_rows)
             font_size = header_size if is_header else body_size
+
+            # Apply zebra before cell-specific styles so individual cell
+            # backgrounds can override the row colour (important for merged cells).
+            if not is_header and ts.zebra:
+                try:
+                    row_bg = ts.even_row_color if r % 2 == 0 else ts.odd_row_color
+                    if row_bg:
+                        zc = Color.parse(row_bg).reportlab_color
+                        cmds.append(("BACKGROUND", (0, tr), (num_cols - 1, tr), zc))
+                except Exception:
+                    pass
+
             grid_c = 0
             cell_idx = 0
 
@@ -1259,15 +1429,6 @@ class PDFRenderer(BaseRenderer):
 
                 grid_c += colspan
                 cell_idx += 1
-
-            if not is_header and ts.zebra:
-                try:
-                    row_bg = ts.even_row_color if r % 2 == 0 else ts.odd_row_color
-                    if row_bg:
-                        zc = Color.parse(row_bg).reportlab_color
-                        cmds.append(("BACKGROUND", (0, tr), (num_cols - 1, tr), zc))
-                except Exception:
-                    pass
 
         bc = Color.parse(ts.border_color).reportlab_color
         bw = max(ts.border_width, 0.1)

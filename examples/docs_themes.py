@@ -12,52 +12,36 @@ from reporting.layout.geometry import Edges
 from reporting.styles.theme import CorporateTheme, DarkTheme, LightTheme, Theme
 from reporting.styles.colors import ColorPalette, Color
 from reporting.styles.typography import Typography, FontSpec
-from reporting.tablespec.style import TableStyle
 from reporting.renderers.pdf.renderer import PDFRenderer
 from reporting.renderers.html.renderer import HTMLRenderer
 
 OUT_DIR = Path(__file__).parent
 
 
-@Theme.register("ocean")
 class OceanTheme(Theme):
     """Custom ocean-themed palette (teal/blue on light cyan)."""
 
     def __init__(self) -> None:
-        palette = ColorPalette(
-            primary=Color.from_hex("#006994"),
-            secondary=Color.from_hex("#00B4D8"),
-            accent=Color.from_hex("#FF6B35"),
-            background=Color.from_hex("#E0F7FA"),
-            text_primary=Color.from_hex("#003B5C"),
-            text_secondary=Color.from_hex("#0077B6"),
-            border=Color.from_hex("#90E0EF"),
-            error=Color.from_hex("#C00000"),
-            warning=Color.from_hex("#FFC000"),
-            success=Color.from_hex("#2E7D32"),
-        )
-        typography = Typography(
-            heading_1=FontSpec("Helvetica", 28, bold=True, color="#006994"),
-            heading_2=FontSpec("Helvetica", 22, bold=True, color="#00B4D8"),
-            body=FontSpec("Helvetica", 11, color="#003B5C"),
-            caption=FontSpec("Helvetica", 9, italic=True, color="#0077B6"),
-        )
-        table_style = TableStyle()
-
-        footer = FooterPanel(
-            enabled=True, separator_color=palette.border.css,
-            font_name=typography.caption.family,
-            font_size=typography.caption.size,
-            color=palette.text_secondary.css,
-            center_text="Ocean Report",
-        )
         super().__init__(
-            name="Ocean",
             page_size=(960, 540),
-            palette=palette,
-            typography=typography,
-            table_style=table_style,
-            footer_panel=footer,
+            palette=ColorPalette(
+                primary=Color.from_hex("#006994"),
+                secondary=Color.from_hex("#00B4D8"),
+                accent=Color.from_hex("#FF6B35"),
+                background=Color.from_hex("#E0F7FA"),
+                text_primary=Color.from_hex("#003B5C"),
+                text_secondary=Color.from_hex("#0077B6"),
+                border=Color.from_hex("#90E0EF"),
+                error=Color.from_hex("#C00000"),
+                warning=Color.from_hex("#FFC000"),
+                success=Color.from_hex("#2E7D32"),
+            ),
+            typography=Typography(
+                heading_1=FontSpec("Helvetica", 28, bold=True, color="#006994"),
+                heading_2=FontSpec("Helvetica", 22, bold=True, color="#00B4D8"),
+                body=FontSpec("Helvetica", 11, color="#003B5C"),
+                caption=FontSpec("Helvetica", 9, italic=True, color="#0077B6"),
+            ),
         )
 
 
@@ -119,7 +103,7 @@ def main() -> None:
     slide4[0, 0].text(
         "This slide uses a fully custom theme:\n"
         "- Custom ColorPalette (teal/blue/orange)\n"
-        "- @Theme.register('ocean') for name-based lookup\n"
+        "- OceanTheme subclass of Theme\n"
         "- SolidBackground from palette",
         style="body",
     )
@@ -127,17 +111,16 @@ def main() -> None:
 
     # ---- Slide 5: (removed) ---- #
 
-    # ---- Slide 6: Registered theme via name string ----
+    # ---- Slide 6: OceanTheme passed directly ----
     slide6 = Slide(
-        "Ocean by Name",
-        theme="ocean",
-        footer_panel=FooterPanel(center_text="Registered | Docs"),
+        "Ocean Theme (direct)",
+        theme=OceanTheme(),
+        footer_panel=FooterPanel(center_text="Ocean | Docs"),
     )
     slide6.grid_layout(rows=1, cols=1, padding=Edges.all(20))
     slide6[0, 0].text(
-        "Themes can be registered with @Theme.register('name')\n"
-        "and referenced by a plain string.\n\n"
-        'Slide("Title", theme="ocean")',
+        "The OceanTheme subclass can be passed directly:\n\n"
+        'Slide("Title", theme=OceanTheme())',
         style="body",
     )
     doc.add_slide(slide6)

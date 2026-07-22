@@ -182,7 +182,8 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
         # Footer rendering
         footer_html = ""
         fh = slide.footer_panel.height
-        if fh > 0 and slide._footer_grid is not None:
+        if fh > 0 and slide.footer_panel.enabled:
+            slide._populate_footer_grid()
             fp = slide.footer_panel
             pad = fp.padding
             offset_y_px = slide.height - fh + pad.top
@@ -219,7 +220,7 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
                         rect.width,
                         rect.height,
                     )
-                    el_html = self._render_element_html(element, adj)
+                    el_html = self._render_element_html(element, adj, panel=cell.panel)
                     footer_parts.append(el_html)
             if footer_parts:
                 sep_html = ""
@@ -319,6 +320,12 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
         return style
 
     def _render_text_html(self, element: TextElement, style: str) -> str:
+        from reporting.styles.typography import resolve_style_name
+        theme = getattr(self, '_current_slide', None)
+        resolved = None
+        if "style" in element.properties and theme is not None:
+            resolved = resolve_style_name(element.properties["style"], theme.theme.typography)
+
         parts: list[str] = []
         for block in element.blocks:
             text_parts: list[str] = []
@@ -330,11 +337,14 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
                     span_style += "font-style:italic;"
                 if run.color:
                     span_style += f"color:{Color.parse(run.color).css};"
-                if run.size:
-                    span_style += f"font-size:{run.size}px;"
-                if run.font_name:
-                    span_style += f"font-family:{run.font_name};"
-                text_parts.append(f'<span style="{span_style}">{run.text}</span>')
+                fs = run.size or (resolved.size if resolved else None)
+                if fs:
+                    span_style += f"font-size:{fs}px;"
+                fn = run.font_name or (resolved.family if resolved else None)
+                if fn:
+                    span_style += f"font-family:{fn};"
+                text = run.text.replace("\n", "<br/>")
+                text_parts.append(f'<span style="{span_style}">{text}</span>')
             text_html = "".join(text_parts)
             align_class = f"text-{block.alignment.value}"
             parts.append(f'<div class="text-block {align_class}" style="text-align:{block.alignment.value}">{text_html}</div>')
@@ -344,7 +354,8 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
     def _render_image_html(self, element: ImageElement, style: str) -> str:
         if not element.source or not os.path.exists(element.source):
             return f"""<div class="cell" style="{style}"><p>Image not found: {element.source}</p></div>"""
-        return f"""<div class="cell" style="{style}"><img src="{element.source}" style="width:100%;height:100%;object-fit:contain" alt="{element.alt_text}"></div>"""
+        obj_fit = "contain" if element.preserve_aspect else "fill"
+        return f"""<div class="cell" style="{style}"><img src="{element.source}" style="width:100%;height:100%;object-fit:{obj_fit}" alt="{element.alt_text}"></div>"""
 
     def _render_figure_html(self, element: FigureElement, style: str) -> str:
         if element.figure is None:
@@ -381,7 +392,7 @@ body {{ background: {pal.background.css}; font-family: {theme.typography.body.fa
             return f"""<div class="cell" style="{style}"></div>"""
 
         theme = getattr(self, '_current_slide', None)
-        ts = theme.theme.table_style if theme is not None else None
+        ts = None
 
         header_bg = Color.parse(ts.header_background).css if ts else "#4472C4"
         header_fg = Color.parse(ts.header_text_color).css if ts else "#ffffff"

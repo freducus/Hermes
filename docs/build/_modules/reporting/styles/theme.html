@@ -42,7 +42,6 @@
               <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../01_basic_example.html">Documento, Slide, Grid y Renderizado</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -55,8 +54,6 @@
 <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples/padding_margin.html">Padding &amp; Margin example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples/image_demo.html">Image embedding demo</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples/figure_alignment.html">Figure alignment example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples/comprehensive.html">Comprehensive example</a></li>
 </ul>
 
@@ -90,116 +87,35 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">Color</span><span class="p">,</span> <span class="n">ColorPalette</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.typography</span><span class="w"> </span><span class="kn">import</span> <span class="n">Typography</span><span class="p">,</span> <span class="n">FontSpec</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.footer_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FooterConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.slide_type</span><span class="w"> </span><span class="kn">import</span> <span class="n">SlideTypeConfig</span>
-
-<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">reporting.tablespec.style</span><span class="w"> </span><span class="kn">import</span> <span class="n">TableStyle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reporting.styles.table_style</span><span class="w"> </span><span class="kn">import</span> <span class="n">TableStyle</span>
 
 
 <div class="viewcode-block" id="Theme">
-<a class="viewcode-back" href="../../../api.html#reporting.styles.theme.Theme">[docs]</a>
+<a class="viewcode-back" href="../../../api.html#reporting.styles.Theme">[docs]</a>
 <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Theme</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base report theme combining colours, typography, and table styling.</span>
-
-<span class="sd">    Subclasses (``CorporateTheme``, ``DarkTheme``, ``LightTheme``)</span>
-<span class="sd">    provide pre-built palettes.  A custom theme can be created by</span>
-<span class="sd">    instantiating ``Theme`` directly with any ``ColorPalette``,</span>
-<span class="sd">    ``Typography``, and ``TableStyle``.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        name: Theme name for identification.</span>
-<span class="sd">        palette: The colour palette.</span>
-<span class="sd">        typography: Font specifications for all text levels.</span>
-<span class="sd">        table_style: Table style rules (column widths, zebra, etc.).</span>
-<span class="sd">        footer: Footer configuration (height, separator, font).</span>
-
-<span class="sd">    Example::</span>
-
-<span class="sd">        from reporting.styles.theme import Theme</span>
-<span class="sd">        from reporting.styles.colors import ColorPalette, Color</span>
-<span class="sd">        from reporting.styles.typography import Typography, FontSpec</span>
-<span class="sd">        from reporting.tablespec.style import TableStyle</span>
-
-<span class="sd">        theme = Theme(</span>
-<span class="sd">            name=&quot;Custom&quot;,</span>
-<span class="sd">            palette=ColorPalette(</span>
-<span class="sd">                primary=Color.from_hex(&quot;#333&quot;),</span>
-<span class="sd">                secondary=Color.from_hex(&quot;#666&quot;),</span>
-<span class="sd">                # ... other colours</span>
-<span class="sd">            ),</span>
-<span class="sd">            typography=Typography(),</span>
-<span class="sd">            table_style=TableStyle(),</span>
-<span class="sd">        )</span>
-<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">palette</span><span class="p">:</span> <span class="n">ColorPalette</span>
     <span class="n">typography</span><span class="p">:</span> <span class="n">Typography</span>
-    <span class="n">table_style</span><span class="p">:</span> <span class="s2">&quot;TableStyle&quot;</span>
-    <span class="n">footer</span><span class="p">:</span> <span class="n">FooterConfig</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">FooterConfig</span><span class="p">)</span>
-    <span class="n">slide_types</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SlideTypeConfig</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">table_style</span><span class="p">:</span> <span class="n">TableStyle</span>
 
-<div class="viewcode-block" id="Theme.get_slide_type">
-<a class="viewcode-back" href="../../../api.html#reporting.styles.theme.Theme.get_slide_type">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_slide_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SlideTypeConfig</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Look up a slide type by name, falling back to a default if missing.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            name: The slide type name.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            The matching ``SlideTypeConfig`` or a fresh default.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slide_types</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="n">name</span><span class="p">,</span>
-            <span class="n">SlideTypeConfig</span><span class="o">.</span><span class="n">from_theme</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">),</span>
-        <span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="Theme.get_heading_style">
-<a class="viewcode-back" href="../../../api.html#reporting.styles.theme.Theme.get_heading_style">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_heading_style</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FontSpec</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the font specification for a heading level.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            level: 1, 2, or 3 for the corresponding heading.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            The ``FontSpec`` for that level, or ``body``</span>
-<span class="sd">            if the level is outside 1..3.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="mi">1</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">typography</span><span class="o">.</span><span class="n">heading_1</span><span class="p">,</span>
             <span class="mi">2</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">typography</span><span class="o">.</span><span class="n">heading_2</span><span class="p">,</span>
             <span class="mi">3</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">typography</span><span class="o">.</span><span class="n">heading_3</span><span class="p">,</span>
         <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">typography</span><span class="o">.</span><span class="n">body</span><span class="p">)</span></div>
-</div>
 
 
 
 <div class="viewcode-block" id="CorporateTheme">
-<a class="viewcode-back" href="../../../api.html#reporting.styles.theme.CorporateTheme">[docs]</a>
+<a class="viewcode-back" href="../../../api.html#reporting.styles.CorporateTheme">[docs]</a>
 <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CorporateTheme</span><span class="p">(</span><span class="n">Theme</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Default corporate theme (blue/grey palette, Arial fonts).</span>
-
-<span class="sd">    Uses the corporate colour scheme and Arial/Calibri fonts</span>
-<span class="sd">    with a white background.</span>
-
-<span class="sd">    Example::</span>
-
-<span class="sd">        from reporting.styles.theme import CorporateTheme</span>
-
-<span class="sd">        theme = CorporateTheme()</span>
-<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">reporting.tablespec.style</span><span class="w"> </span><span class="kn">import</span> <span class="n">TableStyle</span>
-
         <span class="n">palette</span> <span class="o">=</span> <span class="n">ColorPalette</span><span class="p">(</span>
             <span class="n">primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#1F4E79&quot;</span><span class="p">),</span>
             <span class="n">secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#2E75B6&quot;</span><span class="p">),</span>
@@ -222,104 +138,15 @@
             <span class="n">mono</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier New&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#333333&quot;</span><span class="p">),</span>
         <span class="p">)</span>
         <span class="n">table_style</span> <span class="o">=</span> <span class="n">TableStyle</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Corporate&quot;</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span> <span class="n">table_style</span><span class="o">=</span><span class="n">table_style</span><span class="p">,</span>
-                         <span class="n">footer</span><span class="o">=</span><span class="n">FooterConfig</span><span class="p">(</span><span class="n">center_text</span><span class="o">=</span><span class="s2">&quot;Corporate Report&quot;</span><span class="p">),</span>
-                         <span class="n">slide_types</span><span class="o">=</span><span class="n">_builtin_slide_types</span><span class="p">(</span>
-                             <span class="n">theme_palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span>
-                             <span class="n">theme_typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span>
-                             <span class="n">center_text</span><span class="o">=</span><span class="s2">&quot;Corporate Report&quot;</span><span class="p">,</span>
-                         <span class="p">))</span></div>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Corporate&quot;</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span> <span class="n">table_style</span><span class="o">=</span><span class="n">table_style</span><span class="p">)</span></div>
 
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_builtin_slide_types</span><span class="p">(</span>
-    <span class="n">theme_palette</span><span class="p">:</span> <span class="n">ColorPalette</span><span class="p">,</span>
-    <span class="n">theme_typography</span><span class="p">:</span> <span class="n">Typography</span><span class="p">,</span>
-    <span class="n">center_text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SlideTypeConfig</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create the standard set of slide types for a built-in theme.&quot;&quot;&quot;</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">reporting.elements.text</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextAlignment</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">reporting.title_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">TitleConfig</span><span class="p">,</span> <span class="n">SubtitleConfig</span><span class="p">,</span> <span class="n">TitlePanelConfig</span>
-
-    <span class="n">title_fg</span> <span class="o">=</span> <span class="n">TitleConfig</span><span class="p">(</span>
-        <span class="n">font_name</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">heading_1</span><span class="o">.</span><span class="n">family</span><span class="p">,</span>
-        <span class="n">font_size</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">heading_1</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
-        <span class="n">bold</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">heading_1</span><span class="o">.</span><span class="n">bold</span><span class="p">,</span>
-        <span class="n">italic</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">heading_1</span><span class="o">.</span><span class="n">italic</span><span class="p">,</span>
-        <span class="n">color</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">heading_1</span><span class="o">.</span><span class="n">color</span> <span class="ow">or</span> <span class="n">theme_palette</span><span class="o">.</span><span class="n">primary</span><span class="o">.</span><span class="n">css</span><span class="p">,</span>
-        <span class="n">alignment</span><span class="o">=</span><span class="n">TextAlignment</span><span class="o">.</span><span class="n">LEFT</span><span class="p">,</span>
-        <span class="n">show_separator</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">separator_color</span><span class="o">=</span><span class="n">theme_palette</span><span class="o">.</span><span class="n">border</span><span class="o">.</span><span class="n">css</span><span class="p">,</span>
-        <span class="n">separator_width</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-        <span class="n">separator_margin</span><span class="o">=</span><span class="mf">8.0</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">subtitle_fg</span> <span class="o">=</span> <span class="n">SubtitleConfig</span><span class="p">(</span>
-        <span class="n">font_name</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">family</span><span class="p">,</span>
-        <span class="n">font_size</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
-        <span class="n">bold</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">bold</span><span class="p">,</span>
-        <span class="n">italic</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">italic</span><span class="p">,</span>
-        <span class="n">color</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">color</span> <span class="ow">or</span> <span class="n">theme_palette</span><span class="o">.</span><span class="n">text_secondary</span><span class="o">.</span><span class="n">css</span><span class="p">,</span>
-        <span class="n">alignment</span><span class="o">=</span><span class="n">TextAlignment</span><span class="o">.</span><span class="n">LEFT</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">panel_cfg</span> <span class="o">=</span> <span class="n">TitlePanelConfig</span><span class="p">()</span>
-
-    <span class="c1"># Build footer configs</span>
-    <span class="n">default_footer</span> <span class="o">=</span> <span class="n">FooterConfig</span><span class="p">(</span>
-        <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">separator_color</span><span class="o">=</span><span class="n">theme_palette</span><span class="o">.</span><span class="n">border</span><span class="o">.</span><span class="n">css</span><span class="p">,</span>
-        <span class="n">font_name</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">caption</span><span class="o">.</span><span class="n">family</span><span class="p">,</span>
-        <span class="n">font_size</span><span class="o">=</span><span class="n">theme_typography</span><span class="o">.</span><span class="n">caption</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
-        <span class="n">color</span><span class="o">=</span><span class="n">theme_palette</span><span class="o">.</span><span class="n">text_secondary</span><span class="o">.</span><span class="n">css</span><span class="p">,</span>
-        <span class="n">center_text</span><span class="o">=</span><span class="n">center_text</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">no_footer</span> <span class="o">=</span> <span class="n">FooterConfig</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="n">SlideTypeConfig</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
-            <span class="n">title_panel_height</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>
-            <span class="n">title_config</span><span class="o">=</span><span class="n">title_fg</span><span class="p">,</span>
-            <span class="n">subtitle_config</span><span class="o">=</span><span class="n">subtitle_fg</span><span class="p">,</span>
-            <span class="n">title_panel_config</span><span class="o">=</span><span class="n">panel_cfg</span><span class="p">,</span>
-            <span class="n">footer_config</span><span class="o">=</span><span class="n">default_footer</span><span class="p">,</span>
-        <span class="p">),</span>
-        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">SlideTypeConfig</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;title&quot;</span><span class="p">,</span>
-            <span class="n">title_panel_height</span><span class="o">=</span><span class="mf">80.0</span><span class="p">,</span>
-            <span class="n">title_config</span><span class="o">=</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">title_fg</span><span class="p">,</span> <span class="n">show_separator</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-            <span class="n">subtitle_config</span><span class="o">=</span><span class="n">subtitle_fg</span><span class="p">,</span>
-            <span class="n">title_panel_config</span><span class="o">=</span><span class="n">panel_cfg</span><span class="p">,</span>
-            <span class="n">footer_config</span><span class="o">=</span><span class="n">no_footer</span><span class="p">,</span>
-        <span class="p">),</span>
-        <span class="s2">&quot;blank&quot;</span><span class="p">:</span> <span class="n">SlideTypeConfig</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;blank&quot;</span><span class="p">,</span>
-            <span class="n">title_panel_height</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-            <span class="n">title_config</span><span class="o">=</span><span class="n">title_fg</span><span class="p">,</span>
-            <span class="n">subtitle_config</span><span class="o">=</span><span class="n">subtitle_fg</span><span class="p">,</span>
-            <span class="n">title_panel_config</span><span class="o">=</span><span class="n">panel_cfg</span><span class="p">,</span>
-            <span class="n">footer_config</span><span class="o">=</span><span class="n">no_footer</span><span class="p">,</span>
-        <span class="p">),</span>
-    <span class="p">}</span>
 
 
 <div class="viewcode-block" id="DarkTheme">
-<a class="viewcode-back" href="../../../api.html#reporting.styles.theme.DarkTheme">[docs]</a>
+<a class="viewcode-back" href="../../../api.html#reporting.styles.DarkTheme">[docs]</a>
 <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DarkTheme</span><span class="p">(</span><span class="n">Theme</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dark theme (blue accent on dark background).</span>
-
-<span class="sd">    Uses Helvetica fonts with light text on a near-black</span>
-<span class="sd">    background.  Suited for presentations in dim environments.</span>
-
-<span class="sd">    Example::</span>
-
-<span class="sd">        from reporting.styles.theme import DarkTheme</span>
-
-<span class="sd">        theme = DarkTheme()</span>
-<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">reporting.tablespec.style</span><span class="w"> </span><span class="kn">import</span> <span class="n">TableStyle</span>
-
         <span class="n">palette</span> <span class="o">=</span> <span class="n">ColorPalette</span><span class="p">(</span>
             <span class="n">primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#4FC3F7&quot;</span><span class="p">),</span>
             <span class="n">secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#29B6F6&quot;</span><span class="p">),</span>
@@ -342,34 +169,15 @@
             <span class="n">mono</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#E0E0E0&quot;</span><span class="p">),</span>
         <span class="p">)</span>
         <span class="n">table_style</span> <span class="o">=</span> <span class="n">TableStyle</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Dark&quot;</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span> <span class="n">table_style</span><span class="o">=</span><span class="n">table_style</span><span class="p">,</span>
-                         <span class="n">footer</span><span class="o">=</span><span class="n">FooterConfig</span><span class="p">(</span><span class="n">center_text</span><span class="o">=</span><span class="s2">&quot;Dark Report&quot;</span><span class="p">),</span>
-                         <span class="n">slide_types</span><span class="o">=</span><span class="n">_builtin_slide_types</span><span class="p">(</span>
-                             <span class="n">theme_palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span>
-                             <span class="n">theme_typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span>
-                             <span class="n">center_text</span><span class="o">=</span><span class="s2">&quot;Dark Report&quot;</span><span class="p">,</span>
-                         <span class="p">))</span></div>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Dark&quot;</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span> <span class="n">table_style</span><span class="o">=</span><span class="n">table_style</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="LightTheme">
-<a class="viewcode-back" href="../../../api.html#reporting.styles.theme.LightTheme">[docs]</a>
+<a class="viewcode-back" href="../../../api.html#reporting.styles.LightTheme">[docs]</a>
 <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">LightTheme</span><span class="p">(</span><span class="n">Theme</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Light theme (blue on near-white background).</span>
-
-<span class="sd">    Similar to the corporate theme but with a slightly softer</span>
-<span class="sd">    palette and a light grey background.</span>
-
-<span class="sd">    Example::</span>
-
-<span class="sd">        from reporting.styles.theme import LightTheme</span>
-
-<span class="sd">        theme = LightTheme()</span>
-<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">reporting.tablespec.style</span><span class="w"> </span><span class="kn">import</span> <span class="n">TableStyle</span>
-
         <span class="n">palette</span> <span class="o">=</span> <span class="n">ColorPalette</span><span class="p">(</span>
             <span class="n">primary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#1565C0&quot;</span><span class="p">),</span>
             <span class="n">secondary</span><span class="o">=</span><span class="n">Color</span><span class="o">.</span><span class="n">from_hex</span><span class="p">(</span><span class="s2">&quot;#42A5F5&quot;</span><span class="p">),</span>
@@ -392,13 +200,7 @@
             <span class="n">mono</span><span class="o">=</span><span class="n">FontSpec</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;Courier&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#212121&quot;</span><span class="p">),</span>
         <span class="p">)</span>
         <span class="n">table_style</span> <span class="o">=</span> <span class="n">TableStyle</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Light&quot;</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span> <span class="n">table_style</span><span class="o">=</span><span class="n">table_style</span><span class="p">,</span>
-                         <span class="n">footer</span><span class="o">=</span><span class="n">FooterConfig</span><span class="p">(</span><span class="n">center_text</span><span class="o">=</span><span class="s2">&quot;Light Report&quot;</span><span class="p">),</span>
-                         <span class="n">slide_types</span><span class="o">=</span><span class="n">_builtin_slide_types</span><span class="p">(</span>
-                             <span class="n">theme_palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span>
-                             <span class="n">theme_typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span>
-                             <span class="n">center_text</span><span class="o">=</span><span class="s2">&quot;Light Report&quot;</span><span class="p">,</span>
-                         <span class="p">))</span></div>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Light&quot;</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">typography</span><span class="o">=</span><span class="n">typography</span><span class="p">,</span> <span class="n">table_style</span><span class="o">=</span><span class="n">table_style</span><span class="p">)</span></div>
 
 </pre></div>
 

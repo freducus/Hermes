@@ -242,7 +242,7 @@ class TitlePanel:
     padding: Edges = dataclasses.field(
         default_factory=lambda: Edges(left=20, right=20, top=8, bottom=8),
     )
-    show_separator: bool = True
+    show_separator: bool = False
     separator_color: ColorValue = "#CCCCCC"
     separator_width: float = 1.0
     separator_margin: float = 8.0
@@ -250,22 +250,3 @@ class TitlePanel:
     def __post_init__(self) -> None:
         self.separator_color = normalize_color(self.separator_color)
 
-    @classmethod
-    def from_theme(cls, theme: Theme) -> TitlePanel:
-        """Create a ``TitlePanel`` from a ``Theme``.
-
-        Derives separator colour from the theme's colour palette.
-
-        Args:
-            theme: The theme to use as a source.
-
-        Returns:
-            A fully-populated ``TitlePanel``.
-        """
-        return cls(
-            height=60.0,
-            show_separator=True,
-            separator_color=theme.palette.border.css,
-            separator_width=1.0,
-            separator_margin=8.0,
-        )

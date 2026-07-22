@@ -164,17 +164,14 @@ class TestSlide:
 
     def test_theme_page_size_defaults(self):
         """Theme.page_size controls slide width/height when not explicit."""
-        theme = Theme(
-            name="Wide",
-            page_size=(1280.0, 720.0),
-        )
+        theme = Theme(page_size=(1280.0, 720.0))
         slide = Slide("Wide", theme=theme)
         assert slide.width == 1280.0
         assert slide.height == 720.0
 
     def test_explicit_size_overrides_theme(self):
         """Explicit width/height must override theme.page_size."""
-        theme = Theme(name="Small", page_size=(640.0, 480.0))
+        theme = Theme(page_size=(640.0, 480.0))
         slide = Slide("Big", theme=theme, width=1920.0, height=1080.0)
         assert slide.width == 1920.0
         assert slide.height == 1080.0
@@ -182,28 +179,16 @@ class TestSlide:
     def test_dark_theme_works(self):
         """DarkTheme creates slides with correct page_size."""
         slide = Slide("Dark", theme=DarkTheme())
-        assert slide.theme.name == "Dark"
         assert slide.width == 960.0
 
     def test_light_theme_works(self):
         """LightTheme creates slides with correct page_size."""
         slide = Slide("Light", theme=LightTheme())
-        assert slide.theme.name == "Light"
-
-    def test_theme_register_and_load(self):
-        """Theme.register() and Theme.load_themes()."""
-        @Theme.register("test_theme")
-        class TestRegTheme(Theme):
-            def __init__(self) -> None:
-                super().__init__(name="TestRegistered")
-
-        assert "test_theme" in Theme._registry
-        assert Theme._registry["test_theme"] is TestRegTheme
+        assert slide.width == 960.0
 
     def test_empty_slide_defaults_to_corporate(self):
         """Slide() with no args uses CorporateTheme."""
         slide = Slide()
-        assert slide.theme.name == "Corporate"
         assert slide.width == 960.0
         assert slide.height == 540.0
 

@@ -63,6 +63,7 @@ class TableElement(BaseElement):
     data: Any = None
     include_index: bool = False
     header: bool = True
+    header_style: bool = True
     zebra: bool = False
     numeric_format: Optional[str] = None
     column_widths: Optional[list[float]] = None
@@ -73,6 +74,7 @@ class TableElement(BaseElement):
         self.data = data
         self.include_index = kwargs.pop("include_index", False)
         self.header = kwargs.pop("header", True)
+        self.header_style = kwargs.pop("header_style", True)
         self.zebra = kwargs.pop("zebra", False)
         self.numeric_format = kwargs.pop("numeric_format", None)
         self.column_widths = kwargs.pop("column_widths", None)
